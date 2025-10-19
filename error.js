@@ -27,9 +27,10 @@
     let question = {};
     const keysPressed = {};
 
-    let lastShootTime = 0;
-    const SHOOT_DELAY = 150;
+let lastShootTime = 0;
+    const SHOOT_DELAY = 150;
 
+const MOBILE_SHOOT = 'MobileShoot'; // ⭐ NOVO: Constante para identificar o disparo via botão móvel
 const MOBILE_MOVE_LEFT = 'MobileLeft';
 const MOBILE_MOVE_RIGHT = 'MobileRight';
 // VARIÁVEIS PARA CONTROLE ANALÓGICO (LIVRE) VIA TOQUE
@@ -38,7 +39,6 @@ let touchTargetY = null; // Posição Y para onde a nave deve ir
 // Fator que determina a velocidade e suavidade do movimento de toque
 const TOUCH_MOVE_SPEED_FACTOR = 0.05; 
 // O PLAYER_SPEED (ex: 5) ainda será o limite de velocidade.
-
 // ... (Suas outras variáveis: SHOOT_DELAY, player, gameArea, keysPressed etc.)
 
     let movementInterval = null;
@@ -444,39 +444,38 @@ function endGame(isVictory = false) {
     questionDisplay.style.display = 'none'; // Esconde o painel de perguntas
 }
 
-
-// =========================================================================
-// ⭐ INÍCIO DO CÓDIGO DE SUPORTE TOUCH/CLICK (Insira AQUI) ⭐
-// =========================================================================
-
-// Funções para Manuseio de Disparo Tátil (JÁ CORRIGIDA PARA CHAMAR 'shoot()')
-function handleGameAreaTouch(event) {
-    // Certifique-se de que o jogo está rodando
+// A nova função para o Botão Exclusivo (Use esta)
+function handleShootButtonTouch(event) {
+    // 1. Previne o movimento (se for um touch) e o clique padrão
+    event.preventDefault();
+    event.stopPropagation(); // Impede que o toque suba para o gameArea e cause movimento
+    
+    // 2. Garante que o jogo está rodando
     if (!isGameRunning) return;
     
-    // Previne o comportamento padrão (ex: scroll, zoom)
-    event.preventDefault(); 
-
-    // Dispara o tiro se o toque não for no Boss (para evitar interferência)
-    const target = event.target;
-
-    // Se o alvo for a 'gameArea' ou o 'player' ou um 'bullet' ou 'asteroid'
-    if (target.id === 'gameArea' || target.id === 'player' || target.className.includes('bullet') || target.className.includes('asteroid')) {
-        shoot(); // Chama a sua função real de disparo
-        
-        // Adiciona uma pequena classe visual temporária para feedback de disparo tátil
-        player.classList.add('shooting');
-        setTimeout(() => {
-            player.classList.remove('shooting');
-        }, SHOOT_DELAY / 2); // Dura metade do delay do tiro
-    } 
+    // 3. Simula o pressionar de tecla para quem usa keysPressed
+    // Se você usa o keysPressed para disparo (tecla Espaço), adicione isso:
+    keysPressed[MOBILE_SHOOT] = true;
+    
+    // 4. Chama a função de disparo diretamente
+    shoot();
+    
+    // Opcional: Feedback visual rápido no botão
+    const button = event.currentTarget;
+    button.classList.add('active');
+    setTimeout(() => {
+        button.classList.remove('active');
+    }, SHOOT_DELAY / 2);
 }
 
-// Listener principal (deve estar no final do script para garantir que todos os elementos existam)
+// O restante do seu código JavaScript, a partir de `document.addEventListener('DOMContentLoaded', ...`
+
 // Listener principal (deve estar no final do script para garantir que todos os elementos existam)
 document.addEventListener('DOMContentLoaded', () => {
     const startButton = document.getElementById('startButton');
-    const gameAreaElement = document.getElementById('gameArea'); // Garante que pegamos a área de jogo
+    const gameAreaElement = document.getElementById('gameArea'); 
+    // ⭐ NOVO: Referência ao botão de disparo exclusivo
+    const shootButton = document.getElementById('shootButton'); 
 
     // Lógica para o Botão Iniciar (Inalterada)
     if (startButton) {
@@ -487,16 +486,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ⭐ NOVO: Adiciona listener para o botão de disparo exclusivo
+    if (shootButton) {
+        // Disparo ao clicar (desktop se o botão for visível)
+        shootButton.addEventListener('click', handleShootButtonTouch);
+        // Disparo ao tocar (mobile)
+        shootButton.addEventListener('touchstart', handleShootButtonTouch);
+        // Opcional: Remove o 'pressionado' ao soltar (se estiver usando keysPressed)
+        shootButton.addEventListener('touchend', () => { delete keysPressed[MOBILE_SHOOT]; });
+    }
+    
     // 3. Adiciona suporte a toque na área do jogo
     if (gameAreaElement) {
-        // Suporte para Disparo (Toque ou Tap)
-        gameAreaElement.addEventListener('touchstart', handleGameAreaTouch);
+        // Se você não quer mais disparo ao tocar na gameArea, REMOVA o listener abaixo:
+        // gameAreaElement.addEventListener('touchstart', handleGameAreaTouch); 
         
-        // ⭐ NOVO: Suporte para Movimento (Touch) ⭐
+        // ⭐ Movimento Touch (Inalterado) ⭐
         gameAreaElement.addEventListener('touchstart', handleMoveTouch);
-        gameAreaElement.addEventListener('touchmove', handleMoveTouch); // Move a nave enquanto o dedo arrasta
-        gameAreaElement.addEventListener('touchend', handleMoveEnd);   // Para o movimento ao soltar
-        gameAreaElement.addEventListener('touchcancel', handleMoveEnd); // Para em caso de interrupção
+        gameAreaElement.addEventListener('touchmove', handleMoveTouch); 
+        gameAreaElement.addEventListener('touchend', handleMoveEnd); 
+        gameAreaElement.addEventListener('touchcancel', handleMoveEnd); 
     }
 });
 
@@ -1200,28 +1209,47 @@ function exitBossFight(success) {
         setTimeout(() => player.classList.remove('shooting'), 100);
     }
 }
+function shoot() {
+    // 1. Variáveis de controle de tempo
+    const currentTime = Date.now();
+    
+    // 2. VERIFICAÇÕES DE PRÉ-DISPARO (CRÍTICO!)
+    // Garante que o jogo está rodando E que o tempo de espera (delay) foi cumprido.
+    if (!isGameRunning || currentTime - lastShootTime < SHOOT_DELAY) {
+        return; // Sai da função, impedindo o disparo.
+    }
 
-   function shoot() {
-    const bulletElement = document.createElement('div');
-    bulletElement.className = 'bullet';
+    // 3. ATUALIZAÇÃO DO TEMPO DE DISPARO
+    // Só atualizamos o tempo se o disparo for realizado.
+    lastShootTime = currentTime;
 
-    const bulletX = playerX + 43; //POSIÇÃO DO TIRO DA NAVE
-    const bulletY = playerY;
+    // ----------------------------------------------------
+    // Lógica do Disparo (Seu código original)
+    // ----------------------------------------------------
 
-     playShootSound(); 
+    const bulletElement = document.createElement('div');
+    bulletElement.className = 'bullet';
 
-    bulletElement.style.left = `${bulletX}px`;
-    bulletElement.style.top = `${bulletY}px`;
-    gameArea.appendChild(bulletElement);
+    // Para centralizar o tiro (se o player tiver 100px de largura e o bullet 6px)
+    // Se o player é 50px de largura e o bullet 6px, use: playerX + (50/2) - (6/2) = playerX + 25 - 3 = playerX + 22
+    // Se o seu valor de 43 está correto para o seu layout, mantenha-o.
+    const bulletX = playerX + 43; 
+    const bulletY = playerY;
 
-    // CRÍTICO: Armazena a resposta correta atual no objeto do tiro
-    bullets.push({
-        element: bulletElement,
-        x: bulletX,
-        y: bulletY,
-        // *** NOVO ***: Adiciona o valor correto. Se não houver pergunta, usa null.
-        value: (question && question.answer !== undefined) ? question.answer : null 
-    });
+    playShootSound(); 
+
+    bulletElement.style.left = `${bulletX}px`;
+    bulletElement.style.top = `${bulletY}px`;
+    gameArea.appendChild(bulletElement);
+
+    // CRÍTICO: Armazena a resposta correta atual no objeto do tiro
+    bullets.push({
+        element: bulletElement,
+        x: bulletX,
+        y: bulletY,
+        // Mantém a lógica de armazenar a resposta correta
+        value: (question && question.answer !== undefined) ? question.answer : null 
+    });
 }
 
     // --- Loop Principal do Jogo ---
