@@ -17,46 +17,71 @@
             --cor-combo: #ffcc00; /* Dourado */
         }
 
-        body {
-            font-family: 'Orbitron', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--cor-fundo);
-            color: var(--cor-principal);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh; 
-            width: 100vw;       
-            overflow: hidden;
-            user-select: none;
-        }
+     body {
+    font-family: 'Orbitron', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--cor-fundo);
+    color: var(--cor-principal);
+    
+    display: flex;
+    flex-direction: column; /* Organiza o conteúdo em coluna (gameArea em cima, adArea embaixo) */
+    align-items: center; /* Centraliza horizontalmente o conteúdo */
+    
+    height: 100vh; /* CRÍTICO: Define a altura exata da tela */
+    min-height: 100vh; 
+    width: 100vw; 
+    
+    overflow: hidden; /* CRÍTICO: Remove a rolagem da página */
+    user-select: none;
+}
 
-        #gameArea {
-            position: relative;
-            width: 100vw;       
-            height: 100vh;     
-            max-width: 100vw;
-            max-height: 100vh;
-            background: rgba(0, 0, 0, 0.4);
-            border: 5px solid var(--cor-secundaria);
-            box-shadow: 0 0 20px var(--cor-secundaria);
-            overflow: hidden;
-            cursor: crosshair;
-            /* Estrelas de Fundo */
-            background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
-                              radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
-                              radial-gradient(white, rgba(255,255,255,.1) 3px, transparent 50px);
-            background-size: 550px 550px, 350px 350px, 250px 250px;
-            background-position: 0 0, 40px 60px, 120px 200px;
-            animation: move-stars 3s linear infinite;
-        }
+#gameArea {
+    position: relative;
+    
+    /* CRÍTICO: Usa Flexbox para preencher o espaço restante */
+    flex-grow: 1; /* Faz esta área ocupar todo o espaço vertical disponível */
+    height: auto; /* Permite que o Flexbox controle a altura */
+    max-height: none; /* Remove a restrição que impedia o layout funcionar */
+    
+    width: 100vw; /* Ocupa a largura total */
+    max-width: 100vw;
+    
+    background: rgba(0, 0, 0, 0.4);
+    border: 5px solid var(--cor-secundaria);
+    box-shadow: 0 0 20px var(--cor-secundaria);
+    overflow: hidden;
+    cursor: crosshair;
+    /* Estrelas de Fundo */
+    background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+                      radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+                      radial-gradient(white, rgba(255,255,255,.1) 3px, transparent 50px);
+    background-size: 550px 550px, 350px 350px, 250px 250px;
+    background-position: 0 0, 40px 60px, 120px 200px;
+    animation: move-stars 3s linear infinite;
+}
 
-        @keyframes move-stars {
-            from { background-position-y: 0, 60px, 200px; }
-            to { background-position-y: 550px, 410px, 700px; }
-        }
+@keyframes move-stars {
+    from { background-position-y: 0, 60px, 200px; }
+    to { background-position-y: 550px, 410px, 700px; }
+} 
+
+/* NOVO ESTILO: Área de Anúncio Fixa Abaixo da Área do Jogo */
+#adArea {
+    /* CRÍTICO: Define a altura e impede que o Flexbox a encolha */
+    height: 43px; /* Altura do banner (50px) + padding (10px superior/inferior) */
+    flex-shrink: 0; /* Garante que a altura seja mantida */
+    
+    width: 100vw; /* Garante que ocupe a largura total */
+    max-width: 100vw; 
+    text-align: center;
+    padding: 10px 0; /* Espaçamento interno */
+    background-color: rgba(0, 0, 0, 0.5); 
+    
+    /* REMOVIDO: margin-top: auto; (Não é mais necessário no layout Flexbox) */
+    
+    border-top: 2px solid var(--cor-principal);
+}
 
  /* Foguete VERTICAL (⬆️) */
 #player {
@@ -474,6 +499,7 @@
     box-shadow: 0 0 10px var(--cor-erro);
     transform: scale(1.05);
 }
+
     </style>
 </head>
 <body>
@@ -521,7 +547,8 @@
 
 <script src="error.js"></script>
  <!-- Banner Adsterra no rodapé -->
-  <div style="text-align:center; margin-bottom:10px;">
+<div id="adArea">
+    <div> 
         <script type="text/javascript">
           atOptions = {
             'key' : 'bbf348585df7afae438e1754d1003d92',
@@ -533,6 +560,7 @@
         </script>
         <script type="text/javascript" src="https://www.highperformanceformat.com/bbf348585df7afae438e1754d1003d92/invoke.js"></script>
     </div>
+</div>
 
 </body>
 </html>
