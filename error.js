@@ -431,7 +431,62 @@ function endGame(isVictory = false) {
     gameOverScreen.style.display = 'flex';
     questionDisplay.style.display = 'none'; // Esconde o painel de perguntas
 }
+
+
+// =========================================================================
+// ⭐ INÍCIO DO CÓDIGO DE SUPORTE TOUCH/CLICK (Insira AQUI) ⭐
+// =========================================================================
+
+// Funções para Manuseio de Disparo Tátil (JÁ CORRIGIDA PARA CHAMAR 'shoot()')
+function handleGameAreaTouch(event) {
+    // Certifique-se de que o jogo está rodando
+    if (!isGameRunning) return;
+    
+    // Previne o comportamento padrão (ex: scroll, zoom)
+    event.preventDefault(); 
+
+    // Dispara o tiro se o toque não for no Boss (para evitar interferência)
+    const target = event.target;
+
+    // Se o alvo for a 'gameArea' ou o 'player' ou um 'bullet' ou 'asteroid'
+    if (target.id === 'gameArea' || target.id === 'player' || target.className.includes('bullet') || target.className.includes('asteroid')) {
+        shoot(); // Chama a sua função real de disparo
+        
+        // Adiciona uma pequena classe visual temporária para feedback de disparo tátil
+        player.classList.add('shooting');
+        setTimeout(() => {
+            player.classList.remove('shooting');
+        }, SHOOT_DELAY / 2); // Dura metade do delay do tiro
+    } 
+}
+
+// Listener principal (deve estar no final do script para garantir que todos os elementos existam)
+document.addEventListener('DOMContentLoaded', () => {
+    const startButton = document.getElementById('startButton');
+    
+    // 1. Adiciona o listener de clique (para PC/Mouse)
+    if (startButton) {
+        startButton.addEventListener('click', startGame);
+        
+        // 2. Adiciona o listener de toque (para Celular/Tablet)
+        startButton.addEventListener('touchstart', (event) => {
+            // Previne o comportamento padrão (ex: zoom) e o disparo do evento 'click' subsequente.
+            event.preventDefault(); 
+            startGame();
+        });
+    }
+
+    // 3. Adiciona suporte a toque na área do jogo para ATIRAR (Disparo tátil)
+    const gameAreaElement = document.getElementById('gameArea');
+    if (gameAreaElement) {
+        gameAreaElement.addEventListener('touchstart', handleGameAreaTouch);
+    }
+});
+
+// --- FIM DO CÓDIGO DE SUPORTE TOUCH/CLICK ---
 // --- Funções da HUD e Dificuldade ---
+
+
 
     // NOVO CÓDIGO PARA updateHUD()
 function updateHUD() {
@@ -1427,53 +1482,3 @@ function confirmExit() {
     // Confirma se o usuário quer sair
     return confirm("Tem certeza que deseja sair da missão e voltar para a tela anterior?");
 }
-// --- NOVO CÓDIGO PARA SUPORTE TOUCH/CLICK ---
-document.addEventListener('DOMContentLoaded', () => {
-    const startButton = document.getElementById('startButton');
-    
-    // 1. Adiciona o listener de clique (para PC/Mouse)
-    if (startButton) {
-        startButton.addEventListener('click', startGame);
-        
-        // 2. Adiciona o listener de toque (para Celular/Tablet)
-        // Usar 'touchstart' garante que o toque inicie a função.
-        startButton.addEventListener('touchstart', (event) => {
-            // Previne o comportamento padrão (ex: zoom) e o disparo do evento 'click' subsequente.
-            event.preventDefault(); 
-            startGame();
-        });
-    }
-
-    // 3. Adiciona suporte a toque na área do jogo para ATIRAR (Disparo tátil)
-    const gameAreaElement = document.getElementById('gameArea');
-    if (gameAreaElement) {
-        gameAreaElement.addEventListener('touchstart', handleGameAreaTouch);
-    }
-});
-
-// Funções para Manuseio de Disparo Tátil
-function handleGameAreaTouch(event) {
-    // Certifique-se de que o jogo está rodando
-    if (!isGameRunning) return;
-    
-    // Previne o comportamento padrão (ex: scroll, zoom)
-    event.preventDefault(); 
-
-    // Dispara o tiro se o toque não for no Boss (para evitar interferência com o clique no boss)
-    // Para simplificar, vamos verificar se o alvo do toque é a gameArea
-    const target = event.target;
-
-    // Se o alvo for a 'gameArea' ou o 'player' ou um 'bullet' (elementos não-interativos)
-    if (target.id === 'gameArea' || target.id === 'player' || target.className.includes('bullet')) {
-         shootBullet();
-         
-         // Adiciona uma pequena classe visual temporária para feedback de disparo tátil
-         player.classList.add('shooting');
-         setTimeout(() => {
-             player.classList.remove('shooting');
-         }, SHOOT_DELAY / 2); // Dura metade do delay do tiro
-    } 
-    // Se você tiver um elemento específico para o Boss, pode adicionar uma exceção aqui:
-    // else if (target.id === 'boss') { /* não atira */ }
-}
-// --- FIM DO NOVO CÓDIGO PARA SUPORTE TOUCH/CLICK ---
