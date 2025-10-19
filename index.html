@@ -500,39 +500,6 @@
     transform: scale(1.05);
 }
 
-/* Estilo para a Área de Tiro (Mantido no canto direito) */
-#mobileShootButton {
-    /* ... (seu CSS existente, garantindo z-index alto) ... */
-    position: fixed; /* Mude para 'fixed' para garantir que não se mova com o scroll */
-    bottom: 10px; 
-    right: 10px;
-    z-index: 1000; /* CRÍTICO: Deve ser maior que o anúncio */
-    /* ... */
-}
-
-/* ⭐ NOVO ESTILO: Área do Joystick Virtual (Canto Esquerdo) ⭐ */
-#mobileJoystickArea {
-    /* POSICIONAMENTO */
-    position: fixed; /* Fixa na tela */
-    bottom: 10px; /* Alinha na parte inferior */
-    left: 10px; /* Alinha no canto esquerdo */
-    
-    /* TAMANHO (Ajuste conforme o tamanho desejado para a área de toque) */
-    width: 120px;
-    height: 120px;
-    
-    /* ESTILO VISUAL (Opcional: para dar feedback visual) */
-    background: rgba(var(--cor-principal), 0.1); /* Um círculo neon semi-transparente */
-    border: 2px solid rgba(var(--cor-principal), 0.5);
-    border-radius: 50%;
-    
-    /* CAMADA CRÍTICA */
-    z-index: 1000; /* CRÍTICO: Deve estar acima de tudo (incluindo o anúncio) */
-    
-    /* GARANTE QUE O TOQUE FUNCIONE AQUI */
-    touch-action: none;
-}
-
     </style>
 </head>
 <body>
@@ -553,7 +520,6 @@
         <div id="rightSideHUD">
             <div id="lives">Vidas: 💖💖💖</div>
             <div id="bossHealth"></div>
-            
         </div>
     </div>
 </div>
@@ -578,14 +544,9 @@
 </div>
 </div>
 
-<button id="mobileShootButton">FOGO</button>
-
-
 
 <script src="error.js"></script>
  <!-- Banner Adsterra no rodapé -->
-  <button id="mobileShootButton">FOGO</button>
-<div id="mobileJoystickArea"></div>
 <div id="adArea">
     <div> 
         <script type="text/javascript">
