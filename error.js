@@ -29,6 +29,18 @@
 
     let lastShootTime = 0;
     const SHOOT_DELAY = 150;
+
+const MOBILE_MOVE_LEFT = 'MobileLeft';
+const MOBILE_MOVE_RIGHT = 'MobileRight';
+// VARIÁVEIS PARA CONTROLE ANALÓGICO (LIVRE) VIA TOQUE
+let touchTargetX = null; // Posição X para onde a nave deve ir
+let touchTargetY = null; // Posição Y para onde a nave deve ir
+// Fator que determina a velocidade e suavidade do movimento de toque
+const TOUCH_MOVE_SPEED_FACTOR = 0.05; 
+// O PLAYER_SPEED (ex: 5) ainda será o limite de velocidade.
+
+// ... (Suas outras variáveis: SHOOT_DELAY, player, gameArea, keysPressed etc.)
+
     let movementInterval = null;
     
     let infoTimer = null; // Novo timer para gerenciar mensagens temporárias
@@ -461,29 +473,77 @@ function handleGameAreaTouch(event) {
 }
 
 // Listener principal (deve estar no final do script para garantir que todos os elementos existam)
+// Listener principal (deve estar no final do script para garantir que todos os elementos existam)
 document.addEventListener('DOMContentLoaded', () => {
     const startButton = document.getElementById('startButton');
-    
-    // 1. Adiciona o listener de clique (para PC/Mouse)
+    const gameAreaElement = document.getElementById('gameArea'); // Garante que pegamos a área de jogo
+
+    // Lógica para o Botão Iniciar (Inalterada)
     if (startButton) {
         startButton.addEventListener('click', startGame);
-        
-        // 2. Adiciona o listener de toque (para Celular/Tablet)
         startButton.addEventListener('touchstart', (event) => {
-            // Previne o comportamento padrão (ex: zoom) e o disparo do evento 'click' subsequente.
             event.preventDefault(); 
             startGame();
         });
     }
 
-    // 3. Adiciona suporte a toque na área do jogo para ATIRAR (Disparo tátil)
-    const gameAreaElement = document.getElementById('gameArea');
+    // 3. Adiciona suporte a toque na área do jogo
     if (gameAreaElement) {
+        // Suporte para Disparo (Toque ou Tap)
         gameAreaElement.addEventListener('touchstart', handleGameAreaTouch);
+        
+        // ⭐ NOVO: Suporte para Movimento (Touch) ⭐
+        gameAreaElement.addEventListener('touchstart', handleMoveTouch);
+        gameAreaElement.addEventListener('touchmove', handleMoveTouch); // Move a nave enquanto o dedo arrasta
+        gameAreaElement.addEventListener('touchend', handleMoveEnd);   // Para o movimento ao soltar
+        gameAreaElement.addEventListener('touchcancel', handleMoveEnd); // Para em caso de interrupção
     }
 });
 
 // --- FIM DO CÓDIGO DE SUPORTE TOUCH/CLICK ---
+
+// Função para CAPTURAR a posição X/Y do toque
+function handleMoveTouch(event) {
+    // 1. Previne o comportamento padrão (ex: scroll, zoom)
+    event.preventDefault();
+
+    // 2. Garante que o jogo está rodando
+    if (!isGameRunning) return;
+    
+    // Certifique-se de que 'gameArea' está definida globalmente
+    const gameAreaElement = document.getElementById('gameArea'); 
+    if (!gameAreaElement) return;
+    
+    const gameAreaRect = gameAreaElement.getBoundingClientRect();
+
+    // 3. Pega a posição do primeiro toque (ou do toque que restou)
+    const touch = event.touches[0];
+    if (touch) {
+        // Define o alvo no sistema de coordenadas do jogo
+        touchTargetX = touch.clientX - gameAreaRect.left;
+        touchTargetY = touch.clientY - gameAreaRect.top;
+    }
+}
+
+
+// Função para PARAR o Movimento quando os dedos são levantados
+function handleMoveEnd(event) {
+    // 1. Garante que o jogo está rodando
+    if (!isGameRunning) return;
+
+    // 2. Se não houver toques remanescentes, reseta os alvos de movimento.
+    if (event.touches.length === 0) {
+        touchTargetX = null;
+        touchTargetY = null;
+    } 
+    // 3. Se houver toques remanescentes (multitouch), atualiza o alvo com o que sobrou.
+    else if (event.touches.length > 0) {
+        handleMoveTouch(event); 
+    }
+}
+
+// ⭐ A função handleGameAreaTouch permanece inalterada e é responsável apenas pelo DISPARO.
+
 // --- Funções da HUD e Dificuldade ---
 
 
@@ -1042,37 +1102,104 @@ function exitBossFight(success) {
 }
     // --- Lógica da Nave e Tiros ---
 
-    function movePlayer() {
-        if (!isGameRunning) return;
+  function movePlayer() {
+    if (!isGameRunning) return;
 
-        let dx = 0;
-        let dy = 0;
+    let dx = 0;
+    let dy = 0;
+    let rotation = 0;
+    
+    // Suas dimensões da nave (Ajuste se necessário)
+    const playerWidth = 50; 
+    const playerHeight = 50; 
 
-        if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) dx = -PLAYER_SPEED;
-        if (keysPressed['ArrowRight'] || keysPressed['KeyD']) dx = PLAYER_SPEED;
-        if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
-        if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
+    // ==========================================================
+    // ⭐ LÓGICA DE MOVIMENTO PC (DIGITAL) - ATIVA SE NÃO HOUVER TOQUE ⭐
+    // ==========================================================
+    if (touchTargetX === null) {
+        if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) {
+            dx = -PLAYER_SPEED;
+            rotation = -10;
+        }
+        if (keysPressed['ArrowRight'] || keysPressed['KeyD']) {
+            if (dx === 0) {
+                dx = PLAYER_SPEED;
+                rotation = 10;
+            } else {
+                dx = 0; // Anula se Left e Right pressionados
+                rotation = 0;
+            }
+        }
+        if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
+        if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
+        
+        // Aplica o fator diagonal APENAS na lógica digital (PC)
+        if (dx !== 0 && dy !== 0) {
+            const diagFactor = Math.sqrt(2);
+            dx /= diagFactor;
+            dy /= diagFactor;
+        }
 
-        if (dx !== 0 && dy !== 0) {
-            const diagFactor = Math.sqrt(2);
-            dx /= diagFactor;
-            dy /= diagFactor;
-        }
+    } 
+    
+    // ==========================================================
+    // ⭐ LÓGICA DE MOVIMENTO MOBILE (ANALÓGICO) - ATIVA SE HOUVER TOQUE ⭐
+    // ==========================================================
+    else {
+        // Calcula o centro atual da nave
+        const playerCenterX = playerX + (playerWidth / 2);
+        const playerCenterY = playerY + (playerHeight / 2);
 
-        playerX = Math.max(0, Math.min(GAME_WIDTH - 50, playerX + dx));
-        playerY = Math.max(0, Math.min(GAME_HEIGHT - 70, playerY + dy));
+        // 1. Calcula a distância e a direção (vetor) até o ponto de toque
+        const diffX = touchTargetX - playerCenterX;
+        const diffY = touchTargetY - playerCenterY;
+        
+        const distance = Math.sqrt(diffX * diffX + diffY * diffY);
+        const STOPPING_DISTANCE = 5; // Distância mínima para parar o movimento
 
-        player.style.left = `${playerX}px`;
-        player.style.top = `${playerY}px`;
+        if (distance > STOPPING_DISTANCE) {
+            // Calcula o movimento dx e dy de forma gradual (analog)
+            dx = diffX * TOUCH_MOVE_SPEED_FACTOR; 
+            dy = diffY * TOUCH_MOVE_SPEED_FACTOR;
 
-        const now = Date.now();
-        if ((keysPressed['Space'] || keysPressed['Mouse0']) && (now - lastShootTime > SHOOT_DELAY)) {
-            shoot();
-            lastShootTime = now;
-            player.classList.add('shooting');
-            setTimeout(() => player.classList.remove('shooting'), 100);
-        }
-    }
+            // Limita a velocidade máxima
+            const speedMagnitude = Math.sqrt(dx * dx + dy * dy);
+            if (speedMagnitude > PLAYER_SPEED) {
+                dx = (dx / speedMagnitude) * PLAYER_SPEED;
+                dy = (dy / speedMagnitude) * PLAYER_SPEED;
+            }
+            
+            // Calcula a rotação para feedback
+            rotation = (dx / PLAYER_SPEED) * 15;
+            
+        } else {
+            dx = 0;
+            dy = 0;
+        }
+    }
+
+    // ==========================================================
+    // APLICAÇÃO DO MOVIMENTO E CLAMPING
+    // ==========================================================
+    
+    // Aplica o Movimento e Restrição de Borda
+    playerX = Math.max(0, Math.min(GAME_WIDTH - playerWidth, playerX + dx));
+    playerY = Math.max(0, Math.min(GAME_HEIGHT - playerHeight - 20, playerY + dy)); 
+
+    // Atualiza Posição e Rotação
+    player.style.left = `${playerX}px`;
+    player.style.top = `${playerY}px`;
+    player.style.transform = `rotate(${rotation}deg)`;
+
+    // Lógica de Disparo (PC: Space/Mouse)
+    const now = Date.now();
+    if ((keysPressed['Space'] || keysPressed['Mouse0']) && (now - lastShootTime > SHOOT_DELAY)) {
+        shoot();
+        lastShootTime = now;
+        player.classList.add('shooting');
+        setTimeout(() => player.classList.remove('shooting'), 100);
+    }
+}
 
    function shoot() {
     const bulletElement = document.createElement('div');
