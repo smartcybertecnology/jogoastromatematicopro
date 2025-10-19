@@ -499,7 +499,35 @@
     box-shadow: 0 0 10px var(--cor-erro);
     transform: scale(1.05);
 }
+/* style.css (Adicione estas regras) */
 
+#shootButton {
+    /* Posição fixa no canto inferior direito */
+    position: absolute; /* Usamos 'absolute' se estiver dentro de #gameArea (que deve ser 'relative') */
+    bottom: 20px;
+    right: 20px;
+    
+    /* Estilo do botão */
+    padding: 15px 25px;
+    font-size: 1.2rem;
+    background-color: var(--cor-acerto); /* Ex: verde */
+    color: white;
+    border: 3px solid white;
+    border-radius: 10px;
+    cursor: pointer;
+    z-index: 1000; /* Garante que fique acima de tudo */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+    
+    /* Inicialmente esconde o botão para desktop */
+    display: none; 
+}
+
+/* 📱 Media Query: Mostra o botão APENAS em telas menores (celulares/tablets) */
+@media (max-width: 768px) {
+    #shootButton {
+        display: block; /* Oculta a visualização para telas grandes (desktop) */
+    }
+}
     </style>
 </head>
 <body>
@@ -523,7 +551,7 @@
         </div>
     </div>
 </div>
-  
+  <button id="shootButton">🔫 DISPARAR</button>
 
     <div id="player">⬆️</div>
 
