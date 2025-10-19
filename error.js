@@ -30,16 +30,20 @@
     let lastShootTime = 0;
     const SHOOT_DELAY = 150;
 
-const MOBILE_MOVE_LEFT = 'MobileLeft';
-const MOBILE_MOVE_RIGHT = 'MobileRight';
-// VARIÁVEIS PARA CONTROLE ANALÓGICO (LIVRE) VIA TOQUE
-let touchTargetX = null; // Posição X para onde a nave deve ir
-let touchTargetY = null; // Posição Y para onde a nave deve ir
-// Fator que determina a velocidade e suavidade do movimento de toque
+// Variáveis para o Movimento Livre (Analog/Tap-to-move):
+// Armazena a posição X e Y que a nave está tentando alcançar (ponto de toque)
+let touchTargetX = null; 
+let touchTargetY = null; 
+// Fator de aceleração: Controla a suavidade e a velocidade do movimento de toque
 const TOUCH_MOVE_SPEED_FACTOR = 0.05; 
+
+
+// Nova Variável para o Botão de Tiro Dedicado:
+// Esta chave será ativada no objeto keysPressed[] quando o botão for pressionado.
+const MOBILE_SHOOT_KEY = 'MobileShoot';
 // O PLAYER_SPEED (ex: 5) ainda será o limite de velocidade.
 
-// ... (Suas outras variáveis: SHOOT_DELAY, player, gameArea, keysPressed etc.)
+
 
     let movementInterval = null;
     
@@ -448,59 +452,40 @@ function endGame(isVictory = false) {
 // =========================================================================
 // ⭐ INÍCIO DO CÓDIGO DE SUPORTE TOUCH/CLICK (Insira AQUI) ⭐
 // =========================================================================
+// ==========================================================
+// ⭐ 1. FUNÇÕES DE DISPARO DEDICADAS (BOTÃO 'FOGO') ⭐
+// ==========================================================
 
-// Funções para Manuseio de Disparo Tátil (JÁ CORRIGIDA PARA CHAMAR 'shoot()')
-function handleGameAreaTouch(event) {
-    // Certifique-se de que o jogo está rodando
+// Variável Global: const MOBILE_SHOOT_KEY = 'MobileShoot';
+
+function handleShootButtonTouchStart(event) {
+    // É crucial prevenir o default para que o touchstart não ative 
+    // outros listeners na gameArea (como o de clique do mouse)
+    event.preventDefault(); 
     if (!isGameRunning) return;
     
-    // Previne o comportamento padrão (ex: scroll, zoom)
-    event.preventDefault(); 
-
-    // Dispara o tiro se o toque não for no Boss (para evitar interferência)
-    const target = event.target;
-
-    // Se o alvo for a 'gameArea' ou o 'player' ou um 'bullet' ou 'asteroid'
-    if (target.id === 'gameArea' || target.id === 'player' || target.className.includes('bullet') || target.className.includes('asteroid')) {
-        shoot(); // Chama a sua função real de disparo
-        
-        // Adiciona uma pequena classe visual temporária para feedback de disparo tátil
-        player.classList.add('shooting');
-        setTimeout(() => {
-            player.classList.remove('shooting');
-        }, SHOOT_DELAY / 2); // Dura metade do delay do tiro
-    } 
+    // Ativa a flag para que a função movePlayer comece a disparar
+    keysPressed[MOBILE_SHOOT_KEY] = true; 
 }
 
-// Listener principal (deve estar no final do script para garantir que todos os elementos existam)
-// Listener principal (deve estar no final do script para garantir que todos os elementos existam)
-document.addEventListener('DOMContentLoaded', () => {
-    const startButton = document.getElementById('startButton');
-    const gameAreaElement = document.getElementById('gameArea'); // Garante que pegamos a área de jogo
+function handleShootButtonTouchEnd(event) {
+    event.preventDefault();
+    // Desativa a flag
+    keysPressed[MOBILE_SHOOT_KEY] = false;
+}
 
-    // Lógica para o Botão Iniciar (Inalterada)
-    if (startButton) {
-        startButton.addEventListener('click', startGame);
-        startButton.addEventListener('touchstart', (event) => {
-            event.preventDefault(); 
-            startGame();
-        });
-    }
+// ❌ FUNÇÃO REMOVIDA:
+// A antiga função handleGameAreaTouch (que disparava ao toque) FOI REMOVIDA.
+// O disparo é agora tratado pelo mobileShootButton e sua lógica em movePlayer.
 
-    // 3. Adiciona suporte a toque na área do jogo
-    if (gameAreaElement) {
-        // Suporte para Disparo (Toque ou Tap)
-        gameAreaElement.addEventListener('touchstart', handleGameAreaTouch);
-        
-        // ⭐ NOVO: Suporte para Movimento (Touch) ⭐
-        gameAreaElement.addEventListener('touchstart', handleMoveTouch);
-        gameAreaElement.addEventListener('touchmove', handleMoveTouch); // Move a nave enquanto o dedo arrasta
-        gameAreaElement.addEventListener('touchend', handleMoveEnd);   // Para o movimento ao soltar
-        gameAreaElement.addEventListener('touchcancel', handleMoveEnd); // Para em caso de interrupção
-    }
-});
 
-// --- FIM DO CÓDIGO DE SUPORTE TOUCH/CLICK ---
+// ==========================================================
+// ⭐ 2. FUNÇÕES DE MOVIMENTO LIVRE (PARA mobileJoystickArea) ⭐
+// ==========================================================
+
+// Variáveis Globais: 
+// let touchTargetX = null;
+// let touchTargetY = null;
 
 // Função para CAPTURAR a posição X/Y do toque
 function handleMoveTouch(event) {
@@ -510,18 +495,29 @@ function handleMoveTouch(event) {
     // 2. Garante que o jogo está rodando
     if (!isGameRunning) return;
     
-    // Certifique-se de que 'gameArea' está definida globalmente
-    const gameAreaElement = document.getElementById('gameArea'); 
-    if (!gameAreaElement) return;
+    // 3. Captura o retângulo da área de toque (mobileJoystickArea)
+    const targetElement = event.currentTarget; // O elemento ao qual o listener está anexado
+    if (!targetElement) return;
     
-    const gameAreaRect = gameAreaElement.getBoundingClientRect();
+    const targetRect = targetElement.getBoundingClientRect();
 
-    // 3. Pega a posição do primeiro toque (ou do toque que restou)
+    // 4. Pega a posição do primeiro toque
     const touch = event.touches[0];
     if (touch) {
-        // Define o alvo no sistema de coordenadas do jogo
-        touchTargetX = touch.clientX - gameAreaRect.left;
-        touchTargetY = touch.clientY - gameAreaRect.top;
+        // Define o alvo no sistema de coordenadas do JOGO (não do joystick)
+        // Se o joystick estiver fixo, a coordenada relativa é a mesma que absoluta.
+        touchTargetX = touch.clientX - targetRect.left + targetElement.offsetLeft; // Ajuste para a posição do jogo
+        touchTargetY = touch.clientY - targetRect.top + targetElement.offsetTop;
+        
+        // Simplificação: Se o joystick for 'fixed' e a gameArea for 'relative', 
+        // muitas vezes basta a coordenada absoluta do toque (touch.clientX/Y)
+        // se você ajustar a lógica de targetRect.
+        
+        // Usaremos a lógica mais simples (posição do toque na tela):
+        // Nota: Você pode precisar ajustar touchTargetX e Y na movePlayer 
+        // dependendo de onde o joystick está fixo (fixed) vs. o sistema de coordenadas do jogo.
+        touchTargetX = touch.clientX;
+        touchTargetY = touch.clientY;
     }
 }
 
@@ -542,12 +538,69 @@ function handleMoveEnd(event) {
     }
 }
 
-// ⭐ A função handleGameAreaTouch permanece inalterada e é responsável apenas pelo DISPARO.
 
-// --- Funções da HUD e Dificuldade ---
+// ==========================================================
+// ⭐ 3. BLOCO DOMContentLoaded (LISTENERS FINAIS) ⭐
+// ==========================================================
 
+document.addEventListener('DOMContentLoaded', () => {
+    const startButton = document.getElementById('startButton');
+    const gameAreaElement = document.getElementById('gameArea'); 
+    const mobileShootButton = document.getElementById('mobileShootButton'); 
+    // ⭐ NOVO: Referência à área do Joystick
+    const mobileJoystickArea = document.getElementById('mobileJoystickArea'); 
 
+    // Lógica para o Botão Iniciar (Inalterada)
+    if (startButton) {
+        startButton.addEventListener('click', startGame);
+        startButton.addEventListener('touchstart', (event) => {
+            event.preventDefault(); 
+            startGame();
+        });
+    }
 
+    // A gameAreaElement não tem mais listeners de toque (nem movimento, nem tiro)
+    // if (gameAreaElement) {} 
+    
+    // ==========================================================
+    // ⭐ LISTENERS PARA MOVIMENTO (SOMENTE NA ÁREA mobileJoystickArea) ⭐
+    // ==========================================================
+    if (mobileJoystickArea) {
+        // Movimento Livre (analógico)
+        mobileJoystickArea.addEventListener('touchstart', handleMoveTouch);
+        mobileJoystickArea.addEventListener('touchmove', handleMoveTouch); 
+        mobileJoystickArea.addEventListener('touchend', handleMoveEnd); 
+        mobileJoystickArea.addEventListener('touchcancel', handleMoveEnd);
+        
+        // Bloqueia o clique do mouse no joystick para evitar que ative o disparo de PC
+        mobileJoystickArea.addEventListener('mousedown', (e) => e.preventDefault());
+    }
+    
+    // ==========================================================
+    // ⭐ LISTENERS PARA DISPARO (SOMENTE NO mobileShootButton) ⭐
+    // ==========================================================
+    if (mobileShootButton) {
+        mobileShootButton.addEventListener('touchstart', handleShootButtonTouchStart);
+        mobileShootButton.addEventListener('mousedown', handleShootButtonTouchStart);
+        
+        mobileShootButton.addEventListener('touchend', handleShootButtonTouchEnd);
+        mobileShootButton.addEventListener('touchcancel', handleShootButtonTouchEnd);
+        mobileShootButton.addEventListener('mouseup', handleShootButtonTouchEnd);
+    }
+
+    // ⭐ LISTENERS DE TECLADO (Para PC) - Mantenha este bloco
+    // Exemplo:
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && isGameRunning) {
+            e.preventDefault();
+        }
+        keysPressed[e.code] = true;
+    });
+
+    document.addEventListener('keyup', (e) => {
+        delete keysPressed[e.code];
+    });
+});
     // NOVO CÓDIGO PARA updateHUD()
 function updateHUD() {
     scoreDisplay.innerText = score;
