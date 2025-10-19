@@ -1525,3 +1525,46 @@ function confirmExit() {
     // Confirma se o usuário quer sair
     return confirm("Tem certeza que deseja sair da missão e voltar para a tela anterior?");
 }
+// --- Inicialização: Garantir que o botão de início funcione em mobile ---
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Pega o elemento do botão de início
+    const startButton = document.getElementById('startButton');
+    
+    // 2. Verifica se o botão existe antes de adicionar listeners
+    if (startButton) {
+        
+        // Função unificada para iniciar o jogo e prevenir o 'Ghost Click'
+        const handleStartGame = (e) => {
+            // CRÍTICO: Previne o toque (touchstart) de disparar um 'click'
+            // duplicado (o chamado 'ghost click') em 300ms.
+            e.preventDefault(); 
+            startGame();
+        };
+
+        // Adiciona o listener de 'click' para PC/Mouse
+        startButton.addEventListener('click', (e) => {
+            // No PC, apenas chama a função, mas deve-se ignorar o clique
+            // se o touchstart já disparou (tratado pelo preventDefault)
+            if (isMobile) return; 
+            startGame();
+        });
+
+        // Adiciona o listener de 'touchstart' para celular
+        if (isMobile) {
+            startButton.addEventListener('touchstart', handleStartGame);
+        }
+
+        // Caso o usuário esteja em um PC mas queira o touch (Chrome DevTools)
+        // Adicionamos o 'click' mesmo no ambiente móvel, mas o 'touchstart' é o preferido
+        if (isMobile) {
+             startButton.addEventListener('click', (e) => {
+                // Apenas para garantir que o 'click' não atrapalhe se o touch falhar
+                e.preventDefault();
+            });
+        }
+    }
+    
+    // Configura os controles de toque ANTES do jogo começar, para que o setupTouchControls 
+    // possa ocultar os botões se o dispositivo não for móvel.
+    setupTouchControls(); 
+});
