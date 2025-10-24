@@ -2,92 +2,96 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Astro-Matemático PRO 🚀</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
-   <style>
-        :root {
-            --cor-principal: #00ffff; /* Ciano Neon */
-            --cor-secundaria: #ff00ff; /* Magenta Neon */
-            --cor-fundo: #0a0a2a; /* Azul Escuro do Espaço */
-            --cor-acerto: #00ff00; /* Verde */
-            --cor-erro: #ff4500; /* Laranja Vermelho */
-            --cor-combo: #ffcc00; /* Dourado */
-        }
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Astro-Matemático PRO 🚀</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
 
-        body {
-    font-family: 'Orbitron', sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: var(--cor-fundo);
-    color: var(--cor-principal);
-    
-    display: flex;
-    flex-direction: column; 
-    align-items: center; /* Centraliza horizontalmente o conteúdo */
-    
-    height: 100vh; 
-    min-height: 100vh; 
-    width: 100vw; 
-    
-    overflow: hidden; 
-    user-select: none;
-    touch-action: none;
-    
-    max-width: 100%; 
-}
+<style>
+    :root {
+        --cor-principal: #00ffff; /* Ciano Neon */
+        --cor-secundaria: #ff00ff; /* Magenta Neon */
+        --cor-fundo: #0a0a2a; /* Azul Escuro do Espaço */
+        --cor-acerto: #00ff00; /* Verde */
+        --cor-erro: #ff4500; /* Laranja Vermelho */
+        --cor-combo: #ffcc00; /* Dourado */
+    }
 
-#gameArea {
-    position: relative;
-    
-    /* CRÍTICO: Usa Flexbox para preencher o espaço restante */
-    flex-grow: 1; /* Faz esta área ocupar todo o espaço vertical disponível */
-    height: auto; 
-    max-height: none; 
-    
-    width: 95vw; 
-    max-width: 1000px; /* Limite a largura máxima para uma melhor jogabilidade em telas grandes (Desktop) */
-    
-    background: rgba(0, 0, 0, 0.4);
-    border: 5px solid var(--cor-secundaria);
-    box-shadow: 0 0 20px var(--cor-secundaria);
-    overflow: hidden;
-    cursor: crosshair;
-    /* Estrelas de Fundo */
-    background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
-    						 radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
-    						 radial-gradient(white, rgba(255,255,255,.1) 3px, transparent 50px);
-    background-size: 550px 550px, 350px 350px, 250px 250px;
-    background-position: 0 0, 40px 60px, 120px 200px;
-    animation: move-stars 3s linear infinite;
-    touch-action: none; 
-}
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* Evita rolagem e travamentos no mobile */
+    }
 
-        @keyframes move-stars {
-            from { background-position-y: 0, 60px, 200px; }
-            to { background-position-y: 550px, 410px, 700px; }
-        } 
+    body {
+        font-family: 'Orbitron', sans-serif;
+        background-color: var(--cor-fundo);
+        color: var(--cor-principal);
 
-        /* NOVO ESTILO: Área de Anúncio Fixa Abaixo da Área do Jogo */
-        #adArea {
-            /* CRÍTICO: Define a altura e impede que o Flexbox a encolha */
-            height: 43px; /* Altura do banner (50px) + padding (10px superior/inferior) */
-            flex-shrink: 0; /* Garante que a altura seja mantida */
-            
-            width: 100vw; /* Garante que ocupe a largura total */
-            max-width: 100vw; 
-            text-align: center;
-            padding: 10px 0; /* Espaçamento interno */
-            background-color: rgba(0, 0, 0, 0.5); 
-            
-            border-top: 2px solid var(--cor-principal);
-        }
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+
+        height: 100dvh; /* Altura dinâmica segura no mobile */
+        min-height: 100dvh;
+        user-select: none;
+        touch-action: none;
+        max-width: 100%;
+    }
+
+    #gameArea {
+        position: relative;
+        flex: 0 0 auto;
+        height: calc(100dvh - 60px); /* Mantém visível o anúncio/botão */
+        max-height: calc(100dvh - 60px);
+
+        width: 95vw;
+        max-width: 1000px;
+
+        background: rgba(0, 0, 0, 0.4);
+        border: 5px solid var(--cor-secundaria);
+        box-shadow: 0 0 20px var(--cor-secundaria);
+        overflow: hidden;
+        cursor: crosshair;
+
+        background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+                          radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+                          radial-gradient(white, rgba(255,255,255,.1) 3px, transparent 50px);
+        background-size: 550px 550px, 350px 350px, 250px 250px;
+        background-position: 0 0, 40px 60px, 120px 200px;
+        animation: move-stars 3s linear infinite;
+        touch-action: none; 
+    }
+
+    @keyframes move-stars {
+        from { background-position-y: 0, 60px, 200px; }
+        to { background-position-y: 550px, 410px, 700px; }
+    }
+
+    /* Área de Anúncio Fixa Abaixo do Jogo */
+    #adArea {
+        position: relative;
+        bottom: 0;
+        height: 60px;
+        flex-shrink: 0;
+
+        width: 100vw;
+        max-width: 100vw;
+        text-align: center;
+        padding: 10px 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        border-top: 2px solid var(--cor-principal);
+    }
 
         #player {
     position: absolute;
     bottom: 20px;
+    
+    /* REMOVIDO: left: 50%; */
+    /* REMOVIDO: transform: translateX(-50%); */
     
     width: clamp(42px, 10vw, 63px); 
     height: clamp(42px, 10vw, 63px);
@@ -202,7 +206,7 @@
             width: 100%; 
             
             /* 🚀 CORREÇÃO CRÍTICA: Calcula a altura máxima. 
-               A altura total é 125px. Subtraímos 35px-40px para o texto e suas margens. */
+                A altura total é 125px. Subtraímos 35px-40px para o texto e suas margens. */
             max-height: calc(110% - 35px); 
             
             /* Garante que o GIF se expanda para preencher a área, mesmo que corte um pouco */
@@ -530,37 +534,10 @@
             display: none; 
         }
 
-        /* 📱 Media Query: Regras para celular (telas menores ou iguais a 768px) */
+        /* 📱 Media Query: Mostra o botão APENAS em telas menores (celulares/tablets) */
         @media (max-width: 768px) {
             #shootButton {
-                display: block; /* Mostra o botão no celular */
-                z-index: 40; /* Z-index mais baixo para ficar DENTRO da gameArea e acima dos asteroides */
-            }
-
-            /* 💥 AJUSTE CRÍTICO: Limita a altura da Game Area para subir a base */
-            #gameArea {
-                /* ANULA O FLEX-GROW e define uma altura máxima */
-                flex-grow: 0; 
-                height: 85vh; /* <--- NOVO: Usa 85% da altura da tela */
-                max-height: 85vh; /* <--- NOVO: Garante a limitação */
-                margin-top: auto; /* Empurra para baixo para que os elementos de cima (HUD) fiquem visíveis caso tenha barra de endereço no celular */
-            }
-
-            /* Opcional: Ajusta a posição do jogador para a nova base */
-            #player {
-                bottom: 10px; /* Reduz a distância da base (agora a nova base) */
-            }
-
-            /* Opcional: Ajusta a posição do botão de disparo para a nova base */
-            #shootButton {
-                /* Este botão está DENTRO da #gameArea (position: absolute) */
-                bottom: 10px; /* Reduz a distância da base (agora a nova base) */
-                right: 10px;
-            }
-
-            /* Opcional: Centraliza a gameArea na vertical, se a altura for menor que 100vh */
-            body {
-                justify-content: center; /* Centraliza o conteúdo verticalmente */
+                display: block; /* Oculta a visualização para telas grandes (desktop) */
             }
         }
     </style>
@@ -588,8 +565,7 @@
 
 <div id="player"></div>
 
-<button id="shootButton">🔫 DISPARAR</button> </div> 
-
+</div> <button id="shootButton">🔫 DISPARAR</button>
 
 <div id="overlay">
  <h1>Astro-Matemático PRO 🌌</h1>
