@@ -2,12 +2,12 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Astro-Matemático PRO 🚀</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
-    <style>
+   <style>
         :root {
             --cor-principal: #00ffff; /* Ciano Neon */
             --cor-secundaria: #ff00ff; /* Magenta Neon */
@@ -17,7 +17,7 @@
             --cor-combo: #ffcc00; /* Dourado */
         }
 
-     body {
+        body {
     font-family: 'Orbitron', sans-serif;
     margin: 0;
     padding: 0;
@@ -25,15 +25,19 @@
     color: var(--cor-principal);
     
     display: flex;
-    flex-direction: column; /* Organiza o conteúdo em coluna (gameArea em cima, adArea embaixo) */
+    flex-direction: column; 
     align-items: center; /* Centraliza horizontalmente o conteúdo */
     
-    height: 100vh; /* CRÍTICO: Define a altura exata da tela */
+    height: 100vh; 
     min-height: 100vh; 
     width: 100vw; 
     
-    overflow: hidden; /* CRÍTICO: Remove a rolagem da página */
+    overflow: hidden; 
     user-select: none;
+    touch-action: none;
+    
+    /* NOVO: Permite que o body se expanda para telas grandes, mas apenas a Game Area será limitada */
+    max-width: 100%; 
 }
 
 #gameArea {
@@ -44,8 +48,13 @@
     height: auto; /* Permite que o Flexbox controle a altura */
     max-height: none; /* Remove a restrição que impedia o layout funcionar */
     
-    width: 100vw; /* Ocupa a largura total */
-    max-width: 100vw;
+    /* 🚀 AJUSTE CRÍTICO PARA RESPONSIVIDADE DE TELA GRANDE */
+    /* Garante que a largura não exceda 95% da tela E não ultrapasse 1000px, 
+       mantendo-o centralizado pelo 'body' (align-items: center) */
+    width: 95vw; 
+    max-width: 1000px; /* Limite a largura máxima para uma melhor jogabilidade em telas grandes (Desktop) */
+    
+    /* REMOVEMOS A REGRA ANTERIOR: max-width: 100vw; (Era redundante ou limitava demais) */
     
     background: rgba(0, 0, 0, 0.4);
     border: 5px solid var(--cor-secundaria);
@@ -59,52 +68,57 @@
     background-size: 550px 550px, 350px 350px, 250px 250px;
     background-position: 0 0, 40px 60px, 120px 200px;
     animation: move-stars 3s linear infinite;
+    touch-action: none; 
 }
 
-@keyframes move-stars {
-    from { background-position-y: 0, 60px, 200px; }
-    to { background-position-y: 550px, 410px, 700px; }
-} 
+        @keyframes move-stars {
+            from { background-position-y: 0, 60px, 200px; }
+            to { background-position-y: 550px, 410px, 700px; }
+        } 
 
-/* NOVO ESTILO: Área de Anúncio Fixa Abaixo da Área do Jogo */
-#adArea {
-    /* CRÍTICO: Define a altura e impede que o Flexbox a encolha */
-    height: 43px; /* Altura do banner (50px) + padding (10px superior/inferior) */
-    flex-shrink: 0; /* Garante que a altura seja mantida */
-    
-    width: 100vw; /* Garante que ocupe a largura total */
-    max-width: 100vw; 
-    text-align: center;
-    padding: 10px 0; /* Espaçamento interno */
-    background-color: rgba(0, 0, 0, 0.5); 
-    
-    /* REMOVIDO: margin-top: auto; (Não é mais necessário no layout Flexbox) */
-    
-    border-top: 2px solid var(--cor-principal);
-}
+        /* NOVO ESTILO: Área de Anúncio Fixa Abaixo da Área do Jogo */
+        #adArea {
+            /* CRÍTICO: Define a altura e impede que o Flexbox a encolha */
+            height: 43px; /* Altura do banner (50px) + padding (10px superior/inferior) */
+            flex-shrink: 0; /* Garante que a altura seja mantida */
+            
+            width: 100vw; /* Garante que ocupe a largura total */
+            max-width: 100vw; 
+            text-align: center;
+            padding: 10px 0; /* Espaçamento interno */
+            background-color: rgba(0, 0, 0, 0.5); 
+            
+            /* REMOVIDO: margin-top: auto; (Não é mais necessário no layout Flexbox) */
+            
+            border-top: 2px solid var(--cor-principal);
+        }
 
- /* Foguete VERTICAL (⬆️) */
-#player {
+        #player {
     position: absolute;
     bottom: 20px;
-    left: calc(50% - 25px);
-    width: 90px; /* Mantenha o tamanho */
-    height: 90px; /* Mantenha o tamanho */
-    transition: transform 0.05s ease-out;
-    z-index: 15;
-    transform: rotate(0deg); 
-
-   
-    font-size: 0; /* Opção 1: Garante que o texto suma */
+    
+    /* REMOVIDO: left: 50%; */
+    /* REMOVIDO: transform: translateX(-50%); */
+    
+    width: clamp(42px, 10vw, 63px); 
+    height: clamp(42px, 10vw, 63px);
     
     background-image: url('player.gif');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
     
-    background-size: contain; /* Ajusta o GIF para caber no 50x50px */
-    background-repeat: no-repeat; /* Garante que o GIF não se repita */
-    background-position: center; /* Centraliza o GIF */
+    transition: transform 0.05s ease-out;
+    z-index: 15;
+
+    /* 🔒 Proteções extras */
+    outline: none;
+    user-select: none;
+    pointer-events: none; /* impede foco e clique */
+    cursor: none; /* ❌ oculta o cursor do mouse quando passa sobre o foguete */
 }
 
-/* Você pode manter o #player::after para o efeito de fogo, ele continua funcionando! */
+/* O ::after pode manter a centralização para o emoji de fogo, se for desejado */
 #player::after {
     content: '🔥';
     position: absolute;
@@ -115,9 +129,11 @@
     opacity: 0;
     transition: opacity 0.1s;
 }
+
         .shooting #player::after {
             opacity: 1;
         }
+
 
         /* Tiros */
         .bullet {
@@ -133,38 +149,40 @@
 
         /* Asteroides */
       
-.asteroid {
-  
-    transform-origin: center center; 
-    animation: none; 
-    text-shadow: 0 0 5px black;
-    
-    position: absolute; /* MUITO IMPORTANTE para o posicionamento */
-    width: 80px; /* Tamanho do seu asteroide */
-    height: 80px; /* Tamanho do seu asteroide */
-    
-    /* ADICIONE ISSO para que a imagem seja o GIF */
-    background-size: contain; 
-    background-repeat: no-repeat;
-    background-position: center;
-}
+        .asteroid {
+            
+            transform-origin: center center; 
+            animation: none; 
+            text-shadow: 0 0 5px black;
+            
+            position: absolute; /* MUITO IMPORTANTE para o posicionamento */
+            width: 14vw; 
+            height: 14vw; 
+            max-width: 65px; /* Limite máximo para desktop */
+            max-height: 65px;
+            
+            /* ADICIONE ISSO para que a imagem seja o GIF */
+            background-size: contain; 
+            background-repeat: no-repeat;
+            background-position: center;
+        }
 
-/* NOVO: Estilo para o número da resposta dentro do asteroide */
-.asteroid span {
-    /* ... (Mantenha o código existente para o span) ... */
-    background: rgba(0, 0, 0, 0.5); 
-    padding: 2px 5px;
-    border-radius: 5px;
-    
-    /* Garante que o número fique visível sobre o GIF */
-    position: absolute; 
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 2; /* Garante que fique acima do GIF (que é o background) */
-    color: var(--cor-principal); /* Garante que o número seja legível */
-    font-size: 1em; /* Tamanho do número */
-}
+        /* NOVO: Estilo para o número da resposta dentro do asteroide */
+        .asteroid span {
+            /* ... (Mantenha o código existente para o span) ... */
+            background: rgba(0, 0, 0, 0.5); 
+            padding: 2px 5px;
+            border-radius: 5px;
+            
+            /* Garante que o número fique visível sobre o GIF */
+            position: absolute; 
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2; /* Garante que fique acima do GIF (que é o background) */
+            color: var(--cor-principal); /* Garante que o número seja legível */
+            font-size: 1.2rem;
+        }
         .destroyed { opacity: 0 !important; transform: scale(0.1) !important; transition: all 0.5s ease-out; }
         .old-asteroid { 
             opacity: 0.4; 
@@ -176,95 +194,96 @@
         /* --- BOSS ESPECÍFICO APRIMORADO PARA MAIS REALISMO --- */
 
 
-#boss.vulnerable {
-    border-color: var(--cor-acerto, lime);
-    box-shadow: 0 0 20px var(--cor-acerto, lime), 0 0 40px rgba(0, 255, 0, 0.7);
-}
+        #boss.vulnerable {
+            border-color: var(--cor-acerto, lime);
+            box-shadow: 0 0 20px var(--cor-acerto, lime), 0 0 40px rgba(0, 255, 0, 0.7);
+        }
 
-#boss.hit {
+        #boss.hit {
 
-    animation: bossShake 0.1s 3; /* Adiciona feedback de acerto */
-    
-}
+            animation: bossShake 0.1s 3; /* Adiciona feedback de acerto */
+            
+        }
 
-.boss-gif {
-    top: 0%;
-    margin-right: 0%;
-    margin-left: 0%;
-    /* Ocupa a largura total da área de conteúdo (140px) */
-    width: 100%; 
-    
-    /* 🚀 CORREÇÃO CRÍTICA: Calcula a altura máxima. 
-       A altura total é 125px. Subtraímos 35px-40px para o texto e suas margens. */
-    max-height: calc(110% - 35px); 
-    
-    /* Garante que o GIF se expanda para preencher a área, mesmo que corte um pouco */
-    object-fit: cover; 
-    
-    display: block;
-    margin: 0 auto; 
-    
-    /* Pequena margem para separar a imagem do texto */
-    margin-bottom: 5px; 
-}
-/* --- 1. SELETOR PRINCIPAL: #boss --- */
-#boss {
-    /* Define um tamanho fixo para o Boss para ajudar na colisão */
-    width: 140px; 
-    height: 125px; 
-    
-    /* Centraliza o Boss (mantendo a flutuação do JS) */
-    position: absolute;
-    top: 85px; 
-    left: 50%; 
-    transform: translateX(-50%); 
-    
-    /* Estilo de fundo/borda do Boss (opcional) */
-    /* Garante que qualquer espaço não preenchido pelo GIF seja preto */
-    background-color: black; 
-    border: 3px solid #ff00ff;
-    border-radius: 10px;
-    
-    /* MANTIDO: O padding é essencial para dar espaço ao texto */
-    padding: 10px; 
-    
-    z-index: 100;
-    
-    /* Configurações visuais do estado 'vulnerable' e 'invulnerable' */
-    box-shadow: 0 0 25px #ff00ff, 0 0 50px rgba(255, 0, 255, 0.5);
-    transition: box-shadow 0.3s, transform 0.1s;
-    text-align: center;
-}
+        .boss-gif {
+            top: 0%;
+            margin-right: 0%;
+            margin-left: 0%;
+            /* Ocupa a largura total da área de conteúdo (140px) */
+            width: 100%; 
+            
+            /* 🚀 CORREÇÃO CRÍTICA: Calcula a altura máxima. 
+                A altura total é 125px. Subtraímos 35px-40px para o texto e suas margens. */
+            max-height: calc(110% - 35px); 
+            
+            /* Garante que o GIF se expanda para preencher a área, mesmo que corte um pouco */
+            object-fit: cover; 
+            
+            display: block;
+            margin: 0 auto; 
+            
+            /* Pequena margem para separar a imagem do texto */
+            margin-bottom: 5px; 
+        }
+        /* --- 1. SELETOR PRINCIPAL: #boss --- */
+        #boss {
+            /* Define um tamanho fixo para o Boss para ajudar na colisão */
+            /* 💥 MODIFICADO: Reduzido 30% (140px -> 98px) */
+        width: clamp(90px, 25vw, 150px);
+            height: auto; /* Permite que o conteúdo defina a altura */
+            
+            /* Centraliza o Boss (mantendo a flutuação do JS) */
+            position: absolute;
+            top: 8vh; /* Posiciona o boss usando a altura da tela */ 
+            left: 50%; 
+            transform: translateX(-50%); 
+            
+            /* Estilo de fundo/borda do Boss (opcional) */
+            /* Garante que qualquer espaço não preenchido pelo GIF seja preto */
+            background-color: black; 
+            border: 3px solid #ff00ff;
+            border-radius: 10px;
+            
+            /* MANTIDO: O padding é essencial para dar espaço ao texto */
+            padding: 10px; 
+            
+            z-index: 100;
+            
+            /* Configurações visuais do estado 'vulnerable' e 'invulnerable' */
+            box-shadow: 0 0 25px #ff00ff, 0 0 50px rgba(255, 0, 255, 0.5);
+            transition: box-shadow 0.3s, transform 0.1s;
+            text-align: center;
+        }
 
 
 
 
-/* --- 3. SELETOR DO TEXTO: .boss-question --- */
-.boss-question {
-    display: block;
-    color: white;
-    font-size: 1.1em;
-    font-weight: bold;
-    
-    /* Garante que o texto fique encostado no topo do padding, sem empurrar o GIF */
-    margin-top: 0; 
-    margin-bottom: 5px; 
-}
+        /* --- 3. SELETOR DO TEXTO: .boss-question --- */
+        .boss-question {
+            display: block;
+            color: white;
+            font-size: clamp(0.8rem, 3vw, 1.1rem); /* Reduz o tamanho da fonte em telas pequenas */
+            font-weight: bold;
+            
+            /* Garante que o texto fique encostado no topo do padding, sem empurrar o GIF */
+            margin-top: 0; 
+            margin-bottom: 5px; 
+        }
 
-/* --- 4. SELETOR DA RESPOSTA: .boss-answer-display --- */
-.boss-answer-display {
-    color: var(--cor-acerto, lime);
-    font-size: 1.5em;
-    font-weight: bold;
-    margin-top: 0; 
-}
+        /* --- 4. SELETOR DA RESPOSTA: .boss-answer-display --- */
+        .boss-answer-display {
+            color: var(--cor-acerto, lime);
+            font-size: clamp(1.2rem, 4vw, 1.5rem); /* Reduz o tamanho da fonte em telas pequenas */
+            font-weight: bold;
+            margin-top: 0; 
+        }
 
-/* Keyframes para o efeito de tremor (hit) */
-@keyframes bossShake {
-    0% { transform: translate(calc(-50% - 5px), 0); }
-    50% { transform: translate(calc(-50% + 5px), 0); }
-    100% { transform: translate(-50%, 0); }
-}
+        /* Keyframes para o efeito de tremor (hit) */
+        @keyframes bossShake {
+            0% { transform: translate(calc(-50% - 5px), 0); }
+            50% { transform: translate(calc(-50% + 5px), 0); }
+            100% { transform: translate(-50%, 0); }
+        }
 
         /* Sistema de Partículas para Explosão */
         .particle {
@@ -277,257 +296,257 @@
         }
 
 
-/* --- Interface do Jogo (HUD) --- */
-#hud {
-    position: absolute;
-    top: 0px;
-    width: 96%;
-    left: 1%;
-    display: flex; 
-    flex-wrap: wrap;
-    justify-content: space-between; 
-    align-items: flex-start; 
-    padding: 10px;
-    z-index: 30;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 10px;
-    border: 1px solid var(--cor-principal);
-}
+        /* --- Interface do Jogo (HUD) --- */
+        #hud {
+            position: absolute;
+            top: 0px;
+            width: 96%;
+            left: 1%;
+            display: flex; 
+            flex-wrap: wrap;
+            justify-content: space-between; 
+            align-items: flex-start; 
+            padding: 10px;
+            z-index: 30;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            border: 1px solid var(--cor-principal);
+        }
 
-/* NOVO: Contêiner para manter Score e Combo agrupados e alinhados à esquerda */
-#scoreComboGroup {
-    display: flex;
-    flex-direction: column; /* Coloca os filhos (score e combo) um abaixo do outro */
-    align-items: flex-start; /* Alinha o grupo à esquerda */
-}
+        /* NOVO: Contêiner para manter Score e Combo agrupados e alinhados à esquerda */
+        #scoreComboGroup {
+            display: flex;
+            flex-direction: column; /* Coloca os filhos (score e combo) um abaixo do outro */
+            align-items: flex-start; /* Alinha o grupo à esquerda */
+        }
 
-/* Estrutura do Score (Label acima do valor) */
-#scoreContainer { /* NOVO CONTÊINER NECESSÁRIO NO HTML */
-    display: flex;
-    flex-direction: column; 
-    align-items: center; /* Centraliza o texto "Pontos:" e o número */
-    padding: 0;
-}
+        /* Estrutura do Score (Label acima do valor) */
+        #scoreContainer { /* NOVO CONTÊINER NECESSÁRIO NO HTML */
+            display: flex;
+            flex-direction: column; 
+            align-items: center; /* Centraliza o texto "Pontos:" e o número */
+            padding: 0;
+        }
 
-.score-label { /* NOVA CLASSE NECESSÁRIA NO HTML */
-    font-size: 0.8em; 
-    color: #aaa; 
-    text-shadow: 1px 1px 2px #000;
-    margin-bottom: -5px; /* Ajusta o espaçamento entre label e número */
-}
+        .score-label { /* NOVA CLASSE NECESSÁRIA NO HTML */
+            font-size: 0.8em; 
+            color: #aaa; 
+            text-shadow: 1px 1px 2px #000;
+            margin-bottom: -5px; /* Ajusta o espaçamento entre label e número */
+        }
 
-#score {
-    font-size: 1.5em;
-    font-weight: bold;
-    color: var(--cor-principal);
-    /* Regras de flexbox antigas foram removidas aqui */
-}
+        #score {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--cor-principal);
+            /* Regras de flexbox antigas foram removidas aqui */
+        }
 
-/* Estilo do Combo ajustado para ficar abaixo do score */
-#combo {
-    color: var(--cor-combo);
-    font-size: 1.0em;
-    text-shadow: 0 0 8px var(--cor-combo);
-    text-align: left;
-    margin-top: 5px; /* Espaço entre o Score e o Combo */
-    /* Regras de flexbox antigas foram removidas aqui */
-    display: none; 
-}
+        /* Estilo do Combo ajustado para ficar abaixo do score */
+        #combo {
+            color: var(--cor-combo);
+            font-size: 1.0em;
+            text-shadow: 0 0 8px var(--cor-combo);
+            text-align: left;
+            margin-top: 5px; /* Espaço entre o Score e o Combo */
+            /* Regras de flexbox antigas foram removidas aqui */
+            display: none; 
+        }
 
-.combo-active {
-    display: block !important;
-    animation: combo-pulse 0.5s infinite alternate;
-}
+        .combo-active {
+            display: block !important;
+            animation: combo-pulse 0.5s infinite alternate;
+        }
 
-/* Novo Contêiner para Lado Direito */
-#rightSideHUD {
-    display: flex;
-    flex-direction: column; /* FORÇA LIVES E BOSSHEALTH A FICAREM UM ABAIXO DO OUTRO */
-    align-items: flex-end; /* Alinha o texto das divs à direita */
-    margin-left: auto; /* Empurra o grupo para o lado direito */
-}
+        /* Novo Contêiner para Lado Direito */
+        #rightSideHUD {
+            display: flex;
+            flex-direction: column; /* FORÇA LIVES E BOSSHEALTH A FICAREM UM ABAIXO DO OUTRO */
+            align-items: flex-end; /* Alinha o texto das divs à direita */
+            margin-left: auto; /* Empurra o grupo para o lado direito */
+        }
 
-/* AJUSTE CORRIGIDO: Garante que o texto 'BOSS HP:' e os corações fiquem na mesma linha */
-#bossHealth {
-    font-size: 1.2em;
-    font-weight: 900;
-    color: var(--cor-erro);
-    
-    /* NOVO: Usa Flexbox para alinhar o texto 'BOSS HP:' e o conteúdo da barra */
-    display: flex; 
-    align-items: center; /* Alinhamento vertical entre texto e corações */
-    justify-content: flex-end; /* Alinha o conteúdo à direita */
+        /* AJUSTE CORRIGIDO: Garante que o texto 'BOSS HP:' e os corações fiquem na mesma linha */
+        #bossHealth {
+            font-size: 1.2em;
+            font-weight: 900;
+            color: var(--cor-erro);
+            
+            /* NOVO: Usa Flexbox para alinhar o texto 'BOSS HP:' e o conteúdo da barra */
+            display: flex; 
+            align-items: center; /* Alinhamento vertical entre texto e corações */
+            justify-content: flex-end; /* Alinha o conteúdo à direita */
 
-    width: 100%; /* Ocupa a largura total do contêiner direito */
-    min-width: 150px; 
-    /* display: none; // Essa linha é controlada pelo JS, mas precisa ser alterada para 'flex' ou 'block' no JS durante a luta */
-}
+            width: 100%; /* Ocupa a largura total do contêiner direito */
+            min-width: 150px; 
+            /* display: none; // Essa linha é controlada pelo JS, mas precisa ser alterada para 'flex' ou 'block' no JS durante a luta */
+        }
 
-/* NOVO: Estilo para o contêiner dos corações (boss-hp-bar) */
-.boss-hp-bar {
-    margin-left: 5px; /* Espaço entre o texto 'BOSS HP:' e a barra de corações */
-    display: flex; /* Garante que os spans de coração fiquem lado a lado */
-    align-items: center;
-}
+        /* NOVO: Estilo para o contêiner dos corações (boss-hp-bar) */
+        .boss-hp-bar {
+            margin-left: 5px; /* Espaço entre o texto 'BOSS HP:' e a barra de corações */
+            display: flex; /* Garante que os spans de coração fiquem lado a lado */
+            align-items: center;
+        }
 
-/* Opcional: Ajusta o tamanho dos corações do Boss */
-.boss-hp-bar span {
-    font-size: 1.2em; 
-    margin: 0 1px;
-}
+        /* Opcional: Ajusta o tamanho dos corações do Boss */
+        .boss-hp-bar span {
+            font-size: 1.2em; 
+            margin: 0 1px;
+        }
 
-/* Você pode precisar ajustar #lives para remover o flex-grow */
-#lives {
-    color: var(--cor-erro);
-    font-size: 1.5em;
-    /* Removido: flex-basis: auto; */
-    /* Removido: text-align: right; */
-}
+        /* Você pode precisar ajustar #lives para remover o flex-grow */
+        #lives {
+            color: var(--cor-erro);
+            font-size: 1.5em;
+            /* Removido: flex-basis: auto; */
+            /* Removido: text-align: right; */
+        }
 
-/* Caixa de Pergunta Central */
-.question-box {
-    position: absolute;
-    top: 0%;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 1px 30px;
-    font-size: 2em;
-    font-weight: 900;
-    background: rgba(0, 0, 0, 0.7);
-    border: 3px solid var(--cor-principal);
-    box-shadow: 0 0 15px var(--cor-principal);
-    border-radius: 10px;
-    z-index: 25;
-    animation: pulse-question 1.5s infinite alternate;
-}
-/* NOVO ESTILO: Para mensagens de erro/repelidas */
-.question-box.error-msg {
-    color: var(--cor-erro); /* Muda a cor do texto para laranja/vermelho */
-    border-color: var(--cor-erro); /* Muda a borda */
-    box-shadow: 0 0 15px var(--cor-erro); /* Muda o brilho */
-    animation: shake 0.3s; /* Adiciona um pequeno tremor */
-}
+        /* Caixa de Pergunta Central */
+        .question-box {
+            position: absolute;
+            top: 0%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1px 30px;
+            font-size: clamp(1.5em, 5vw, 2em);
+            font-weight: 900;
+            background: rgba(0, 0, 0, 0.7);
+            border: 3px solid var(--cor-principal);
+            box-shadow: 0 0 15px var(--cor-principal);
+            border-radius: 10px;
+            z-index: 25;
+            animation: pulse-question 1.5s infinite alternate;
+        }
+        /* NOVO ESTILO: Para mensagens de erro/repelidas */
+        .question-box.error-msg {
+            color: var(--cor-erro); /* Muda a cor do texto para laranja/vermelho */
+            border-color: var(--cor-erro); /* Muda a borda */
+            box-shadow: 0 0 15px var(--cor-erro); /* Muda o brilho */
+            animation: shake 0.3s; /* Adiciona um pequeno tremor */
+        }
 
-@keyframes shake {
-    0%, 100% { transform: translateX(-50%); }
-    25% { transform: translateX(calc(-50% - 5px)); }
-    75% { transform: translateX(calc(-50% + 5px)); }
-}
-/* NOVO ESTILO: Para mensagens de Alerta/Foco */
-.question-box.alert-msg {
-    color: var(--cor-secundaria); /* Magenta Neon */
-    border-color: var(--cor-secundaria);
-    box-shadow: 0 0 20px var(--cor-secundaria), 0 0 10px white;
-    animation: alert-pulse 1s infinite alternate; /* Novo efeito de pulsação */
-}
+        @keyframes shake {
+            0%, 100% { transform: translateX(-50%); }
+            25% { transform: translateX(calc(-50% - 5px)); }
+            75% { transform: translateX(calc(-50% + 5px)); }
+        }
+        /* NOVO ESTILO: Para mensagens de Alerta/Foco */
+        .question-box.alert-msg {
+            color: var(--cor-secundaria); /* Magenta Neon */
+            border-color: var(--cor-secundaria);
+            box-shadow: 0 0 20px var(--cor-secundaria), 0 0 10px white;
+            animation: alert-pulse 1s infinite alternate; /* Novo efeito de pulsação */
+        }
 
-@keyframes alert-pulse {
-    from {
-        box-shadow: 0 0 15px var(--cor-secundaria), 0 0 5px white;
-        transform: translateX(-50%) scale(1);
-    }
-    to {
-        box-shadow: 0 0 30px var(--cor-secundaria), 0 0 10px var(--cor-principal);
-        transform: translateX(-50%) scale(1.03);
-    }
-}
+        @keyframes alert-pulse {
+            from {
+                box-shadow: 0 0 15px var(--cor-secundaria), 0 0 5px white;
+                transform: translateX(-50%) scale(1);
+            }
+            to {
+                box-shadow: 0 0 30px var(--cor-secundaria), 0 0 10px var(--cor-principal);
+                transform: translateX(-50%) scale(1.03);
+            }
+        }
 
 
-/* Telas de Overlay */
-#overlay, #gameOverScreen {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    
-    /* ⭐ CORREÇÃO 1: Fundo SÓLIDO (opacidade 1) para esconder o jogo por baixo. ⭐ */
-    background: rgba(0, 0, 0, 1); 
-    
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    
-    /* ⭐ CORREÇÃO 2: Aumentar o z-index para garantir que esteja acima de TUDO. ⭐ */
-    z-index: 1000; 
-}
+        /* Telas de Overlay */
+        #overlay, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            
+            /* ⭐ CORREÇÃO 1: Fundo SÓLIDO (opacidade 1) para esconder o jogo por baixo. ⭐ */
+            background: rgba(0, 0, 0, 1); 
+            
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            
+            /* ⭐ CORREÇÃO 2: Aumentar o z-index para garantir que esteja acima de TUDO. ⭐ */
+            z-index: 1000; 
+        }
 
-#startButton, #restartButton {
-    padding: 15px 30px;
-    font-size: 1.5em;
-    font-weight: 700;
-    border: 3px solid var(--cor-secundaria);
-    background-color: var(--cor-fundo);
-    color: var(--cor-secundaria);
-    cursor: pointer;
-    border-radius: 10px;
-    transition: all 0.3s;
-    box-shadow: 0 0 15px var(--cor-secundaria);
-    margin-top: 20px;
-}
+        #startButton, #restartButton {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            font-weight: 700;
+            border: 3px solid var(--cor-secundaria);
+            background-color: var(--cor-fundo);
+            color: var(--cor-secundaria);
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px var(--cor-secundaria);
+            margin-top: 20px;
+        }
 
-#startButton:hover, #restartButton:hover {
-    background-color: var(--cor-secundaria);
-    color: var(--cor-fundo);
-    box-shadow: 0 0 25px var(--cor-principal);
-    transform: scale(1.05);
-}
-/* NOVO: Estilo para o Botão SAIR */
-#exitButton {
-    /* Estilos base */
-    background: var(--cor-fundo);
-    color: var(--cor-erro);
-    border: 1px solid var(--cor-erro);
-    padding: 5px 10px;
-    font-size: 0.8em;
-    font-weight: 700;
-    cursor: pointer;
-    border-radius: 5px;
-    transition: all 0.3s;
-    text-decoration: none; /* Para parecer um botão, não um link */
+        #startButton:hover, #restartButton:hover {
+            background-color: var(--cor-secundaria);
+            color: var(--cor-fundo);
+            box-shadow: 0 0 25px var(--cor-principal);
+            transform: scale(1.05);
+        }
+        /* NOVO: Estilo para o Botão SAIR */
+        #exitButton {
+            /* Estilos base */
+            background: var(--cor-fundo);
+            color: var(--cor-erro);
+            border: 1px solid var(--cor-erro);
+            padding: 5px 10px;
+            font-size: 0.8em;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+            text-decoration: none; /* Para parecer um botão, não um link */
 
-    /* Posicionamento no HUD (canto superior esquerdo) */
-    order: -1; /* Força a ir para o início do flex container */
-    margin-right: 15px; /* Espaço à direita para separar do score/combo */
-}
+            /* Posicionamento no HUD (canto superior esquerdo) */
+            order: -1; /* Força a ir para o início do flex container */
+            margin-right: 15px; /* Espaço à direita para separar do score/combo */
+        }
 
-#exitButton:hover {
-    background-color: var(--cor-erro);
-    color: var(--cor-fundo);
-    box-shadow: 0 0 10px var(--cor-erro);
-    transform: scale(1.05);
-}
-/* style.css (Adicione estas regras) */
+        #exitButton:hover {
+            background-color: var(--cor-erro);
+            color: var(--cor-fundo);
+            box-shadow: 0 0 10px var(--cor-erro);
+            transform: scale(1.05);
+        }
+        /* style.css (Adicione estas regras) */
 
-#shootButton {
-    /* Posição fixa no canto inferior direito */
-    position: absolute; /* Usamos 'absolute' se estiver dentro de #gameArea (que deve ser 'relative') */
-    bottom: 20px;
-    right: 20px;
-    
-    /* Estilo do botão */
-    padding: 15px 25px;
-    font-size: 1.2rem;
-    background-color: var(--cor-acerto); /* Ex: verde */
-    color: white;
-    border: 3px solid white;
-    border-radius: 10px;
-    cursor: pointer;
-    z-index: 1000; /* Garante que fique acima de tudo */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
-    
-    /* Inicialmente esconde o botão para desktop */
-    display: none; 
-}
+        #shootButton {
+            /* Posição fixa no canto inferior direito */
+            position: absolute; /* Usamos 'absolute' se estiver dentro de #gameArea (que deve ser 'relative') */
+            bottom: 20px;
+            right: 20px;
+            
+            /* Estilo do botão */
+            padding: 15px 25px;
+            font-size: 1.2rem;
+            background-color: var(--cor-acerto); /* Ex: verde */
+            color: white;
+            border: 3px solid white;
+            border-radius: 10px;
+            cursor: pointer;
+            z-index: 1000; /* Garante que fique acima de tudo */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+            
+            /* Inicialmente esconde o botão para desktop */
+            display: none; 
+        }
 
-/* 📱 Media Query: Mostra o botão APENAS em telas menores (celulares/tablets) */
-@media (max-width: 768px) {
-    #shootButton {
-        display: block; /* Oculta a visualização para telas grandes (desktop) */
-    }
-}
+        /* 📱 Media Query: Mostra o botão APENAS em telas menores (celulares/tablets) */
+        @media (max-width: 768px) {
+            #shootButton {
+                display: block; /* Oculta a visualização para telas grandes (desktop) */
+            }
+        }
     </style>
 </head>
 <body>
@@ -550,10 +569,11 @@
             <div id="bossHealth"></div>
         </div>
     </div>
-</div>
-  <button id="shootButton">🔫 DISPARAR</button>
+    
+    <div id="player"></div>
 
-    <div id="player">⬆️</div>
+</div> 
+<button id="shootButton">🔫 DISPARAR</button>
 
     <div id="overlay">
         <h1>Astro-Matemático PRO 🌌</h1>
