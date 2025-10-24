@@ -24,41 +24,43 @@
     background-color: var(--cor-fundo);
     color: var(--cor-principal);
     
-    display: flex;
+   display: flex;
     flex-direction: column; 
     align-items: center; /* Centraliza horizontalmente o conteúdo */
     
-    height: 100vh; 
-    min-height: 100vh; 
+    /* 🚀 CORREÇÃO PRINCIPAL: Permite que o body se ajuste ao conteúdo 
+       e preencha a tela. O 100vh é o culpado em muitos browsers mobile, 
+       mas vamos mantê-lo e confiar no layout Flex/GameArea para acomodação */
+    height: 100vh; /* Mantido, mas a altura funcional virá de #gameArea */
+    min-height: 100vh; /* Idem */
     width: 100vw; 
     
     overflow: hidden; 
     user-select: none;
     touch-action: none;
     
-    /* NOVO: Permite que o body se expanda para telas grandes, mas apenas a Game Area será limitada */
     max-width: 100%; 
 }
 
 #gameArea {
-    position: relative;
+   position: relative;
     
     /* CRÍTICO: Usa Flexbox para preencher o espaço restante */
     flex-grow: 1; /* Faz esta área ocupar todo o espaço vertical disponível */
-    height: auto; /* Permite que o Flexbox controle a altura */
-    max-height: none; /* Remove a restrição que impedia o layout funcionar */
     
-    /* 🚀 AJUSTE CRÍTICO PARA RESPONSIVIDADE DE TELA GRANDE */
-    /* Garante que a largura não exceda 95% da tela E não ultrapasse 1000px, 
-       mantendo-o centralizado pelo 'body' (align-items: center) */
+    /* Permite que o Flexbox defina a altura, ocupando o que sobrar */
+    height: auto; 
+    
+    /* Garante que não haja restrições de altura que impeçam o crescimento */
+    max-height: 100%; 
+    
+    /* 🚀 AJUSTE CRÍTICO: Removendo transform e o top/bottom desnecessário para deixar o flexbox fazer o trabalho */
+    /* REMOVIDO: max-height: calc(100vh - 80px); (Essa linha era uma tentativa de fixar a altura, mas o flexbox fará melhor) */
+    
     width: 95vw; 
-    max-width: 1000px; /* Limite a largura máxima para uma melhor jogabilidade em telas grandes (Desktop) */
+    max-width: 1000px; 
     
-    /* REMOVEMOS A REGRA ANTERIOR: max-width: 100vw; (Era redundante ou limitava demais) */
-    
-    background: rgba(0, 0, 0, 0.4);
-    border: 5px solid var(--cor-secundaria);
-    box-shadow: 0 0 20px var(--cor-secundaria);
+    /* ... (restante do seu código) ... */
     overflow: hidden;
     cursor: crosshair;
     /* Estrelas de Fundo */
@@ -552,62 +554,56 @@
 <body>
 
 <div id="gameArea">
-    
-    <div id="hud">
-        <a id="exitButton" href="brincadeiras3.html" onclick="return confirmExit();">SAIR</a>
-        <div id="scoreComboGroup">
-            <div id="scoreContainer">
-                <div class="score-label">Pontos:</div>
-                <div id="score">0</div>
-            </div>
-            <div id="combo"></div> 
-        </div>
-        
-        <div id="question" class="question-box"></div>
-        <div id="rightSideHUD">
-            <div id="lives">Vidas: 💖💖💖</div>
-            <div id="bossHealth"></div>
-        </div>
-    </div>
-    
-    <div id="player"></div>
+ 
+ <div id="hud">
+ <a id="exitButton" href="brincadeiras3.html" onclick="return confirmExit();">SAIR</a>
+<div id="scoreComboGroup">
+<div id="scoreContainer">
+ <div class="score-label">Pontos:</div>
+ <div id="score">0</div>
+</div>
+ <div id="combo"></div> 
+ </div>
 
-</div> 
-<button id="shootButton">🔫 DISPARAR</button>
+ <div id="question" class="question-box"></div>
+<div id="rightSideHUD">
+ <div id="lives">Vidas: 💖💖💖</div>
+ <div id="bossHealth"></div>
+ </div>
+ </div>
+ 
+ <div id="player"></div>
 
-    <div id="overlay">
-        <h1>Astro-Matemático PRO 🌌</h1>
-        <p>Destrua o asteroide com a resposta correta e veja seu combo aumentar!</p>
-        <p>A cada 10 acertos, um **Boss de Fase** surgirá!</p>
-        <p>Use **Setas** ou **WASD** para mover, **Espaço** ou **Mouse Click** para atirar.</p>
-        <button id="startButton">INICIAR MISSÃO</button>
-    </div>
-    
+</div> <button id="shootButton">🔫 DISPARAR</button>
+
+<div id="overlay">
+<h1>Astro-Matemático PRO 🌌</h1>
+ <p>Destrua o asteroide com a resposta correta e veja seu combo aumentar!</p>
+<p>A cada 10 acertos, um **Boss de Fase** surgirá!</p>
+ <p>Use **Setas** ou **WASD** para mover, **Espaço** ou **Mouse Click** para atirar.</p>
+ <button id="startButton">INICIAR MISSÃO</button>
+</div>
+
 <div id="gameOverScreen" style="display: none;">
-    <h2>MISSÃO FRACASSADA</h2>
-    
-    <p>Pontuação Final: <span id="finalScore">0</span></p>
-    
-    <button id="restartButton" onclick="startGame()">TENTAR NOVAMENTE</button>
-</div>
-</div>
+ <h2>MISSÃO FRACASSADA</h2>
 
+<p>Pontuação Final: <span id="finalScore">0</span></p>
 
-<script src="error.js"></script>
- <!-- Banner Adsterra no rodapé -->
+<button id="restartButton" onclick="startGame()">TENTAR NOVAMENTE</button>
+</div> <script src="error.js"></script>
 <div id="adArea">
-    <div> 
-        <script type="text/javascript">
-          atOptions = {
-            'key' : 'bbf348585df7afae438e1754d1003d92',
-            'format' : 'iframe',
-            'height' : 50,
-            'width' : 320,
-            'params' : {}
-          };
-        </script>
-        <script type="text/javascript" src="https://www.highperformanceformat.com/bbf348585df7afae438e1754d1003d92/invoke.js"></script>
-    </div>
+ <div> 
+ <script type="text/javascript">
+atOptions = {
+'key' : 'bbf348585df7afae438e1754d1003d92',
+'format' : 'iframe',
+ 'height' : 50,
+'width' : 320,
+'params' : {}
+};
+</script>
+<script type="text/javascript" src="https://www.highperformanceformat.com/bbf348585df7afae438e1754d1003d92/invoke.js"></script>
+ </div>
 </div>
 
 </body>
