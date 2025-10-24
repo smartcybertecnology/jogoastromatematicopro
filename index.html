@@ -46,7 +46,7 @@
     /* CRÍTICO: Usa Flexbox para preencher o espaço restante */
     flex-grow: 1; /* Faz esta área ocupar todo o espaço vertical disponível */
     height: auto; /* Permite que o Flexbox controle a altura */
-    max-height: none; /* Remove a restrição que impedia o layout funcionar */
+    max-height: 90vh; /* Remove a restrição que impedia o layout funcionar */
     
     /* 🚀 AJUSTE CRÍTICO PARA RESPONSIVIDADE DE TELA GRANDE */
     /* Garante que a largura não exceda 95% da tela E não ultrapasse 1000px, 
@@ -100,9 +100,8 @@
     /* REMOVIDO: left: 50%; */
     /* REMOVIDO: transform: translateX(-50%); */
     
-    width: clamp(42px, 10vw, 63px); 
-    height: clamp(42px, 10vw, 63px);
-    
+   width: clamp(42px, 8%, 63px); /* 8% da largura da gameArea */
+    height: clamp(42px, 8%, 63px);
     background-image: url('player.gif');
     background-size: contain;
     background-repeat: no-repeat;
@@ -156,10 +155,10 @@
             text-shadow: 0 0 5px black;
             
             position: absolute; /* MUITO IMPORTANTE para o posicionamento */
-            width: 14vw; 
-            height: 14vw; 
-            max-width: 65px; /* Limite máximo para desktop */
-            max-height: 65px;
+            width: clamp(40px, 12%, 65px);  /* 12% da largura da gameArea */
+    height: clamp(40px, 12%, 65px);
+    max-width: 65px; 
+    max-height: 65px;
             
             /* ADICIONE ISSO para que a imagem seja o GIF */
             background-size: contain; 
