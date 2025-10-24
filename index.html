@@ -45,8 +45,8 @@
     #gameArea {
         position: relative;
         flex: 0 0 auto;
-        height: calc(100dvh - 60px); /* Mantém visível o anúncio/botão */
-        max-height: calc(100dvh - 60px);
+       height: 85vh; /* <--- NOVO: Usa 85% da altura da tela */
+    max-height: 85vh; /* <--- NOVO: Garante a limitação */
 
         width: 95vw;
         max-width: 1000px;
@@ -88,7 +88,7 @@
 
         #player {
     position: absolute;
-    bottom: 20px;
+    bottom: 10px;
     
     /* REMOVIDO: left: 50%; */
     /* REMOVIDO: transform: translateX(-50%); */
@@ -516,8 +516,8 @@
         #shootButton {
             /* Posição fixa no canto inferior direito */
             position: absolute; /* Usamos 'absolute' se estiver dentro de #gameArea (que deve ser 'relative') */
-            bottom: 20px;
-            right: 20px;
+            bottom: 10px;
+            right: 10px;
             
             /* Estilo do botão */
             padding: 15px 25px;
@@ -535,7 +535,7 @@
         }
 
         /* 📱 Media Query: Mostra o botão APENAS em telas menores (celulares/tablets) */
-        @media (max-width: 768px) {
+        @media (max-width: 468px) {
             #shootButton {
                 display: block; /* Oculta a visualização para telas grandes (desktop) */
             }
