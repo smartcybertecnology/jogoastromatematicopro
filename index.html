@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
-    <style>
+   <style>
         :root {
             --cor-principal: #00ffff; /* Ciano Neon */
             --cor-secundaria: #ff00ff; /* Magenta Neon */
@@ -18,117 +18,117 @@
         }
 
         body {
-            font-family: 'Orbitron', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--cor-fundo);
-            color: var(--cor-principal);
+    font-family: 'Orbitron', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--cor-fundo);
+    color: var(--cor-principal);
+    
+    display: flex;
+    flex-direction: column; 
+    align-items: center; /* Centraliza horizontalmente o conteúdo */
+    
+    height: 100vh; 
+    min-height: 100vh; 
+    width: 100vw; 
+    
+    overflow: hidden; 
+    user-select: none;
+    touch-action: none;
+    
+    /* NOVO: Permite que o body se expanda para telas grandes, mas apenas a Game Area será limitada */
+    max-width: 100%; 
+}
 
-            display: flex;
-            flex-direction: column;
-            align-items: center; /* Centraliza horizontalmente o conteúdo */
-
-            height: 100vh;
-            min-height: 100vh;
-            width: 100vw;
-
-            overflow: hidden;
-            user-select: none;
-            touch-action: none;
-
-            /* NOVO: Permite que o body se expanda para telas grandes, mas apenas a Game Area será limitada */
-            max-width: 100%;
-        }
-
-        #gameArea {
-            position: relative;
-
-            /* CRÍTICO: Usa Flexbox para preencher o espaço restante */
-            flex-grow: 1; /* Faz esta área ocupar todo o espaço vertical disponível */
-            height: auto; /* Permite que o Flexbox controle a altura */
-            max-height: none; /* Remove a restrição que impedia o layout funcionar */
-
-            /* 🚀 AJUSTE CRÍTICO PARA RESPONSIVIDADE DE TELA GRANDE */
-            /* Garante que a largura não exceda 95% da tela E não ultrapasse 1000px, 
-               mantendo-o centralizado pelo 'body' (align-items: center) */
-            width: 95vw;
-            max-width: 1000px; /* Limite a largura máxima para uma melhor jogabilidade em telas grandes (Desktop) */
-
-            /* REMOVEMOS A REGRA ANTERIOR: max-width: 100vw; (Era redundante ou limitava demais) */
-
-            background: rgba(0, 0, 0, 0.4);
-            border: 5px solid var(--cor-secundaria);
-            box-shadow: 0 0 20px var(--cor-secundaria);
-            overflow: hidden;
-            cursor: crosshair;
-            /* Estrelas de Fundo */
-            background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
-                              radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
-                              radial-gradient(white, rgba(255,255,255,.1) 3px, transparent 50px);
-            background-size: 550px 550px, 350px 350px, 250px 250px;
-            background-position: 0 0, 40px 60px, 120px 200px;
-            animation: move-stars 3s linear infinite;
-            touch-action: none;
-        }
+#gameArea {
+    position: relative;
+    
+    /* CRÍTICO: Usa Flexbox para preencher o espaço restante */
+    flex-grow: 1; /* Faz esta área ocupar todo o espaço vertical disponível */
+    height: auto; /* Permite que o Flexbox controle a altura */
+    max-height: none; /* Remove a restrição que impedia o layout funcionar */
+    
+    /* 🚀 AJUSTE CRÍTICO PARA RESPONSIVIDADE DE TELA GRANDE */
+    /* Garante que a largura não exceda 95% da tela E não ultrapasse 1000px, 
+       mantendo-o centralizado pelo 'body' (align-items: center) */
+    width: 95vw; 
+    max-width: 1000px; /* Limite a largura máxima para uma melhor jogabilidade em telas grandes (Desktop) */
+    
+    /* REMOVEMOS A REGRA ANTERIOR: max-width: 100vw; (Era redundante ou limitava demais) */
+    
+    background: rgba(0, 0, 0, 0.4);
+    border: 5px solid var(--cor-secundaria);
+    box-shadow: 0 0 20px var(--cor-secundaria);
+    overflow: hidden;
+    cursor: crosshair;
+    /* Estrelas de Fundo */
+    background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+                      radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+                      radial-gradient(white, rgba(255,255,255,.1) 3px, transparent 50px);
+    background-size: 550px 550px, 350px 350px, 250px 250px;
+    background-position: 0 0, 40px 60px, 120px 200px;
+    animation: move-stars 3s linear infinite;
+    touch-action: none; 
+}
 
         @keyframes move-stars {
             from { background-position-y: 0, 60px, 200px; }
             to { background-position-y: 550px, 410px, 700px; }
-        }
+        } 
 
         /* NOVO ESTILO: Área de Anúncio Fixa Abaixo da Área do Jogo */
         #adArea {
             /* CRÍTICO: Define a altura e impede que o Flexbox a encolha */
             height: 43px; /* Altura do banner (50px) + padding (10px superior/inferior) */
             flex-shrink: 0; /* Garante que a altura seja mantida */
-
+            
             width: 100vw; /* Garante que ocupe a largura total */
-            max-width: 100vw;
+            max-width: 100vw; 
             text-align: center;
             padding: 10px 0; /* Espaçamento interno */
-            background-color: rgba(0, 0, 0, 0.5);
-
+            background-color: rgba(0, 0, 0, 0.5); 
+            
             /* REMOVIDO: margin-top: auto; (Não é mais necessário no layout Flexbox) */
-
+            
             border-top: 2px solid var(--cor-principal);
         }
 
         #player {
-            position: absolute;
-            bottom: 20px;
+    position: absolute;
+    bottom: 20px;
+    
+    /* REMOVIDO: left: 50%; */
+    /* REMOVIDO: transform: translateX(-50%); */
+    
+    width: clamp(42px, 10vw, 63px); 
+    height: clamp(42px, 10vw, 63px);
+    
+    background-image: url('player.gif');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    
+    transition: transform 0.05s ease-out;
+    z-index: 15;
 
-            /* REMOVIDO: left: 50%; */
-            /* REMOVIDO: transform: translateX(-50%); */
+    /* 🔒 Proteções extras */
+    outline: none;
+    user-select: none;
+    pointer-events: none; /* impede foco e clique */
+    cursor: none; /* ❌ oculta o cursor do mouse quando passa sobre o foguete */
+}
 
-            width: clamp(42px, 10vw, 63px);
-            height: clamp(42px, 10vw, 63px);
-
-            background-image: url('player.gif');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-
-            transition: transform 0.05s ease-out;
-            z-index: 15;
-
-            /* 🔒 Proteções extras */
-            outline: none;
-            user-select: none;
-            pointer-events: none; /* impede foco e clique */
-            cursor: none; /* ❌ oculta o cursor do mouse quando passa sobre o foguete */
-        }
-
-        /* O ::after pode manter a centralização para o emoji de fogo, se for desejado */
-        #player::after {
-            content: '🔥';
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.5em;
-            opacity: 0;
-            transition: opacity 0.1s;
-        }
+/* O ::after pode manter a centralização para o emoji de fogo, se for desejado */
+#player::after {
+    content: '🔥';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.5em;
+    opacity: 0;
+    transition: opacity 0.1s;
+}
 
         .shooting #player::after {
             opacity: 1;
@@ -148,21 +148,21 @@
         }
 
         /* Asteroides */
-
+      
         .asteroid {
-
-            transform-origin: center center;
-            animation: none;
+            
+            transform-origin: center center; 
+            animation: none; 
             text-shadow: 0 0 5px black;
-
+            
             position: absolute; /* MUITO IMPORTANTE para o posicionamento */
-            width: 14vw;
-            height: 14vw;
+            width: 14vw; 
+            height: 14vw; 
             max-width: 65px; /* Limite máximo para desktop */
             max-height: 65px;
-
+            
             /* ADICIONE ISSO para que a imagem seja o GIF */
-            background-size: contain;
+            background-size: contain; 
             background-repeat: no-repeat;
             background-position: center;
         }
@@ -170,12 +170,12 @@
         /* NOVO: Estilo para o número da resposta dentro do asteroide */
         .asteroid span {
             /* ... (Mantenha o código existente para o span) ... */
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.5); 
             padding: 2px 5px;
             border-radius: 5px;
-
+            
             /* Garante que o número fique visível sobre o GIF */
-            position: absolute;
+            position: absolute; 
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -184,13 +184,13 @@
             font-size: 1.2rem;
         }
         .destroyed { opacity: 0 !important; transform: scale(0.1) !important; transition: all 0.5s ease-out; }
-        .old-asteroid {
-            opacity: 0.4;
-            border-color: #555;
-            box-shadow: none;
-            transition: all 1.5s ease-out;
+        .old-asteroid { 
+            opacity: 0.4; 
+            border-color: #555; 
+            box-shadow: none; 
+            transition: all 1.5s ease-out; 
         }
-
+        
         /* --- BOSS ESPECÍFICO APRIMORADO PARA MAIS REALISMO --- */
 
 
@@ -202,7 +202,7 @@
         #boss.hit {
 
             animation: bossShake 0.1s 3; /* Adiciona feedback de acerto */
-
+            
         }
 
         .boss-gif {
@@ -210,45 +210,45 @@
             margin-right: 0%;
             margin-left: 0%;
             /* Ocupa a largura total da área de conteúdo (140px) */
-            width: 100%;
-
+            width: 100%; 
+            
             /* 🚀 CORREÇÃO CRÍTICA: Calcula a altura máxima. 
-               A altura total é 125px. Subtraímos 35px-40px para o texto e suas margens. */
-            max-height: calc(110% - 35px);
-
+                A altura total é 125px. Subtraímos 35px-40px para o texto e suas margens. */
+            max-height: calc(110% - 35px); 
+            
             /* Garante que o GIF se expanda para preencher a área, mesmo que corte um pouco */
-            object-fit: cover;
-
+            object-fit: cover; 
+            
             display: block;
-            margin: 0 auto;
-
+            margin: 0 auto; 
+            
             /* Pequena margem para separar a imagem do texto */
-            margin-bottom: 5px;
+            margin-bottom: 5px; 
         }
         /* --- 1. SELETOR PRINCIPAL: #boss --- */
         #boss {
             /* Define um tamanho fixo para o Boss para ajudar na colisão */
             /* 💥 MODIFICADO: Reduzido 30% (140px -> 98px) */
-            width: clamp(90px, 25vw, 150px);
+        width: clamp(90px, 25vw, 150px);
             height: auto; /* Permite que o conteúdo defina a altura */
-
+            
             /* Centraliza o Boss (mantendo a flutuação do JS) */
             position: absolute;
-            top: 8vh; /* Posiciona o boss usando a altura da tela */
-            left: 50%;
-            transform: translateX(-50%);
-
+            top: 8vh; /* Posiciona o boss usando a altura da tela */ 
+            left: 50%; 
+            transform: translateX(-50%); 
+            
             /* Estilo de fundo/borda do Boss (opcional) */
             /* Garante que qualquer espaço não preenchido pelo GIF seja preto */
-            background-color: black;
+            background-color: black; 
             border: 3px solid #ff00ff;
             border-radius: 10px;
-
+            
             /* MANTIDO: O padding é essencial para dar espaço ao texto */
-            padding: 10px;
-
+            padding: 10px; 
+            
             z-index: 100;
-
+            
             /* Configurações visuais do estado 'vulnerable' e 'invulnerable' */
             box-shadow: 0 0 25px #ff00ff, 0 0 50px rgba(255, 0, 255, 0.5);
             transition: box-shadow 0.3s, transform 0.1s;
@@ -264,10 +264,10 @@
             color: white;
             font-size: clamp(0.8rem, 3vw, 1.1rem); /* Reduz o tamanho da fonte em telas pequenas */
             font-weight: bold;
-
+            
             /* Garante que o texto fique encostado no topo do padding, sem empurrar o GIF */
-            margin-top: 0;
-            margin-bottom: 5px;
+            margin-top: 0; 
+            margin-bottom: 5px; 
         }
 
         /* --- 4. SELETOR DA RESPOSTA: .boss-answer-display --- */
@@ -275,7 +275,7 @@
             color: var(--cor-acerto, lime);
             font-size: clamp(1.2rem, 4vw, 1.5rem); /* Reduz o tamanho da fonte em telas pequenas */
             font-weight: bold;
-            margin-top: 0;
+            margin-top: 0; 
         }
 
         /* Keyframes para o efeito de tremor (hit) */
@@ -302,10 +302,10 @@
             top: 0px;
             width: 96%;
             left: 1%;
-            display: flex;
+            display: flex; 
             flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: flex-start;
+            justify-content: space-between; 
+            align-items: flex-start; 
             padding: 10px;
             z-index: 30;
             background: rgba(0, 0, 0, 0.6);
@@ -323,14 +323,14 @@
         /* Estrutura do Score (Label acima do valor) */
         #scoreContainer { /* NOVO CONTÊINER NECESSÁRIO NO HTML */
             display: flex;
-            flex-direction: column;
+            flex-direction: column; 
             align-items: center; /* Centraliza o texto "Pontos:" e o número */
             padding: 0;
         }
 
         .score-label { /* NOVA CLASSE NECESSÁRIA NO HTML */
-            font-size: 0.8em;
-            color: #aaa;
+            font-size: 0.8em; 
+            color: #aaa; 
             text-shadow: 1px 1px 2px #000;
             margin-bottom: -5px; /* Ajusta o espaçamento entre label e número */
         }
@@ -350,7 +350,7 @@
             text-align: left;
             margin-top: 5px; /* Espaço entre o Score e o Combo */
             /* Regras de flexbox antigas foram removidas aqui */
-            display: none;
+            display: none; 
         }
 
         .combo-active {
@@ -371,14 +371,14 @@
             font-size: 1.2em;
             font-weight: 900;
             color: var(--cor-erro);
-
+            
             /* NOVO: Usa Flexbox para alinhar o texto 'BOSS HP:' e o conteúdo da barra */
-            display: flex;
+            display: flex; 
             align-items: center; /* Alinhamento vertical entre texto e corações */
             justify-content: flex-end; /* Alinha o conteúdo à direita */
 
             width: 100%; /* Ocupa a largura total do contêiner direito */
-            min-width: 150px;
+            min-width: 150px; 
             /* display: none; // Essa linha é controlada pelo JS, mas precisa ser alterada para 'flex' ou 'block' no JS durante a luta */
         }
 
@@ -391,7 +391,7 @@
 
         /* Opcional: Ajusta o tamanho dos corações do Boss */
         .boss-hp-bar span {
-            font-size: 1.2em;
+            font-size: 1.2em; 
             margin: 0 1px;
         }
 
@@ -459,18 +459,18 @@
             left: 0;
             width: 100%;
             height: 100%;
-
+            
             /* ⭐ CORREÇÃO 1: Fundo SÓLIDO (opacidade 1) para esconder o jogo por baixo. ⭐ */
-            background: rgba(0, 0, 0, 1);
-
+            background: rgba(0, 0, 0, 1); 
+            
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-
+            
             /* ⭐ CORREÇÃO 2: Aumentar o z-index para garantir que esteja acima de TUDO. ⭐ */
-            z-index: 1000;
+            z-index: 1000; 
         }
 
         #startButton, #restartButton {
@@ -518,22 +518,18 @@
             box-shadow: 0 0 10px var(--cor-erro);
             transform: scale(1.05);
         }
-        
-        /* style.css (CORREÇÃO APLICADA AQUI) */
+        /* style.css (Adicione estas regras) */
 
         #shootButton {
-            /* 🚀 CORREÇÃO CRÍTICA: Fixa o botão na tela de visualização (viewport) */
-            position: fixed; 
-            
-            /* Ajustado para ficar 10px acima do topo da área de anúncio (#adArea) */
-            /* Altura do #adArea é 43px (height) + 10px (padding top) + 10px (padding bottom) = 63px. */
-            bottom: 73px; 
+            /* Posição fixa no canto inferior direito */
+            position: absolute; /* Usamos 'absolute' se estiver dentro de #gameArea (que deve ser 'relative') */
+            bottom: 20px;
             right: 20px;
             
             /* Estilo do botão */
             padding: 15px 25px;
             font-size: 1.2rem;
-            background-color: var(--cor-acerto); 
+            background-color: var(--cor-acerto); /* Ex: verde */
             color: white;
             border: 3px solid white;
             border-radius: 10px;
@@ -548,7 +544,7 @@
         /* 📱 Media Query: Mostra o botão APENAS em telas menores (celulares/tablets) */
         @media (max-width: 768px) {
             #shootButton {
-                display: block; /* Mostra o botão no celular */
+                display: block; /* Oculta a visualização para telas grandes (desktop) */
             }
         }
     </style>
@@ -557,56 +553,55 @@
 
 <div id="gameArea">
 
-    <div id="hud">
-        <a id="exitButton" href="brincadeiras3.html" onclick="return confirmExit();">SAIR</a>
-        <div id="scoreComboGroup">
-            <div id="scoreContainer">
-                <div class="score-label">Pontos:</div>
-                <div id="score">0</div>
-            </div>
-            <div id="combo"></div>
-        </div>
+ <div id="hud">
+ <a id="exitButton" href="brincadeiras3.html" onclick="return confirmExit();">SAIR</a>
+ <div id="scoreComboGroup">
+ <div id="scoreContainer">
+ <div class="score-label">Pontos:</div>
+<div id="score">0</div>
+ </div>
+<div id="combo"></div> 
+ </div>
+ 
+ <div id="question" class="question-box"></div>
+<div id="rightSideHUD">
+<div id="lives">Vidas: 💖💖💖</div>
+ <div id="bossHealth"></div>
+ </div>
+ </div>
 
-        <div id="question" class="question-box"></div>
-        <div id="rightSideHUD">
-            <div id="lives">Vidas: 💖💖💖</div>
-            <div id="bossHealth"></div>
-        </div>
-    </div>
+<div id="player"></div>
 
-    <div id="player"></div>
+</div> <button id="shootButton">🔫 DISPARAR</button>
 
-</div> 
-<button id="shootButton">🔫 DISPARAR</button> <div id="overlay">
-    <h1>Astro-Matemático PRO 🌌</h1>
-    <p>Destrua o asteroide com a resposta correta e veja seu combo aumentar!</p>
-    <p>A cada 10 acertos, um **Boss de Fase** surgirá!</p>
-    <p>Use **Setas** ou **WASD** para mover, **Espaço** ou **Mouse Click** para atirar.</p>
-    <button id="startButton">INICIAR MISSÃO</button>
+<div id="overlay">
+ <h1>Astro-Matemático PRO 🌌</h1>
+ <p>Destrua o asteroide com a resposta correta e veja seu combo aumentar!</p>
+ <p>A cada 10 acertos, um **Boss de Fase** surgirá!</p>
+<p>Use **Setas** ou **WASD** para mover, **Espaço** ou **Mouse Click** para atirar.</p>
+ <button id="startButton">INICIAR MISSÃO</button>
 </div>
 
 <div id="gameOverScreen" style="display: none;">
-    <h2>MISSÃO FRACASSADA</h2>
+<h2>MISSÃO FRACASSADA</h2>
 
-    <p>Pontuação Final: <span id="finalScore">0</span></p>
-
-    <button id="restartButton" onclick="startGame()">TENTAR NOVAMENTE</button>
-</div> 
-
-<script src="error.js"></script>
+<p>Pontuação Final: <span id="finalScore">0</span></p>
+ 
+ <button id="restartButton" onclick="startGame()">TENTAR NOVAMENTE</button>
+</div> <script src="error.js"></script>
 <div id="adArea">
-    <div>
-        <script type="text/javascript">
-            atOptions = {
-                'key' : 'bbf348585df7afae438e1754d1003d92',
-                'format' : 'iframe',
-                'height' : 50,
-                'width' : 320,
-                'params' : {}
-            };
-        </script>
-        <script type="text/javascript" src="https://www.highperformanceformat.com/bbf348585df7afae438e1754d1003d92/invoke.js"></script>
-    </div>
+<div> 
+ <script type="text/javascript">
+atOptions = {
+ 'key' : 'bbf348585df7afae438e1754d1003d92',
+ 'format' : 'iframe',
+'height' : 50,
+'width' : 320,
+ 'params' : {}
+};
+ </script>
+ <script type="text/javascript" src="https://www.highperformanceformat.com/bbf348585df7afae438e1754d1003d92/invoke.js"></script>
+</div>
 </div>
 
 </body>
