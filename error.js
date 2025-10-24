@@ -60,6 +60,16 @@ const TOUCH_MOVE_SPEED_FACTOR = 0.05;
     let audioGameOver;
     let audioSucesso;
     let audioBosswin;
+    // Estas variáveis precisam ser persistentes, provavelmente fora da sua função de atualização
+// ou como propriedades do seu objeto 'boss' ou 'gameState'
+
+let bossMovementState = 'moving'; // Pode ser 'moving' ou 'resting'
+let bossMoveTimer = 0; // Tempo gasto no estado atual
+let bossMoveDuration = 2; // Duração da movimentação (em segundos)
+let bossRestDuration = 1.5; // Duração da parada (em segundos)
+let bossTargetX = 0; // O deslocamento X para onde ele está se movendo (para onde parar)
+let bossStartX = 0; // O deslocamento X de onde ele começou o movimento
+let bossMoveSpeed = 80; // Velocidade de movimento (em pixels por segundo, ajustável)
 
 const ASTEROID_GIFS = [
     'asteroid2.gif', // Asteroid 1º GIF
@@ -248,7 +258,7 @@ function startGame() {
     combo = 0;
     acertosDesdeUltimoBoss = 0;
     currentLevel = 1;
-    BASE_ASTEROID_SPEED = 50;
+    BASE_ASTEROID_SPEED = 35; // Velocidade do asteroid no boss
     isGameRunning = true;
     
     // CORREÇÃO 2: Zera o estado do Boss antes de iniciar o novo jogo
@@ -1118,69 +1128,58 @@ function exitBossFight(success) {
     let dy = 0;
     let rotation = 0;
     
-    // Suas dimensões da nave (Ajuste se necessário)
-    const playerWidth = 50; 
-    const playerHeight = 50; 
+    // ⭐ AJUSTE CRÍTICO: Obtém as dimensões reais da nave (máximo 63px)
+    const playerWidth = player.offsetWidth || 63; 
+    const playerHeight = player.offsetHeight || 63; 
+    const marginBottom = 20; // Correspondente ao bottom: 20px no CSS
 
     // ==========================================================
-    // ⭐ LÓGICA DE MOVIMENTO PC (DIGITAL) - ATIVA SE NÃO HOUVER TOQUE ⭐
+    // LÓGICA DE MOVIMENTO (Digital e Analógico)
     // ==========================================================
     if (touchTargetX === null) {
+        // Lógica de Movimento PC (Digital)
         if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) {
             dx = -PLAYER_SPEED;
             rotation = -10;
         }
         if (keysPressed['ArrowRight'] || keysPressed['KeyD']) {
-            if (dx === 0) {
-                dx = PLAYER_SPEED;
-                rotation = 10;
-            } else {
-                dx = 0; // Anula se Left e Right pressionados
+            // Verifica se ambas as teclas de direção horizontal estão pressionadas
+            if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) { 
+                dx = 0; // Anula o movimento horizontal
                 rotation = 0;
+            } else {
+                 dx = PLAYER_SPEED;
+                 rotation = 10;
             }
         }
         if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
         if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
         
-        // Aplica o fator diagonal APENAS na lógica digital (PC)
+        // Aplica o fator diagonal
         if (dx !== 0 && dy !== 0) {
             const diagFactor = Math.sqrt(2);
             dx /= diagFactor;
             dy /= diagFactor;
         }
 
-    } 
-    
-    // ==========================================================
-    // ⭐ LÓGICA DE MOVIMENTO MOBILE (ANALÓGICO) - ATIVA SE HOUVER TOQUE ⭐
-    // ==========================================================
-    else {
-        // Calcula o centro atual da nave
+    } else {
+        // Lógica de Movimento Mobile (Analógico/Touch)
         const playerCenterX = playerX + (playerWidth / 2);
         const playerCenterY = playerY + (playerHeight / 2);
-
-        // 1. Calcula a distância e a direção (vetor) até o ponto de toque
         const diffX = touchTargetX - playerCenterX;
         const diffY = touchTargetY - playerCenterY;
-        
         const distance = Math.sqrt(diffX * diffX + diffY * diffY);
-        const STOPPING_DISTANCE = 5; // Distância mínima para parar o movimento
+        const STOPPING_DISTANCE = 5;
 
         if (distance > STOPPING_DISTANCE) {
-            // Calcula o movimento dx e dy de forma gradual (analog)
             dx = diffX * TOUCH_MOVE_SPEED_FACTOR; 
             dy = diffY * TOUCH_MOVE_SPEED_FACTOR;
-
-            // Limita a velocidade máxima
             const speedMagnitude = Math.sqrt(dx * dx + dy * dy);
             if (speedMagnitude > PLAYER_SPEED) {
                 dx = (dx / speedMagnitude) * PLAYER_SPEED;
                 dy = (dy / speedMagnitude) * PLAYER_SPEED;
             }
-            
-            // Calcula a rotação para feedback
             rotation = (dx / PLAYER_SPEED) * 15;
-            
         } else {
             dx = 0;
             dy = 0;
@@ -1188,19 +1187,21 @@ function exitBossFight(success) {
     }
 
     // ==========================================================
-    // APLICAÇÃO DO MOVIMENTO E CLAMPING
+    // APLICAÇÃO DO MOVIMENTO E CLAMPING CORRIGIDO
     // ==========================================================
     
-    // Aplica o Movimento e Restrição de Borda
+    // ⭐ LIMITE HORIZONTAL CORRIGIDO: Usa playerWidth para parar a nave na borda
     playerX = Math.max(0, Math.min(GAME_WIDTH - playerWidth, playerX + dx));
-    playerY = Math.max(0, Math.min(GAME_HEIGHT - playerHeight - 20, playerY + dy)); 
+    
+    // LIMITE VERTICAL CORRIGIDO: Usa playerHeight e a margem inferior de 20px
+    playerY = Math.max(0, Math.min(GAME_HEIGHT - playerHeight - marginBottom, playerY + dy)); 
 
     // Atualiza Posição e Rotação
-    player.style.left = `${playerX}px`;
+    player.style.left = `${playerX}px`; // Define a borda esquerda
     player.style.top = `${playerY}px`;
     player.style.transform = `rotate(${rotation}deg)`;
 
-    // Lógica de Disparo (PC: Space/Mouse)
+    // Lógica de Disparo
     const now = Date.now();
     if ((keysPressed['Space'] || keysPressed['Mouse0']) && (now - lastShootTime > SHOOT_DELAY)) {
         shoot();
@@ -1210,31 +1211,25 @@ function exitBossFight(success) {
     }
 }
 function shoot() {
-    // 1. Variáveis de controle de tempo
     const currentTime = Date.now();
     
-    // 2. VERIFICAÇÕES DE PRÉ-DISPARO (CRÍTICO!)
-    // Garante que o jogo está rodando E que o tempo de espera (delay) foi cumprido.
+    // Verifica tempo e estado do jogo
     if (!isGameRunning || currentTime - lastShootTime < SHOOT_DELAY) {
-        return; // Sai da função, impedindo o disparo.
+        return; 
     }
-
-    // 3. ATUALIZAÇÃO DO TEMPO DE DISPARO
-    // Só atualizamos o tempo se o disparo for realizado.
     lastShootTime = currentTime;
-
-    // ----------------------------------------------------
-    // Lógica do Disparo (Seu código original)
-    // ----------------------------------------------------
 
     const bulletElement = document.createElement('div');
     bulletElement.className = 'bullet';
 
-    // Para centralizar o tiro (se o player tiver 100px de largura e o bullet 6px)
-    // Se o player é 50px de largura e o bullet 6px, use: playerX + (50/2) - (6/2) = playerX + 25 - 3 = playerX + 22
-    // Se o seu valor de 43 está correto para o seu layout, mantenha-o.
-    const bulletX = playerX + 43; 
-    const bulletY = playerY;
+    // ⭐ AJUSTE CRÍTICO: Cálculo de centralização dinâmico
+    const playerWidth = player.offsetWidth || 63; // Largura real da nave
+    const bulletWidth = 4; // Largura do tiro (do seu CSS: width: 4px)
+
+    // Posição 'left' da bala: 
+    // playerX (borda esquerda) + (Meia Largura da Nave) - (Meia Largura da Bala)
+    const bulletX = playerX + (playerWidth / 2) - (bulletWidth / 2); 
+    const bulletY = playerY; // Topo da nave
 
     playShootSound(); 
 
@@ -1242,12 +1237,10 @@ function shoot() {
     bulletElement.style.top = `${bulletY}px`;
     gameArea.appendChild(bulletElement);
 
-    // CRÍTICO: Armazena a resposta correta atual no objeto do tiro
     bullets.push({
         element: bulletElement,
         x: bulletX,
         y: bulletY,
-        // Mantém a lógica de armazenar a resposta correta
         value: (question && question.answer !== undefined) ? question.answer : null 
     });
 }
@@ -1317,8 +1310,8 @@ if (!isBossFight || asteroids.length > 0) {
             return true;
         });
 
-        // 2. Movimentação de Asteroides
-        const deltaTime = 16.666666 / 1000; // Aproximação de 60 FPS
+        // 2. Movimentação de Asteroides e Tamanho
+        const deltaTime = 16.666666 / 1700; // Aproximação de 60 FPS
         asteroids = asteroids.filter(asteroid => {
             if (asteroid.isDestroyed) {
                 // Os asteroides destruídos são removidos daqui
@@ -1326,7 +1319,7 @@ if (!isBossFight || asteroids.length > 0) {
             }
 
             // Oscilação Horizontal e movimento para baixo
-            asteroid.x = asteroid.baseX + Math.sin(timestamp / 500 + asteroid.oscillationOffset) * 15;
+            asteroid.x = asteroid.baseX + Math.sin(timestamp / 700 + asteroid.oscillationOffset) * 15;
             asteroid.y += asteroid.speed * deltaTime;
             
             asteroid.element.style.left = `${asteroid.x}px`;
@@ -1334,9 +1327,9 @@ if (!isBossFight || asteroids.length > 0) {
 
             // Aumenta a escala e opacidade ao se aproximar (efeito 3D)
             const ratio = (GAME_HEIGHT - asteroid.y) / GAME_HEIGHT;
-            asteroid.scale = Math.min(1, 0.5 + (1 - ratio) * 0.5);
+            asteroid.scale = Math.min(1, 0.5 + (1 - ratio) * 0.3);
             asteroid.element.style.transform = `translate(-50%, -50%) scale(${asteroid.scale})`;
-            asteroid.element.style.opacity = Math.min(1, 0.5 + (1 - ratio) * 0.5);
+            asteroid.element.style.opacity = Math.min(1, 2.0 + (1 - ratio) * 0.5);
 
             // Colisão com o Jogador
             if (checkPlayerCollision(asteroid)) {
@@ -1360,21 +1353,66 @@ if (!isBossFight || asteroids.length > 0) {
             return true;
         });
         
-        // 3. Movimentação do Boss (Novo e Aprimorado)
-        if (isBossFight && boss) {
-            
-            bossMovementTime += 0.02; // Incrementa o tempo suavemente
-            
-            // Oscilação Horizontal suave (senoide)
-            // A amplitude da oscilação depende do nível
-            const maxSwing = 60; 
-            const speedFactor = 0.5 + (currentLevel * 0.1); 
-            const offsetX = Math.sin(bossMovementTime * speedFactor) * maxSwing; 
-            
-            // Ajusta a posição
-            // O boss está centralizado com transform: translateX(-50%), então ajustamos o 'left'
-            boss.element.style.left = `calc(50% + ${offsetX}px)`;
-        }
+       // 3. Movimentação do Boss (Novo e Aprimorado com Paradas)
+if (isBossFight && boss) {
+    // DeltaTime é crucial para movimento baseado em tempo
+    // Assumindo que 'deltaTime' é o tempo (em segundos) que passou desde o último frame (ex: 0.02)
+    const deltaTime = 0.02; // Use a sua taxa de atualização real ou calcule o delta
+
+    bossMoveTimer += deltaTime; // Incrementa o tempo gasto no estado atual
+
+    if (bossMovementState === 'moving') {
+        // === Lógica de Movimento ===
+
+        // Calcula a nova posição baseada no tempo, partindo de bossStartX em direção a bossTargetX
+        let progress = bossMoveTimer / bossMoveDuration; // Progresso de 0 a 1
+
+        if (progress < 1) {
+            // Movimento suave (pode usar uma função de easing, mas 'linear' é bom por enquanto)
+            const currentX = bossStartX + (bossTargetX - bossStartX) * progress;
+            boss.element.style.left = `calc(50% + ${currentX}px)`;
+        } else {
+            // === Fim do Movimento: Transição para Parada ===
+            
+            // Garante que a posição final seja exata
+            boss.element.style.left = `calc(50% + ${bossTargetX}px)`;
+
+            // Transiciona o estado
+            bossMovementState = 'resting';
+            bossMoveTimer = 0; // Zera o timer para a parada
+        }
+
+    } else if (bossMovementState === 'resting') {
+        // === Lógica de Parada ===
+
+        if (bossMoveTimer >= bossRestDuration) {
+            // === Fim da Parada: Transição para Novo Movimento ===
+
+            // 1. Define o ponto de partida do novo movimento
+            bossStartX = bossTargetX;
+            
+            // 2. Define um novo ponto alvo (entre -maxSwing e +maxSwing)
+            const maxSwing = 450; // Amplitude máxima do movimento pela direta/esquerda
+            
+            // Gera um novo alvo aleatório que não seja muito perto do atual
+            let newTargetX;
+            do {
+                newTargetX = Math.floor(Math.random() * maxSwing * 2) - maxSwing; // Valor entre -maxSwing e +maxSwing
+            } while (Math.abs(newTargetX - bossStartX) < 50); // Garante um movimento mínimo de 50px
+
+            bossTargetX = newTargetX;
+
+            // 3. Calcula a duração do novo movimento
+            const distance = Math.abs(bossTargetX - bossStartX);
+            // Duração = Distância / Velocidade. Isso garante que a velocidade seja constante
+            bossMoveDuration = distance / bossMoveSpeed; 
+            
+            // 4. Transiciona o estado
+            bossMovementState = 'moving';
+            bossMoveTimer = 0; // Zera o timer para o movimento
+        }
+    }
+}
 
 
         // 4. Se não há mais alvos e não é Boss Fight, gera nova pergunta
@@ -1441,7 +1479,7 @@ if (!isBossFight || asteroids.length > 0) {
         if (isBossFight) {
             // LÓGICA DE ACERTO NO ENXAME DE PUNIÇÃO
          
-showTemporaryMessage("PUNIÇÃO CANCELADA! Batalha Retomada!", 1500, 'alert-msg');
+showTemporaryMessage("PUNIÇÃO CANCELADA! Batalha Retomada!", 2000, 'alert-msg');
             combo = 0; // Reinicia o combo após o desafio de punição
             
             // 1. Limpa TODOS os outros asteroides do enxame (marca para remoção no gameLoop)
@@ -1556,18 +1594,18 @@ function handleMiss(isCorrectAnswer) {
         // (incluindo asteroides de punição) reinicia o ciclo do Boss.
         shouldResetBoss = true;
         combo = 0;
-        showTemporaryMessage("ALVO PERDIDO! Ciclo do Boss Resetado!", 1500);
+        showTemporaryMessage("ALVO PERDIDO! Ciclo do Boss Resetado!", 2000);
 
     } else if (isCorrectAnswer) {
          // Modo Normal: A resposta correta passou - penalidade máxima
          lives--;
          combo = 0;
          score = Math.max(0, score - 10);
-         showTemporaryMessage("ALVO CORRETO PERDIDO! -1 Vida", 1500);
+         showTemporaryMessage("ALVO CORRETO PERDIDO! -1 Vida", 2000);
     } else {
          // Modo Normal: Uma resposta errada passou ou alvos esgotados
          combo = 0;
-         showTemporaryMessage("ALVO PERDIDO...", 1500);
+         showTemporaryMessage("ALVO PERDIDO...", 2000);
     }
     
     updateHUD();
