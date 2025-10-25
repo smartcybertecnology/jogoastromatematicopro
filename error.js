@@ -190,41 +190,54 @@ function showTemporaryMessage(message, duration = 2000, className = '') {
         }
     }
 
-    // Função para criar explosões de partículas
+    // Função para criar explosões de partículas (otimizada: um único rAF para todos as partículas)
     function createExplosion(x, y, color) {
-        for (let i = 0; i < 20; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.background = color;
-            
-            // Posição inicial (no centro do impacto)
-            particle.style.left = `${x}px`;
-            particle.style.top = `${y}px`;
-            
-            // Movimento aleatório (vetor de velocidade)
-            const angle = Math.random() * 2 * Math.PI;
-            const speed = Math.random() * 5 + 2; 
-            const vx = Math.cos(angle) * speed;
-            const vy = Math.sin(angle) * speed;
-            
-            gameArea.appendChild(particle);
-            
-            // Animação usando requestAnimationFrame para movimento suave
-            let startTime = null;
-            function animateParticle(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const progress = timestamp - startTime;
-                
-                if (progress < 1000) { // Duração de 1 segundo
-                    particle.style.left = `${parseFloat(particle.style.left) + vx}px`;
-                    particle.style.top = `${parseFloat(particle.style.top) + vy}px`;
-                    particle.style.opacity = 1 - (progress / 1000); 
-                    requestAnimationFrame(animateParticle);
+        try {
+            const isMobile = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const particleCount = isMobile ? 8 : 14; // menos partículas em dispositivos móveis
+            const particles = [];
+            const duration = 800; // ms
+            const start = performance.now();
+
+            for (let i = 0; i < particleCount; i++) {
+                const el = document.createElement('div');
+                el.className = 'particle';
+                el.style.background = color || 'white';
+                el.style.left = `${x}px`;
+                el.style.top = `${y}px`;
+                el.style.opacity = '1';
+                gameArea.appendChild(el);
+
+                const angle = Math.random() * Math.PI * 2;
+                const speed = (Math.random() * 3 + 1) * (isMobile ? 0.6 : 1);
+                particles.push({ el, x: x, y: y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed });
+            }
+
+            function step(now) {
+                const t = now - start;
+                const progress = Math.min(1, t / duration);
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    // numeric updates
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.el.style.left = `${p.x}px`;
+                    p.el.style.top = `${p.y}px`;
+                    p.el.style.opacity = String(1 - progress);
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(step);
                 } else {
-                    particle.remove();
+                    // cleanup
+                    for (const p of particles) if (p.el && p.el.parentElement) p.el.remove();
                 }
             }
-            requestAnimationFrame(animateParticle);
+
+            requestAnimationFrame(step);
+        } catch (err) {
+            console.warn('createExplosion failed', err);
         }
     }
 // ... (Certifique-se de que 'keysPressed' é um objeto let ou const no escopo global)
@@ -1119,6 +1132,10 @@ function exitBossFight(success) {
   function movePlayer() {
     if (!isGameRunning) return;
 
+    // Defensive guards: ensure player coordinates are valid numbers
+    if (!isFinite(playerX) || playerX === null) playerX = (GAME_WIDTH || 320) / 2;
+    if (!isFinite(playerY) || playerY === null) playerY = (GAME_HEIGHT || 240) - 70;
+
     let dx = 0;
     let dy = 0;
     let rotation = 0;
@@ -1243,7 +1260,10 @@ function shoot() {
     // --- Loop Principal do Jogo ---
 
     function gameLoop(timestamp) {
-        if (!isGameRunning) return;
+        if (!isGameRunning) return;
+
+        // Refresh measurements to stay in sync with CSS/layout changes
+        updateGameDimensions();
 
         // 1. Movimentação dos Tiros
         const BULLET_SPEED = 10;
@@ -1559,6 +1579,14 @@ showTemporaryMessage("PUNIÇÃO CANCELADA! Batalha Retomada!", 2000, 'alert-msg'
             a.element.remove();
         }
     });
+
+    // Avoid stuck movement after collision: clear any touch-targets
+    touchTargetX = null;
+    touchTargetY = null;
+
+    // Also clear any digital/mouse movement flags to avoid a stuck input state
+    const movementKeys = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Mouse0', MOBILE_MOVE_LEFT, MOBILE_MOVE_RIGHT, MOBILE_SHOOT];
+    movementKeys.forEach(k => { if (keysPressed[k]) keysPressed[k] = false; });
 
     updateHUD();
     if (lives <= 0) {
