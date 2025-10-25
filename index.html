@@ -171,7 +171,7 @@
     background-position: center;
     
     transition: transform 0.05s ease-out;
-    z-index: 15;
+    z-index: 1000; /* above ad (z-index ~400) but below HUD (z-index:2000) */
 
     /* 🔒 Proteções extras */
     outline: none;
@@ -205,7 +205,7 @@
             background-color: var(--cor-principal);
             box-shadow: 0 0 10px var(--cor-principal), 0 0 5px white;
             border-radius: 2px;
-            z-index: 10;
+            z-index: 1150; /* bullets should render above the ad and player */
             transition: none;
         }
 
@@ -354,7 +354,7 @@
             height: 5px;
             border-radius: 50%;
             pointer-events: none;
-            z-index: 20;
+            z-index: 1250; /* particles above ad and player but under HUD */
         }
 
 
