@@ -2,7 +2,8 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Make the page slightly zoomed-out by default on phones and allow reasonable user scaling -->
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=2.0">
     <title>Astro-Matemático PRO 🚀</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -91,6 +92,39 @@
             /* REMOVIDO: margin-top: auto; (Não é mais necessário no layout Flexbox) */
             
             border-top: 2px solid var(--cor-principal);
+        }
+
+        /* Ensure the page and game area use the full viewport height so the game stretches from base to top */
+        html, body {
+            height: 100%;
+        }
+
+        /* Make the game area fill available vertical space and leave room for the ad */
+        #gameArea {
+            min-height: calc(100vh - 64px); /* leave room for ad area (approx 64px) */
+            width: 98vw;
+            max-width: 100%;
+        }
+
+        /* On small screens, pin the ad to the bottom and ensure the game area doesn't get hidden behind it */
+        @media (max-width: 600px) {
+            #adArea {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                z-index: 9999;
+            }
+            /* Give the game area padding at the bottom equal to ad height so content isn't obscured */
+            #gameArea {
+                padding-bottom: 64px;
+                min-height: calc(100vh - 64px);
+                width: 96vw;
+            }
+            body {
+                padding-bottom: 0; /* avoid extra page padding, handled by #gameArea */
+            }
         }
 
         #player {
