@@ -116,14 +116,17 @@
                 position: fixed;
                 left: 0;
                 right: 0;
-                bottom: 0;
+                bottom: env(safe-area-inset-bottom, 0);
                 width: 100%;
-                z-index: 9999;
+                z-index: 400;
+                /* Account for notch/home-bar on modern phones */
+                padding-bottom: env(safe-area-inset-bottom, 0);
+                height: calc(var(--ad-height) + env(safe-area-inset-bottom, 0));
             }
             /* Give the game area padding at the bottom equal to ad height so content isn't obscured */
             #gameArea {
-                padding-bottom: 64px;
-                min-height: calc(100vh - var(--ad-height));
+                padding-bottom: calc(var(--ad-height) + env(safe-area-inset-bottom, 0));
+                min-height: calc(100vh - var(--ad-height) - env(safe-area-inset-bottom, 0));
                 width: 96vw;
             }
             body {
@@ -140,12 +143,17 @@
                 width: 96vw;
                 padding-bottom: calc(var(--ad-height) + env(safe-area-inset-bottom));
             }
-            #player { width: clamp(var(--player-min), 12vw, var(--player-max)); height: clamp(var(--player-min), 12vw, var(--player-max)); bottom: 12px; }
+            #player { width: clamp(var(--player-min), 12vw, var(--player-max)); height: clamp(var(--player-min), 12vw, var(--player-max)); bottom: calc(12px + env(safe-area-inset-bottom, 0)); }
             .asteroid { width: 18vw; height: 18vw; max-width: calc(var(--asteroid-max) - 8px); max-height: calc(var(--asteroid-max) - 8px); }
             #hud { padding: calc(var(--hud-padding) - 2px); }
             .question-box { font-size: clamp(1.0em, 4vw, 1.4em); padding: 6px 12px; }
-            #shootButton { padding: 10px 14px; font-size: 0.95rem; }
+            #shootButton { padding: 10px 14px; font-size: 0.95rem; bottom: calc(var(--ad-height) + env(safe-area-inset-bottom, 0) + 8px); z-index: 1200; }
         }
+    /* Ensure HUD sits above messages and ad */
+    #hud { z-index: 2000; }
+    /* Place question messages and temporary messages under HUD so they don't hide HUD text */
+    .question-box { top: calc(var(--hud-padding) + 8px); z-index: 1800; }
+    .temp-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1800; pointer-events: none; }
 
         #player {
     position: absolute;
