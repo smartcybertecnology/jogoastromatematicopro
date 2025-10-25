@@ -1,608 +1,1708 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Astro-Matemático PRO 🚀</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
-   <style>
-        :root {
-            --cor-principal: #00ffff; /* Ciano Neon */
-            --cor-secundaria: #ff00ff; /* Magenta Neon */
-            --cor-fundo: #0a0a2a; /* Azul Escuro do Espaço */
-            --cor-acerto: #00ff00; /* Verde */
-            --cor-erro: #ff4500; /* Laranja Vermelho */
-            --cor-combo: #ffcc00; /* Dourado */
-        }
 
-        body {
-    font-family: 'Orbitron', sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: var(--cor-fundo);
-    color: var(--cor-principal);
+ // --- Variáveis Globais de Estado ---
+    const gameArea = document.getElementById('gameArea');
+    const player = document.getElementById('player');
+    const questionDisplay = document.getElementById('question');
+    const scoreDisplay = document.getElementById('score');
+    const livesDisplay = document.getElementById('lives');
+    const comboDisplay = document.getElementById('combo');
+    const bossHealthDisplay = document.getElementById('bossHealth');
+
+    let GAME_WIDTH = 0;
+    let GAME_HEIGHT = 0;
+
+    let isGameRunning = false;
+    let score = 0;
+    let lives = 3;
+    let combo = 0;
+    let acertosDesdeUltimoBoss = 0; 
+    let currentLevel = 1;
+
+    let playerX = 0;
+    let playerY = 0;
+    const PLAYER_SPEED = 5;
+
+    let asteroids = [];
+    let bullets = [];
+    let question = {};
+    const keysPressed = {};
+
+let lastShootTime = 0;
+    const SHOOT_DELAY = 150;
+
+const MOBILE_SHOOT = 'MobileShoot'; // ⭐ NOVO: Constante para identificar o disparo via botão móvel
+const MOBILE_MOVE_LEFT = 'MobileLeft';
+const MOBILE_MOVE_RIGHT = 'MobileRight';
+// VARIÁVEIS PARA CONTROLE ANALÓGICO (LIVRE) VIA TOQUE
+let touchTargetX = null; // Posição X para onde a nave deve ir
+let touchTargetY = null; // Posição Y para onde a nave deve ir
+// Fator que determina a velocidade e suavidade do movimento de toque
+const TOUCH_MOVE_SPEED_FACTOR = 0.05; 
+// O PLAYER_SPEED (ex: 5) ainda será o limite de velocidade.
+// ... (Suas outras variáveis: SHOOT_DELAY, player, gameArea, keysPressed etc.)
+
+    let movementInterval = null;
     
-    display: flex;
-    flex-direction: column; 
-    align-items: center; /* Centraliza horizontalmente o conteúdo */
+    let infoTimer = null; // Novo timer para gerenciar mensagens temporárias
+
+    // --- Variáveis do Boss ---
+    let isBossFight = false;
+    let boss = null;
+    let bossCurrentHealth = 0;
+    let isBossVulnerable = false;
+    let bossInterval = null;
+    let bossMovementTime = 0; // Variável para a oscilação do boss
+    let audioShoot;
+    let audioHit;
+    let audioDamage;
+    let audioHitasteroid;
+    let audioHitasteroidfail;
+    let audioGameOver;
+    let audioSucesso;
+    let audioBosswin;
+    // Estas variáveis precisam ser persistentes, provavelmente fora da sua função de atualização
+// ou como propriedades do seu objeto 'boss' ou 'gameState'
+
+let bossMovementState = 'moving'; // Pode ser 'moving' ou 'resting'
+let bossMoveTimer = 0; // Tempo gasto no estado atual
+let bossMoveDuration = 2; // Duração da movimentação (em segundos)
+let bossRestDuration = 1.5; // Duração da parada (em segundos)
+let bossTargetX = 0; // O deslocamento X para onde ele está se movendo (para onde parar)
+let bossStartX = 0; // O deslocamento X de onde ele começou o movimento
+let bossMoveSpeed = 80; // Velocidade de movimento (em pixels por segundo, ajustável)
+
+const ASTEROID_GIFS = [
+    'asteroid2.gif', // Asteroid 1º GIF
+    'asteroid.gif', //  Asteroid 2º GIF
+    'asteroid2.gif', // Asteroid 3º GIF
+    'asteroid3.gif', // Asteroid 4º GIF
+    'asteroid1.gif'  // Asteroid 5º GIF
+];
+
+// URLs dos GIFs - AGORA COM 'maxHealth' PARA CADA CHEFE
+const BOSS_CHARACTERS = [
+    { 
+        name: 'Dr. nervoso', 
+        gifUrl: 'boss1.gif',
+        maxHealth: 3 // Vida para o BOSS 1
+    },
+    { 
+        name: 'Cloud Mad', 
+        gifUrl: 'boss2.gif',
+        maxHealth: 4 // Vida para o BOSS 2
+    },
+    { 
+        name: 'UFO', 
+        gifUrl: 'boss3.gif',
+        maxHealth: 5 // Vida para o BOSS 3
+    },
+    { 
+        name: 'ghost', 
+        gifUrl: 'boss4.gif',
+        maxHealth: 6 // Vida para o BOSS 4
+    },  
+    { 
+        name: 'Buraco negro', 
+        gifUrl: 'boss5.gif',
+        maxHealth: 8 // Vida para o BOSS 4
+    }
+];
+
+    // --- Configurações de Dificuldade ---
+    const DIFFICULTY = [
+        { name: 'NÍVEL 1: SOMA (1-10)', maxNum: 10, op: '+' },
+        { name: 'NÍVEL 2: SOMA AVANÇADA (1-25)', maxNum: 25, op: '+' },
+        { name: 'NÍVEL 3: SUBTRAÇÃO (1-25)', maxNum: 25, op: '-' },
+        { name: 'NÍVEL 4: MULTIPLICAÇÃO (2-10)', maxNum: 10, op: '*' },
+        { name: 'NÍVEL 5: MISTURA (1-30)', maxNum: 30, op: '+-*' }
+    ];
+    const MAX_ASTEROIDS = 4;
+    let BASE_ASTEROID_SPEED = 50;
+    const ASTEROID_TYPES = ['type-a', 'type-b', 'type-c'];
+
+    // --- Funções Auxiliares ---
+    // --- Arrays para Mensagens Aleatórias ---
+const NEGATIVE_FEEDBACK = [
+    "MENSAGEM DO BOSS: TIRO REPELIDO! ENXAME A CAMINHO!!",
+    "O Boss repele seu ataque com facilidade!",
+    "É só isso que você tem? Vou tomar chá de cálculos",
+    "MISS! O boss nem sentiu!",
+    "O boss desviou, ENXAME LIBERADO!",
+    "TIRO BLOQUEADO! O boss contra-ataca!",
+    "REPELIDO! TENTE NOVAMENTE."
+];
+
+const NEUTRAL_FEEDBACK = [
+    "JÁ FOI!",
+    "OBSOLETO!",
+    "ALVO DESCARTADO."
+];
+
+
+// --- Funções Auxiliares (ADICIONE AQUI) ---
+
+// Função para pegar uma mensagem aleatória de um array
+function getRandomMessage(messageArray) {
+    // Certifica-se de que o array existe e não está vazio
+    if (!messageArray || messageArray.length === 0) {
+        return "Alerta de Foco!"; 
+    }
+    // Reutiliza a sua função existente getRandomInt
+    const randomIndex = getRandomInt(0, messageArray.length - 1);
+    return messageArray[randomIndex];
+}
+   // Função para exibir mensagem temporária
+function showTemporaryMessage(message, duration = 2000, className = '') {
+    if (infoTimer) clearTimeout(infoTimer);
+
+    // Limpa classes anteriores e adiciona a nova
+    questionDisplay.className = 'question-box'; 
+    if (className) {
+        questionDisplay.classList.add(className);
+    }
     
-    height: 100vh; 
-    min-height: 100vh; 
-    width: 100vw; 
+    questionDisplay.innerText = message;
     
-    overflow: hidden; 
-    user-select: none;
-    touch-action: none;
-    
-    /* NOVO: Permite que o body se expanda para telas grandes, mas apenas a Game Area será limitada */
-    max-width: 100%; 
+    infoTimer = setTimeout(() => {
+        // Remove a classe de erro/bônus antes de restaurar o texto
+        questionDisplay.className = 'question-box'; 
+        
+        // Volta para a pergunta atual (ou 'BOSS FIGHT')
+        if (isBossFight) {
+            questionDisplay.innerText = "BOSS FIGHT!";
+        } else if (question.text) {
+            questionDisplay.innerText = question.text;
+        } else {
+            questionDisplay.innerText = "Preparando...";
+        }
+        infoTimer = null;
+    }, duration);
 }
 
-#gameArea {
-    position: relative;
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    // Função para criar explosões de partículas
+    function createExplosion(x, y, color) {
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.background = color;
+            
+            // Posição inicial (no centro do impacto)
+            particle.style.left = `${x}px`;
+            particle.style.top = `${y}px`;
+            
+            // Movimento aleatório (vetor de velocidade)
+            const angle = Math.random() * 2 * Math.PI;
+            const speed = Math.random() * 5 + 2; 
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            
+            gameArea.appendChild(particle);
+            
+            // Animação usando requestAnimationFrame para movimento suave
+            let startTime = null;
+            function animateParticle(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const progress = timestamp - startTime;
+                
+                if (progress < 1000) { // Duração de 1 segundo
+                    particle.style.left = `${parseFloat(particle.style.left) + vx}px`;
+                    particle.style.top = `${parseFloat(particle.style.top) + vy}px`;
+                    particle.style.opacity = 1 - (progress / 1000); 
+                    requestAnimationFrame(animateParticle);
+                } else {
+                    particle.remove();
+                }
+            }
+            requestAnimationFrame(animateParticle);
+        }
+    }
+// ... (Certifique-se de que 'keysPressed' é um objeto let ou const no escopo global)
+// Exemplo: const keysPressed = {};
+
+// --- Funções de Inicialização e Jogo ---
+
+    function updateGameDimensions() {
+        GAME_WIDTH = gameArea.clientWidth;
+        GAME_HEIGHT = gameArea.clientHeight;
+    }
+
     
-    /* CRÍTICO: Usa Flexbox para preencher o espaço restante */
-    flex-grow: 1; /* Faz esta área ocupar todo o espaço vertical disponível */
-    height: auto; /* Permite que o Flexbox controle a altura */
-    max-height: none; /* Remove a restrição que impedia o layout funcionar */
+function startGame() {
+    if (isGameRunning) return;
     
-    /* 🚀 AJUSTE CRÍTICO PARA RESPONSIVIDADE DE TELA GRANDE */
-    /* Garante que a largura não exceda 95% da tela E não ultrapasse 1000px, 
-       mantendo-o centralizado pelo 'body' (align-items: center) */
-    width: 95vw; 
-    max-width: 1000px; /* Limite a largura máxima para uma melhor jogabilidade em telas grandes (Desktop) */
+    // Certifique-se de que a variável 'gameArea' esteja acessível
+    const gameArea = document.getElementById('gameArea'); 
+
+    loadAudio(); 
+    updateGameDimensions();
+
+    // Disable browser touch gestures inside the game area while the game runs.
+    // This prevents accidental page panning/scroll while playing but we still
+    // allow multi-touch gestures (pinch-to-zoom) by not preventing default in
+    // handlers when there are multiple touches — see handlers below.
+    if (gameArea) gameArea.style.touchAction = 'none';
     
-    /* REMOVEMOS A REGRA ANTERIOR: max-width: 100vw; (Era redundante ou limitava demais) */
+    // CORREÇÃO 1: Zera o estado das teclas pressionadas (para evitar movimento involuntário)
+    for (const key in keysPressed) {
+        delete keysPressed[key];
+    }
     
-    background: rgba(0, 0, 0, 0.4);
-    border: 5px solid var(--cor-secundaria);
-    box-shadow: 0 0 20px var(--cor-secundaria);
-    overflow: hidden;
-    cursor: crosshair;
-    /* Estrelas de Fundo */
-    background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
-                      radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
-                      radial-gradient(white, rgba(255,255,255,.1) 3px, transparent 50px);
-    background-size: 550px 550px, 350px 350px, 250px 250px;
-    background-position: 0 0, 40px 60px, 120px 200px;
-    animation: move-stars 3s linear infinite;
-    touch-action: none; 
+    // 1. ZERA AS VARIÁVEIS DO JOGO
+    score = 0;
+    lives = 3;
+    combo = 0;
+    acertosDesdeUltimoBoss = 0;
+    currentLevel = 1;
+    BASE_ASTEROID_SPEED = 35; // Velocidade do asteroid no boss
+    isGameRunning = true;
+    
+    // CORREÇÃO 2: Zera o estado do Boss antes de iniciar o novo jogo
+    isBossFight = false; 
+    if (boss && boss.element.parentElement) {
+        boss.element.remove();
+    }
+    boss = null;
+    if (bossInterval) clearInterval(bossInterval);
+
+
+    // 2. LIMPEZA DOS ELEMENTOS VISUAIS ANTIGOS
+    asteroids.forEach(a => { if (a.element) a.element.remove(); });
+    bullets.forEach(b => b.element.remove());
+    asteroids = [];
+    bullets = [];
+    
+    if (infoTimer) clearTimeout(infoTimer);
+
+    // 3. REMOÇÃO DAS TELAS DE OVERLAY
+    document.getElementById('overlay').style.display = 'none';
+    document.getElementById('gameOverScreen').style.display = 'none';
+    questionDisplay.style.display = 'block';
+
+    // ⭐ CORREÇÃO CRÍTICA: RESTAURA O BACKGROUND DA ÁREA DE JOGO ⭐
+    if (gameArea) {
+        // Remove os estilos inline de background que foram definidos em endGame()
+        // para que as regras complexas de background do CSS (as estrelas) voltem a funcionar.
+        
+        // A chave é definir como string vazia (''), o que remove o estilo inline
+        // e permite que o background-image e background-color do CSS sejam re-aplicados.
+        gameArea.style.backgroundImage = ''; 
+        gameArea.style.backgroundColor = ''; 
+    }
+
+
+    // 4. POSIÇÃO INICIAL DA NAVE
+    playerX = GAME_WIDTH / 2 - 25;
+    playerY = GAME_HEIGHT - 70;
+    player.style.left = `${playerX}px`;
+    player.style.top = `${playerY}px`;
+    player.style.transform = 'rotate(0deg)'; 
+
+    // 5. INICIA O JOGO
+    updateHUD();
+    generateNewQuestion(); 
+
+    window.addEventListener('resize', updateGameDimensions);
+
+    // Loop de movimento para 60 FPS
+    movementInterval = setInterval(movePlayer, 1000 / 60);
+
+    requestAnimationFrame(gameLoop);
+}
+// --- Funções Auxiliares para Tocar Áudio ---
+function loadAudio() {
+    audioShoot = new Audio('shoot.mp3');
+    audioShoot.volume = 0.3;
+
+     audioHit = new Audio('hit.mp3');
+    audioHit.volume = 0.3;
+
+     audioDamage = new Audio('damage.mp3');
+    audioDamage.volume = 0.3;
+
+     audioHitasteroid = new Audio('hitasteroid.mp3');
+    audioHitasteroid.volume = 0.3;
+
+    audioHitasteroidfail = new Audio('hitasteroidfail.mp3');
+    audioHitasteroidfail.volume = 0.3;
+
+     audioSucesso = new Audio('Sucesso.mp3');
+    audioSucesso.volume = 0.3;
+
+    audioGameOver = new Audio('game-over.mp3');
+    audioGameOver.volume = 0.3;
+
+    audioBosswin = new Audio('bosswin.mp3');
+    audioBosswin.volume = 0.3;
 }
 
-        @keyframes move-stars {
-            from { background-position-y: 0, 60px, 200px; }
-            to { background-position-y: 550px, 410px, 700px; }
-        } 
-
-        /* NOVO ESTILO: Área de Anúncio Fixa Abaixo da Área do Jogo */
-        #adArea {
-            /* CRÍTICO: Define a altura e impede que o Flexbox a encolha */
-            height: 43px; /* Altura do banner (50px) + padding (10px superior/inferior) */
-            flex-shrink: 0; /* Garante que a altura seja mantida */
-            
-            width: 100vw; /* Garante que ocupe a largura total */
-            max-width: 100vw; 
-            text-align: center;
-            padding: 10px 0; /* Espaçamento interno */
-            background-color: rgba(0, 0, 0, 0.5); 
-            
-            /* REMOVIDO: margin-top: auto; (Não é mais necessário no layout Flexbox) */
-            
-            border-top: 2px solid var(--cor-principal);
-        }
-
-        #player {
-    position: absolute;
-    bottom: 20px;
-    
-    /* REMOVIDO: left: 50%; */
-    /* REMOVIDO: transform: translateX(-50%); */
-    
-    width: clamp(42px, 10vw, 63px); 
-    height: clamp(42px, 10vw, 63px);
-    
-    background-image: url('player.gif');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    
-    transition: transform 0.05s ease-out;
-    z-index: 15;
-
-    /* 🔒 Proteções extras */
-    outline: none;
-    user-select: none;
-    pointer-events: none; /* impede foco e clique */
-    cursor: none; /* ❌ oculta o cursor do mouse quando passa sobre o foguete */
+function playShootSound() {
+    if (audioShoot) {
+        const sound = audioShoot.cloneNode(); 
+        sound.play().catch(e => console.log("Erro ao tocar áudio de disparo:", e));
+    }
 }
 
-/* O ::after pode manter a centralização para o emoji de fogo, se for desejado */
-#player::after {
-    content: '🔥';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.5em;
-    opacity: 0;
-    transition: opacity 0.1s;
+function playHitSound() {
+    if (audioHit) {
+        const sound = audioHit.cloneNode(); // Clona para que o som do acerto não seja cortado
+        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
+    }
+}
+function playDamageSound() {
+    if (audioDamage) {
+        const sound = audioDamage.cloneNode(); // Clona para que o som do acerto não seja cortado
+        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
+    }
+}
+function playHitasteroid() {
+    if (audioHitasteroid) {
+        const sound = audioHitasteroid.cloneNode(); // Clona para que o som do acerto não seja cortado
+        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
+    }
 }
 
-        .shooting #player::after {
-            opacity: 1;
-        }
+function playHitasteroidfail() {
+    if (audioHitasteroidfail) {
+        const sound = audioHitasteroidfail.cloneNode(); // Clona para que o som do acerto não seja cortado
+        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
+    }
+}
+function playSucesso() {
+    if (audioSucesso) {
+        const sound = audioSucesso.cloneNode(); // Clona para que o som do acerto não seja cortado
+        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
+    }
+}
+function playgameover() {
+    if (audioGameOver) {
+        const sound = audioGameOver.cloneNode(); // Clona para que o som do acerto não seja cortado
+        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
+    }
+}
+function playBosswin() {
+    if (audioBosswin) {
+        const sound = audioBosswin.cloneNode(); // Clona para que o som do acerto não seja cortado
+        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
+    }
+}
 
 
-        /* Tiros */
-        .bullet {
-            position: absolute;
-            width: 4px;
-            height: 15px;
-            background-color: var(--cor-principal);
-            box-shadow: 0 0 10px var(--cor-principal), 0 0 5px white;
-            border-radius: 2px;
-            z-index: 10;
-            transition: none;
-        }
 
-        /* Asteroides */
-      
-        .asteroid {
-            
-            transform-origin: center center; 
-            animation: none; 
-            text-shadow: 0 0 5px black;
-            
-            position: absolute; /* MUITO IMPORTANTE para o posicionamento */
-            width: 14vw; 
-            height: 14vw; 
-            max-width: 65px; /* Limite máximo para desktop */
-            max-height: 65px;
-            
-            /* ADICIONE ISSO para que a imagem seja o GIF */
-            background-size: contain; 
-            background-repeat: no-repeat;
-            background-position: center;
-        }
+function endGame(isVictory = false) { 
+    // Certifique-se de que 'gameArea' esteja definida (ex: const gameArea = document.getElementById('gameArea');)
+    const gameArea = document.getElementById('gameArea'); 
 
-        /* NOVO: Estilo para o número da resposta dentro do asteroide */
-        .asteroid span {
-            /* ... (Mantenha o código existente para o span) ... */
-            background: rgba(0, 0, 0, 0.5); 
-            padding: 2px 5px;
-            border-radius: 5px;
-            
-            /* Garante que o número fique visível sobre o GIF */
-            position: absolute; 
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 2; /* Garante que fique acima do GIF (que é o background) */
-            color: var(--cor-principal); /* Garante que o número seja legível */
-            font-size: 1.2rem;
+    // 1. PARADA DE LOOPS E FLAGS
+    isGameRunning = false;
+    clearInterval(movementInterval);
+    if (bossInterval) clearInterval(bossInterval); 
+    if (infoTimer) clearTimeout(infoTimer);
+    window.removeEventListener('resize', updateGameDimensions); // Limpa listener de redimensionamento
+    
+    // 2. TOCA SOM
+    if (isVictory) {
+        playBosswin(); 
+    } else {
+        playgameover(); 
+    }
+
+    // 3. LIMPEZA VISUAL (Boss e Fundo)
+    if (boss && boss.element.parentElement) {
+        // Remove o elemento do Boss
+        createExplosion(GAME_WIDTH / 2, 125, 'var(--cor-erro)'); 
+        boss.element.remove();
+    }
+    
+    // ⭐ CORREÇÃO PRINCIPAL: Remove o background (imagem do Buraco Negro) da área de jogo ⭐
+    if (gameArea) {
+        gameArea.style.backgroundImage = 'none'; // Remove a imagem do fundo
+        gameArea.style.backgroundColor = '#000000'; // Define cor de fundo preto
+        // Re-enable default touch handling when the game ends
+        gameArea.style.touchAction = '';
+    }
+    
+    // GARANTIA DE RESET DO ESTADO DO BOSS
+    isBossFight = false;
+    boss = null;
+    
+    // Limpa asteroides e bullets
+    asteroids.forEach(a => {
+        // Adicionada explosão rápida para feedback antes de remover
+        createExplosion(a.x, a.y, '#999'); 
+        if (a.element) a.element.remove();
+    });
+    bullets.forEach(b => b.element.remove());
+    asteroids = [];
+    bullets = [];
+
+    // 4. EXIBE TELA DE FIM DE JOGO
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    
+    // Altera o título dinamicamente (MISSÃO CUMPRIDA/FRACASSADA)
+    const titleElement = gameOverScreen.querySelector('h2');
+    if (titleElement) {
+        titleElement.innerText = isVictory ? "MISSÃO CUMPRIDA!" : "MISSÃO FRACASSADA";
+    } else {
+        console.error("Elemento H2 não encontrado na tela de Game Over. Verifique seu HTML.");
+    }
+    
+    document.getElementById('finalScore').innerText = score;
+    gameOverScreen.style.display = 'flex';
+    questionDisplay.style.display = 'none'; // Esconde o painel de perguntas
+}
+
+// A nova função para o Botão Exclusivo (Use esta)
+function handleShootButtonTouch(event) {
+    // 1. Previne o movimento (se for um touch) e o clique padrão
+    event.preventDefault();
+    event.stopPropagation(); // Impede que o toque suba para o gameArea e cause movimento
+    
+    // 2. Garante que o jogo está rodando
+    if (!isGameRunning) return;
+    
+    // 3. Simula o pressionar de tecla para quem usa keysPressed
+    // Se você usa o keysPressed para disparo (tecla Espaço), adicione isso:
+    keysPressed[MOBILE_SHOOT] = true;
+    
+    // 4. Chama a função de disparo diretamente
+    shoot();
+    
+    // Opcional: Feedback visual rápido no botão
+    const button = event.currentTarget;
+    button.classList.add('active');
+    setTimeout(() => {
+        button.classList.remove('active');
+    }, SHOOT_DELAY / 2);
+}
+
+// O restante do seu código JavaScript, a partir de `document.addEventListener('DOMContentLoaded', ...`
+
+// Listener principal (deve estar no final do script para garantir que todos os elementos existam)
+document.addEventListener('DOMContentLoaded', () => {
+    const startButton = document.getElementById('startButton');
+    const gameAreaElement = document.getElementById('gameArea'); 
+    // ⭐ NOVO: Referência ao botão de disparo exclusivo
+    const shootButton = document.getElementById('shootButton'); 
+
+    // Lógica para o Botão Iniciar (Inalterada)
+    if (startButton) {
+        startButton.addEventListener('click', startGame);
+        startButton.addEventListener('touchstart', (event) => {
+            event.preventDefault(); 
+            startGame();
+        });
+    }
+
+    // ⭐ NOVO: Adiciona listener para o botão de disparo exclusivo
+    if (shootButton) {
+        // Disparo ao clicar (desktop se o botão for visível)
+        shootButton.addEventListener('click', handleShootButtonTouch);
+        // Disparo ao tocar (mobile)
+        // We register touchstart with passive:false so we may call preventDefault()
+        // inside the handler when appropriate. Some browsers default to passive
+        // listeners for touch events which would ignore preventDefault()
+        // and cause warnings. We still avoid preventing default for multi-touch
+        // (pinch) in the handler itself.
+        shootButton.addEventListener('touchstart', handleShootButtonTouch, { passive: false });
+        // Opcional: Remove o 'pressionado' ao soltar (se estiver usando keysPressed)
+        shootButton.addEventListener('touchend', () => { delete keysPressed[MOBILE_SHOOT]; });
+    }
+    
+    // 3. Adiciona suporte a toque na área do jogo
+    if (gameAreaElement) {
+        // If you want to allow normal page gestures like pinch-to-zoom,
+        // we must not always call preventDefault() on multi-touch events.
+        // Register touchstart/touchmove with passive:false so our handler may
+        // call preventDefault() when we detect a single-finger action.
+        // touchend/touchcancel don't need passive:false.
+        // gameAreaElement.addEventListener('touchstart', handleGameAreaTouch); 
+        gameAreaElement.addEventListener('touchstart', handleMoveTouch, { passive: false });
+        gameAreaElement.addEventListener('touchmove', handleMoveTouch, { passive: false }); 
+        gameAreaElement.addEventListener('touchend', handleMoveEnd);
+        gameAreaElement.addEventListener('touchcancel', handleMoveEnd);
+    }
+});
+
+// --- FIM DO CÓDIGO DE SUPORTE TOUCH/CLICK ---
+
+// Função para CAPTURAR a posição X/Y do toque
+function handleMoveTouch(event) {
+    // If there are multiple touches (two-finger pinch), do not steal the
+    // gesture — allow the browser to handle pinch-to-zoom. For single-finger
+    // control we preventDefault to stop scrolling.
+    const touchCount = (event.touches && event.touches.length) || 0;
+    if (touchCount > 1) {
+        // Reset any single-touch target so the ship won't drift when pinch ends.
+        touchTargetX = null;
+        touchTargetY = null;
+        return;
+    }
+
+    // 1. Previne o comportamento padrão (ex: scroll) apenas para single-touch
+    if (touchCount === 1) event.preventDefault();
+
+    // 2. Garante que o jogo está rodando
+    if (!isGameRunning) return;
+    
+    // Certifique-se de que 'gameArea' está definida globalmente
+    const gameAreaElement = document.getElementById('gameArea'); 
+    if (!gameAreaElement) return;
+    
+    const gameAreaRect = gameAreaElement.getBoundingClientRect();
+
+    // 3. Pega a posição do primeiro toque (ou do toque que restou)
+    const touch = event.touches[0];
+    if (touch) {
+        // Define o alvo no sistema de coordenadas do jogo
+        touchTargetX = touch.clientX - gameAreaRect.left;
+        touchTargetY = touch.clientY - gameAreaRect.top;
+    }
+}
+
+
+// Função para PARAR o Movimento quando os dedos são levantados
+function handleMoveEnd(event) {
+    // 1. Garante que o jogo está rodando
+    if (!isGameRunning) return;
+
+    // Be defensive: event.touches may be undefined in some contexts — use a
+    // safe length check.
+    const remaining = (event.touches && event.touches.length) || 0;
+
+    // 2. Se não houver toques remanescentes, reseta os alvos de movimento.
+    if (remaining === 0) {
+        touchTargetX = null;
+        touchTargetY = null;
+    }
+    // 3. Se houver toques remanescentes (multitouch ou single), atualiza o alvo com o que sobrou.
+    else {
+        // Forward the event to the move handler so it computes the new target.
+        handleMoveTouch(event);
+    }
+}
+
+// ⭐ A função handleGameAreaTouch permanece inalterada e é responsável apenas pelo DISPARO.
+
+// --- Funções da HUD e Dificuldade ---
+
+
+
+    // NOVO CÓDIGO PARA updateHUD()
+function updateHUD() {
+    scoreDisplay.innerText = score;
+    
+    // ... (Lógica de ícones de Vidas e Combo inalterada) ...
+    const MAX_LIVES_DISPLAY = 5; 
+    let heartIcons = 'Vidas: ';
+
+    for(let i = 1; i <= MAX_LIVES_DISPLAY; i++) {
+        if (i <= lives) {
+            heartIcons += `<span style="color:var(--cor-erro);">💖</span>`;
+        } else if (i <= 3) { 
+            heartIcons += `<span style="color:gray;">🤍</span>`;
+        } else {
+            heartIcons += `<span style="color:#222;">🤍</span>`;
         }
-        .destroyed { opacity: 0 !important; transform: scale(0.1) !important; transition: all 0.5s ease-out; }
-        .old-asteroid { 
-            opacity: 0.4; 
-            border-color: #555; 
-            box-shadow: none; 
-            transition: all 1.5s ease-out; 
+    }
+    livesDisplay.innerHTML = heartIcons;
+
+    if (combo > 1) {
+        comboDisplay.innerText = `COMBO x${combo}! (+${10 + (combo * 5)}/acerto)`;
+        comboDisplay.classList.add('combo-active');
+    } else {
+        comboDisplay.classList.remove('combo-active');
+        comboDisplay.innerText = '';
+    }
+
+    if (isBossFight) {
+        const bossMaxHealth = boss ? boss.info.maxHealth : 0; 
+
+        // INÍCIO DA MUDANÇA NO BOSSHEALTH
+        
+        let healthBarContent = `BOSS HP: `; // O TEXTO agora fica fora da barra
+
+        healthBarContent += `<div class="boss-hp-bar">`; // Abre o contêiner de corações
+        for(let i = 1; i <= bossMaxHealth; i++) {
+            if (i <= bossCurrentHealth) {
+                healthBarContent += `<span style="color:red;">❤️</span>`; // Coração cheio
+            } else {
+                healthBarContent += `<span style="color:#555;">🤍</span>`; // Coração vazio
+            }
+        }
+        healthBarContent += `</div>`; // Fecha o contêiner de corações
+
+        bossHealthDisplay.innerHTML = healthBarContent; // Usa a nova string com o contêiner
+        bossHealthDisplay.style.display = 'flex'; // Use flex para o alinhamento centralizado
+        
+        // FIM DA MUDANÇA NO BOSSHEALTH
+        
+    } else {
+        bossHealthDisplay.style.display = 'none';
+    }
+
+        // --- LÓGICA DE VIDA BÔNUS A CADA 10 ACERTOS ---
+        // Verifica se é um múltiplo de 10, está no modo normal, e se já passou do primeiro acerto
+        if (!isBossFight && acertosDesdeUltimoBoss > 0 && acertosDesdeUltimoBoss % 10 === 0) {
+            // Verifica se a vida já foi concedida para este múltiplo (e evita vidas infinitas acima de MAX_LIVES_DISPLAY)
+            // Se o contador for 10, ele ganha. No 11, ele não ganha. No 20, ele ganha de novo.
+            if (lives < MAX_LIVES_DISPLAY) { 
+                lives++;
+                playSucesso(); // Toca o som de sucesso/ganho
+                showTemporaryMessage("VIDA EXTRA CONCEDIDA! (+1 vida)", 1500);
+            }
         }
         
-        /* --- BOSS ESPECÍFICO APRIMORADO PARA MAIS REALISMO --- */
-
-
-        #boss.vulnerable {
-            border-color: var(--cor-acerto, lime);
-            box-shadow: 0 0 20px var(--cor-acerto, lime), 0 0 40px rgba(0, 255, 0, 0.7);
+        // Lógica para chamar o Boss (Se 10 acertos ou mais)
+        if (acertosDesdeUltimoBoss >= 10 && !isBossFight) {
+            enterBossFight();
         }
+    }
+    
+// --- Lógica da Matemática e Geração de Asteroides ---
 
-        #boss.hit {
+    function generateQuestionData(diff) {
+        let num1, num2, answer, operator, questionText;
+        const op = diff.op.length > 1 ? diff.op[getRandomInt(0, diff.op.length - 1)] : diff.op;
+        operator = op;
 
-            animation: bossShake 0.1s 3; /* Adiciona feedback de acerto */
-            
+        const maxNum = diff.maxNum;
+
+        if (operator === '+') {
+            num1 = getRandomInt(Math.floor(maxNum / 2) + 1, maxNum);
+            num2 = getRandomInt(1, maxNum);
+            answer = num1 + num2;
+            questionText = `${num1} + ${num2}`;
+        } else if (operator === '-') {
+            num1 = getRandomInt(Math.floor(maxNum / 2) + 1, maxNum);
+            num2 = getRandomInt(1, num1);
+            answer = num1 - num2;
+            questionText = `${num1} - ${num2}`;
+        } else if (operator === '*') {
+            num1 = getRandomInt(2, Math.min(maxNum, 10));
+            num2 = getRandomInt(2, Math.min(maxNum, 10));
+            answer = num1 * num2;
+            questionText = `${num1} x ${num2}`;
+        }
+
+        return { text: questionText, answer: answer, maxRange: maxNum };
+    }
+
+   function generateNewQuestion(clearOld = true) {
+    if (!isGameRunning || isBossFight) return;
+
+    // Limpa mensagens temporárias e volta ao estado normal
+    if (infoTimer) clearTimeout(infoTimer);
+
+    // 1. LIMPEZA IMEDIATA DOS ASTEROIDES ANTIGOS
+    // Remove todos os elementos de asteroides que ainda estão no DOM.
+    asteroids.forEach(a => {
+        if (a.element && a.element.parentElement) {
+            a.element.remove();
         }
+    });
+    // Zera o array de asteroides para uma tela limpa
+    asteroids = [];
+    
+    // 2. LÓGICA DA PERGUNTA
+    const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
+    question = generateQuestionData(currentDiff);
+    
+    // Exibe a nova pergunta imediatamente
+    questionDisplay.innerText = question.text;
 
-        .boss-gif {
-            top: 0%;
-            margin-right: 0%;
-            margin-left: 0%;
-            /* Ocupa a largura total da área de conteúdo (140px) */
-            width: 100%; 
-            
-            /* 🚀 CORREÇÃO CRÍTICA: Calcula a altura máxima. 
-                A altura total é 125px. Subtraímos 35px-40px para o texto e suas margens. */
-            max-height: calc(110% - 35px); 
-            
-            /* Garante que o GIF se expanda para preencher a área, mesmo que corte um pouco */
-            object-fit: cover; 
-            
-            display: block;
-            margin: 0 auto; 
-            
-            /* Pequena margem para separar a imagem do texto */
-            margin-bottom: 5px; 
-        }
-        /* --- 1. SELETOR PRINCIPAL: #boss --- */
-        #boss {
-            /* Define um tamanho fixo para o Boss para ajudar na colisão */
-            /* 💥 MODIFICADO: Reduzido 30% (140px -> 98px) */
-        width: clamp(90px, 25vw, 150px);
-            height: auto; /* Permite que o conteúdo defina a altura */
-            
-            /* Centraliza o Boss (mantendo a flutuação do JS) */
-            position: absolute;
-            top: 8vh; /* Posiciona o boss usando a altura da tela */ 
-            left: 50%; 
-            transform: translateX(-50%); 
-            
-            /* Estilo de fundo/borda do Boss (opcional) */
-            /* Garante que qualquer espaço não preenchido pelo GIF seja preto */
-            background-color: black; 
-            border: 3px solid #ff00ff;
-            border-radius: 10px;
-            
-            /* MANTIDO: O padding é essencial para dar espaço ao texto */
-            padding: 10px; 
-            
-            z-index: 100;
-            
-            /* Configurações visuais do estado 'vulnerable' e 'invulnerable' */
-            box-shadow: 0 0 25px #ff00ff, 0 0 50px rgba(255, 0, 255, 0.5);
-            transition: box-shadow 0.3s, transform 0.1s;
-            text-align: center;
-        }
+    // 3. Gera e coleta respostas
+    const answers = new Set();
+    answers.add(question.answer);
+    const answerRange = Math.max(5, Math.floor(currentDiff.maxNum * 0.3));
 
+    while (answers.size < MAX_ASTEROIDS) {
+        let fakeAnswer;
+        do {
+            fakeAnswer = question.answer + getRandomInt(-answerRange, answerRange);
+        } while (fakeAnswer <= 0 || answers.has(fakeAnswer) || Math.abs(fakeAnswer - question.answer) < 3);
 
+        answers.add(fakeAnswer);
+    }
 
+    let answerArray = Array.from(answers);
+    shuffleArray(answerArray);
 
-        /* --- 3. SELETOR DO TEXTO: .boss-question --- */
-        .boss-question {
-            display: block;
-            color: white;
-            font-size: clamp(0.8rem, 3vw, 1.1rem); /* Reduz o tamanho da fonte em telas pequenas */
-            font-weight: bold;
-            
-            /* Garante que o texto fique encostado no topo do padding, sem empurrar o GIF */
-            margin-top: 0; 
-            margin-bottom: 5px; 
-        }
-
-        /* --- 4. SELETOR DA RESPOSTA: .boss-answer-display --- */
-        .boss-answer-display {
-            color: var(--cor-acerto, lime);
-            font-size: clamp(1.2rem, 4vw, 1.5rem); /* Reduz o tamanho da fonte em telas pequenas */
-            font-weight: bold;
-            margin-top: 0; 
-        }
-
-        /* Keyframes para o efeito de tremor (hit) */
-        @keyframes bossShake {
-            0% { transform: translate(calc(-50% - 5px), 0); }
-            50% { transform: translate(calc(-50% + 5px), 0); }
-            100% { transform: translate(-50%, 0); }
-        }
-
-        /* Sistema de Partículas para Explosão */
-        .particle {
-            position: absolute;
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 20;
-        }
-
-
-        /* --- Interface do Jogo (HUD) --- */
-        #hud {
-            position: absolute;
-            top: 0px;
-            width: 96%;
-            left: 1%;
-            display: flex; 
-            flex-wrap: wrap;
-            justify-content: space-between; 
-            align-items: flex-start; 
-            padding: 10px;
-            z-index: 30;
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 10px;
-            border: 1px solid var(--cor-principal);
-        }
-
-        /* NOVO: Contêiner para manter Score e Combo agrupados e alinhados à esquerda */
-        #scoreComboGroup {
-            display: flex;
-            flex-direction: column; /* Coloca os filhos (score e combo) um abaixo do outro */
-            align-items: flex-start; /* Alinha o grupo à esquerda */
-        }
-
-        /* Estrutura do Score (Label acima do valor) */
-        #scoreContainer { /* NOVO CONTÊINER NECESSÁRIO NO HTML */
-            display: flex;
-            flex-direction: column; 
-            align-items: center; /* Centraliza o texto "Pontos:" e o número */
-            padding: 0;
-        }
-
-        .score-label { /* NOVA CLASSE NECESSÁRIA NO HTML */
-            font-size: 0.8em; 
-            color: #aaa; 
-            text-shadow: 1px 1px 2px #000;
-            margin-bottom: -5px; /* Ajusta o espaçamento entre label e número */
-        }
-
-        #score {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: var(--cor-principal);
-            /* Regras de flexbox antigas foram removidas aqui */
-        }
-
-        /* Estilo do Combo ajustado para ficar abaixo do score */
-        #combo {
-            color: var(--cor-combo);
-            font-size: 1.0em;
-            text-shadow: 0 0 8px var(--cor-combo);
-            text-align: left;
-            margin-top: 5px; /* Espaço entre o Score e o Combo */
-            /* Regras de flexbox antigas foram removidas aqui */
-            display: none; 
-        }
-
-        .combo-active {
-            display: block !important;
-            animation: combo-pulse 0.5s infinite alternate;
-        }
-
-        /* Novo Contêiner para Lado Direito */
-        #rightSideHUD {
-            display: flex;
-            flex-direction: column; /* FORÇA LIVES E BOSSHEALTH A FICAREM UM ABAIXO DO OUTRO */
-            align-items: flex-end; /* Alinha o texto das divs à direita */
-            margin-left: auto; /* Empurra o grupo para o lado direito */
-        }
-
-        /* AJUSTE CORRIGIDO: Garante que o texto 'BOSS HP:' e os corações fiquem na mesma linha */
-        #bossHealth {
-            font-size: 1.2em;
-            font-weight: 900;
-            color: var(--cor-erro);
-            
-            /* NOVO: Usa Flexbox para alinhar o texto 'BOSS HP:' e o conteúdo da barra */
-            display: flex; 
-            align-items: center; /* Alinhamento vertical entre texto e corações */
-            justify-content: flex-end; /* Alinha o conteúdo à direita */
-
-            width: 100%; /* Ocupa a largura total do contêiner direito */
-            min-width: 150px; 
-            /* display: none; // Essa linha é controlada pelo JS, mas precisa ser alterada para 'flex' ou 'block' no JS durante a luta */
-        }
-
-        /* NOVO: Estilo para o contêiner dos corações (boss-hp-bar) */
-        .boss-hp-bar {
-            margin-left: 5px; /* Espaço entre o texto 'BOSS HP:' e a barra de corações */
-            display: flex; /* Garante que os spans de coração fiquem lado a lado */
-            align-items: center;
-        }
-
-        /* Opcional: Ajusta o tamanho dos corações do Boss */
-        .boss-hp-bar span {
-            font-size: 1.2em; 
-            margin: 0 1px;
-        }
-
-        /* Você pode precisar ajustar #lives para remover o flex-grow */
-        #lives {
-            color: var(--cor-erro);
-            font-size: 1.5em;
-            /* Removido: flex-basis: auto; */
-            /* Removido: text-align: right; */
-        }
-
-        /* Caixa de Pergunta Central */
-        .question-box {
-            position: absolute;
-            top: 0%;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 1px 30px;
-            font-size: clamp(1.5em, 5vw, 2em);
-            font-weight: 900;
-            background: rgba(0, 0, 0, 0.7);
-            border: 3px solid var(--cor-principal);
-            box-shadow: 0 0 15px var(--cor-principal);
-            border-radius: 10px;
-            z-index: 25;
-            animation: pulse-question 1.5s infinite alternate;
-        }
-        /* NOVO ESTILO: Para mensagens de erro/repelidas */
-        .question-box.error-msg {
-            color: var(--cor-erro); /* Muda a cor do texto para laranja/vermelho */
-            border-color: var(--cor-erro); /* Muda a borda */
-            box-shadow: 0 0 15px var(--cor-erro); /* Muda o brilho */
-            animation: shake 0.3s; /* Adiciona um pequeno tremor */
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(-50%); }
-            25% { transform: translateX(calc(-50% - 5px)); }
-            75% { transform: translateX(calc(-50% + 5px)); }
-        }
-        /* NOVO ESTILO: Para mensagens de Alerta/Foco */
-        .question-box.alert-msg {
-            color: var(--cor-secundaria); /* Magenta Neon */
-            border-color: var(--cor-secundaria);
-            box-shadow: 0 0 20px var(--cor-secundaria), 0 0 10px white;
-            animation: alert-pulse 1s infinite alternate; /* Novo efeito de pulsação */
-        }
-
-        @keyframes alert-pulse {
-            from {
-                box-shadow: 0 0 15px var(--cor-secundaria), 0 0 5px white;
-                transform: translateX(-50%) scale(1);
-            }
-            to {
-                box-shadow: 0 0 30px var(--cor-secundaria), 0 0 10px var(--cor-principal);
-                transform: translateX(-50%) scale(1.03);
+    // 4. Posicionamento horizontal sem sobreposição
+    const posicoesX = [];
+    const espacoMinimo = 80;
+    while(posicoesX.length < MAX_ASTEROIDS) {
+        let newX = getRandomInt(0, GAME_WIDTH - 80);
+        let isValid = true;
+        for(let existingX of posicoesX) {
+            if (Math.abs(newX - existingX) < espacoMinimo) {
+                isValid = false;
+                break;
             }
         }
+        if(isValid) posicoesX.push(newX);
+    }
+
+    // 5. Cria os novos elementos dos asteroides (COM CORREÇÃO DO GIF)
+    for(let i = 0; i < MAX_ASTEROIDS; i++) {
+        const value = answerArray[i];
+        const asteroidElement = document.createElement('div');
+        asteroidElement.className = 'asteroid';
+        
+        // 🚀 CORREÇÃO 1: Define o GIF como a imagem de fundo
+        const gifUrl = ASTEROID_GIFS[getRandomInt(0, ASTEROID_GIFS.length - 1)];
+        asteroidElement.style.backgroundImage = `url('${gifUrl}')`; 
+        
+        // 🚀 CORREÇÃO 2: Cria o SPAN para o número e o anexa (para ficar por cima do GIF)
+        const answerSpan = document.createElement('span');
+        answerSpan.innerText = value;
+        asteroidElement.appendChild(answerSpan);
+        
+        const randomType = ASTEROID_TYPES[getRandomInt(0, ASTEROID_TYPES.length - 1)];
+        asteroidElement.classList.add(randomType);
+
+        // A posição X agora é o ponto central, mas ajustamos o baseX para o objeto JS
+        const baseX = posicoesX[i] + 40; 
+        const y = -100 - (i * 100);
+
+        asteroidElement.style.left = `${posicoesX[i]}px`; // Usa posicoesX[i] como o left (o translate(-50%) centraliza)
+        asteroidElement.style.top = `${y}px`;
+        asteroidElement.style.transform = 'translate(-50%, -50%) scale(0.5)';
+        asteroidElement.style.opacity = '0.5';
+
+        gameArea.appendChild(asteroidElement);
+        asteroids.push({
+            element: asteroidElement,
+            x: baseX,
+            y: y,
+            baseX: posicoesX[i], // A posição 'left' inicial
+            value: value,
+            isDestroyed: false,
+            isCurrentTarget: true,
+            isCorrectAnswer: (value === question.answer),
+            speed: BASE_ASTEROID_SPEED + getRandomInt(0, 15),
+            scale: 0.5,
+            vx: (Math.random() - 0.5) * 20,
+            oscillationOffset: Math.random() * 10
+        });
+    }
+}
+    // --- Lógica do Boss Aprimorada ---
+
+    function enterBossFight() {
+        isBossFight = true;
+
+        // Limpa a tela
+        asteroids.forEach(a => { a.element.remove(); });
+        asteroids = [];
+
+        // Limpa mensagens temporárias e exibe "BOSS FIGHT!"
+        if (infoTimer) clearTimeout(infoTimer);
+        questionDisplay.innerText = "BOSS FIGHT!";
+        
+        // Seleciona um Boss
+        const bossIndex = (currentLevel - 1) % BOSS_CHARACTERS.length;
+        const bossInfo = BOSS_CHARACTERS[bossIndex];
+
+        const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
+        question = generateQuestionData(currentDiff);
+
+        // *** AQUI É USADA A PROPRIEDADE maxHealth DO CHEFE SELECIONADO ***
+        bossCurrentHealth = bossInfo.maxHealth; 
+        // ***************************************************************
+        bossMovementTime = 0; // Inicializa a variável de tempo para o movimento de oscilação
+
+        // Cria o elemento do Boss
+        boss = {
+            element: document.createElement('div'),
+            info: bossInfo,
+            currentAnswer: null,
+            isVulnerable: false
+        };
+        boss.element.id = 'boss';
+        
+        // LINHAS ALTERADAS: Usamos a tag <img> com o 'gifUrl'
+        boss.element.innerHTML = `
+            <img class="boss-gif" src="${bossInfo.gifUrl}" alt="${bossInfo.name}">
+            <span class="boss-question">${question.text} = ?</span>
+            <div class="boss-answer-display">...</div>
+        `;
+        
+        gameArea.appendChild(boss.element);
+        boss.element.classList.add('invulnerable'); // Inicia invulnerável
+
+        updateHUD();
+
+        // Inicia a mecânica de resposta aleatória
+        if (bossInterval) clearInterval(bossInterval);
+        bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+    }
+
+    function toggleBossVulnerability() {
+        const answerDisplay = boss.element.querySelector('.boss-answer-display');
+        const questionDisplayBoss = boss.element.querySelector('.boss-question');
+
+        const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
+        const answerRange = Math.max(5, Math.floor(currentDiff.maxNum * 0.3));
+
+        if (boss.isVulnerable) {
+            // Fica Invulnerável (esconde a resposta)
+            boss.isVulnerable = false;
+            boss.element.classList.remove('vulnerable');
+            boss.element.classList.add('invulnerable');
+            answerDisplay.innerText = '...';
+
+        } else {
+            // PASSO CHAVE: GERA UMA NOVA PERGUNTA A CADA NOVO CICLO
+            question = generateQuestionData(currentDiff);
+            questionDisplayBoss.innerText = `${question.text} = ?`; // Atualiza a pergunta no Boss
+            
+            // Determina se o Boss será VULNERÁVEL ou se será uma ISCA
+            const isVulnerableWindow = Math.random() < 0.5; // 50% de chance de ser o correto
+            
+            // Prepara para a exibição no visor
+            if (isVulnerableWindow) {
+                // JANELA DE VULNERABILIDADE (Mostra a resposta correta)
+                boss.isVulnerable = true;
+                boss.currentAnswer = question.answer;
+                boss.element.classList.remove('invulnerable');
+                boss.element.classList.add('vulnerable');
+                answerDisplay.innerText = question.answer;
+
+                // Define o timer para voltar a ser invulnerável
+                setTimeout(() => {
+                    if(boss && boss.isVulnerable) { 
+                        boss.isVulnerable = false;
+                        boss.element.classList.remove('vulnerable');
+                        boss.element.classList.add('invulnerable');
+                        answerDisplay.innerText = '...';
+                    }
+                }, 3000 + getRandomInt(500, 1500)); 
+
+            } else {
+                // JANELA DE ISCA (Mostra uma resposta errada, continua invulnerável)
+                boss.isVulnerable = false; // Garante que é falso
+                boss.element.classList.remove('vulnerable');
+                boss.element.classList.add('invulnerable');
+                
+                let fakeAnswer;
+                do {
+                    fakeAnswer = question.answer + getRandomInt(-answerRange, answerRange);
+                } while (fakeAnswer <= 0 || fakeAnswer === question.answer || Math.abs(fakeAnswer - question.answer) < 3);
+
+                boss.currentAnswer = fakeAnswer; // O Boss exibe o erro
+                answerDisplay.innerText = fakeAnswer; 
+
+                // Define o timer para limpar a isca
+                setTimeout(() => {
+                    if(boss && !boss.isVulnerable) { 
+                        answerDisplay.innerText = '...';
+                    }
+                }, 1000 + getRandomInt(500, 1500)); 
+            }
+        }
+    }
 
 
-        /* Telas de Overlay */
-        #overlay, #gameOverScreen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            
-            /* ⭐ CORREÇÃO 1: Fundo SÓLIDO (opacidade 1) para esconder o jogo por baixo. ⭐ */
-            background: rgba(0, 0, 0, 1); 
-            
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            
-            /* ⭐ CORREÇÃO 2: Aumentar o z-index para garantir que esteja acima de TUDO. ⭐ */
-            z-index: 1000; 
-        }
+   function generatePunishmentAsteroids() {
+    // Limpa os asteroides atuais primeiro
+    asteroids.forEach(a => { a.element.remove(); });
+    asteroids = [];
+    
+    // Usa a nova função
+    const repelMsg = getRandomMessage(NEGATIVE_FEEDBACK);
+    showTemporaryMessage(repelMsg, 3000, 'error-msg');
 
-        #startButton, #restartButton {
-            padding: 15px 30px;
-            font-size: 1.5em;
-            font-weight: 700;
-            border: 3px solid var(--cor-secundaria);
-            background-color: var(--cor-fundo);
-            color: var(--cor-secundaria);
-            cursor: pointer;
-            border-radius: 10px;
-            transition: all 0.3s;
-            box-shadow: 0 0 15px var(--cor-secundaria);
-            margin-top: 20px;
-        }
+    // ... (lógica de geração de asteroides de punição)
+    const answers = new Set();
+    answers.add(question.answer);
+    const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
+    const answerRange = Math.max(5, Math.floor(currentDiff.maxNum * 0.3));
 
-        #startButton:hover, #restartButton:hover {
-            background-color: var(--cor-secundaria);
-            color: var(--cor-fundo);
-            box-shadow: 0 0 25px var(--cor-principal);
-            transform: scale(1.05);
-        }
-        /* NOVO: Estilo para o Botão SAIR */
-        #exitButton {
-            /* Estilos base */
-            background: var(--cor-fundo);
-            color: var(--cor-erro);
-            border: 1px solid var(--cor-erro);
-            padding: 5px 10px;
-            font-size: 0.8em;
-            font-weight: 700;
-            cursor: pointer;
-            border-radius: 5px;
-            transition: all 0.3s;
-            text-decoration: none; /* Para parecer um botão, não um link */
+    while (answers.size < MAX_ASTEROIDS) {
+        let fakeAnswer;
+        do {
+            fakeAnswer = question.answer + getRandomInt(-answerRange, answerRange);
+        } while (fakeAnswer <= 0 || answers.has(fakeAnswer) || Math.abs(fakeAnswer - question.answer) < 3);
 
-            /* Posicionamento no HUD (canto superior esquerdo) */
-            order: -1; /* Força a ir para o início do flex container */
-            margin-right: 15px; /* Espaço à direita para separar do score/combo */
-        }
+        answers.add(fakeAnswer);
+    }
 
-        #exitButton:hover {
-            background-color: var(--cor-erro);
-            color: var(--cor-fundo);
-            box-shadow: 0 0 10px var(--cor-erro);
-            transform: scale(1.05);
-        }
-        /* style.css (Adicione estas regras) */
+    let answerArray = Array.from(answers);
+    shuffleArray(answerArray); 
 
-        #shootButton {
-            /* Posição fixa no canto inferior direito */
-            position: absolute; /* Usamos 'absolute' se estiver dentro de #gameArea (que deve ser 'relative') */
-            bottom: 20px;
-            right: 20px;
-            
-            /* Estilo do botão */
-            padding: 15px 25px;
-            font-size: 1.2rem;
-            background-color: var(--cor-acerto); /* Ex: verde */
-            color: white;
-            border: 3px solid white;
-            border-radius: 10px;
-            cursor: pointer;
-            z-index: 1000; /* Garante que fique acima de tudo */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
-            
-            /* Inicialmente esconde o botão para desktop */
-            display: none; 
-        }
-
-        /* 📱 Media Query: Mostra o botão APENAS em telas menores (celulares/tablets) */
-        @media (max-width: 768px) {
-            #shootButton {
-                display: block; /* Oculta a visualização para telas grandes (desktop) */
+    // Posições X apertadas
+    const posicoesX = [];
+    const espacoMinimo = 60;
+    while(posicoesX.length < MAX_ASTEROIDS) {
+        let newX = getRandomInt(0, GAME_WIDTH - 60);
+        let isValid = true;
+        for(let existingX of posicoesX) {
+            if (Math.abs(newX - existingX) < espacoMinimo) {
+                isValid = false;
+                break;
             }
         }
-    </style>
-</head>
-<body>
+        if(isValid) posicoesX.push(newX);
+    }
 
-<div id="gameArea">
+    // Cria os asteroides
+    for(let i = 0; i < MAX_ASTEROIDS; i++) {
+        const value = answerArray[i]; 
+        const asteroidElement = document.createElement('div');
+        asteroidElement.className = 'asteroid';
+        
+        // 🚀 CORREÇÃO PARA GIF: Define o GIF como a imagem de fundo
+        const gifUrl = ASTEROID_GIFS[getRandomInt(0, ASTEROID_GIFS.length - 1)];
+        asteroidElement.style.backgroundImage = `url('${gifUrl}')`; 
+        
+        // 🚀 CORREÇÃO PARA GIF: Cria o SPAN para o número e o anexa
+        const answerSpan = document.createElement('span');
+        answerSpan.innerText = value;
+        asteroidElement.appendChild(answerSpan);
+        // REMOVIDA: asteroidElement.innerText = value; // Foi substituída pelo span
 
- <div id="hud">
- <a id="exitButton" href="brincadeiras3.html" onclick="return confirmExit();">SAIR</a>
- <div id="scoreComboGroup">
- <div id="scoreContainer">
- <div class="score-label">Pontos:</div>
-<div id="score">0</div>
- </div>
-<div id="combo"></div> 
- </div>
- 
- <div id="question" class="question-box"></div>
-<div id="rightSideHUD">
-<div id="lives">Vidas: 💖💖💖</div>
- <div id="bossHealth"></div>
- </div>
- </div>
+        const randomType = ASTEROID_TYPES[getRandomInt(0, ASTEROID_TYPES.length - 1)];
+        asteroidElement.classList.add(randomType);
+        
+        const baseX = posicoesX[i] + 40; 
+        const y = -100 - (i * 100); 
+        
+        // CORREÇÃO: Usa posicoesX[i] como o left (para seguir a lógica do translate no CSS)
+        asteroidElement.style.left = `${posicoesX[i]}px`; 
+        asteroidElement.style.top = `${y}px`;
+        asteroidElement.style.transform = 'translate(-50%, -50%) scale(0.5)'; 
+        asteroidElement.style.opacity = '0.5'; 
+        
+        gameArea.appendChild(asteroidElement);
+        asteroids.push({
+            element: asteroidElement,
+            x: baseX,
+            y: y,
+            baseX: posicoesX[i], // A posição 'left' inicial
+            value: value,
+            isDestroyed: false, 
+            isCurrentTarget: true,
+            isCorrectAnswer: (value === question.answer), 
+            speed: BASE_ASTEROID_SPEED * 2 + getRandomInt(0, 30), 
+            scale: 0.5,
+            vx: (Math.random() - 0.5) * 30, 
+            oscillationOffset: Math.random() * 10 
+        });
+    }
+}
 
-<div id="player"></div>
 
-</div> <button id="shootButton">🔫 DISPARAR</button>
+function handleBossHit(bullet) {
+    if (!boss || !boss.element.parentElement) return false;
 
-<div id="overlay">
- <h1>Astro-Matemático PRO 🌌</h1>
- <p>Destrua o asteroide com a resposta correta e veja seu combo aumentar!</p>
- <p>A cada 10 acertos, um **Boss de Fase** surgirá!</p>
-<p>Use **Setas** ou **WASD** para mover, **Espaço** ou **Mouse Click** para atirar.</p>
- <button id="startButton">INICIAR MISSÃO</button>
-</div>
+    const bossRect = boss.element.getBoundingClientRect();
+    const bulletRect = bullet.element.getBoundingClientRect();
 
-<div id="gameOverScreen" style="display: none;">
-<h2>MISSÃO FRACASSADA</h2>
+    // 1. Verifica Colisão Física
+    const collided = (
+        bulletRect.left < bossRect.right &&
+        bulletRect.right > bossRect.left &&
+        bulletRect.top < bossRect.bottom &&
+        bulletRect.bottom > bossRect.top
+    );
+    
+    if (!collided) return false;
 
-<p>Pontuação Final: <span id="finalScore">0</span></p>
- 
- <button id="restartButton" onclick="startGame()">TENTAR NOVAMENTE</button>
-</div> <script src="error.js"></script>
-<div id="adArea">
-<div> 
- <script type="text/javascript">
-atOptions = {
- 'key' : 'bbf348585df7afae438e1754d1003d92',
- 'format' : 'iframe',
-'height' : 50,
-'width' : 320,
- 'params' : {}
-};
- </script>
- <script type="text/javascript" src="https://www.highperformanceformat.com/bbf348585df7afae438e1754d1003d92/invoke.js"></script>
-</div>
-</div>
+    createExplosion(bullet.x, bullet.y, 'white'); 
 
-</body>
-</html>
+    // 2. Lógica do Jogo (Dano vs. Punição)
+    const isCorrectHit = boss.isVulnerable && bullet.value === question.answer; 
+    
+    if (isCorrectHit) { 
+        // --- ACERTO VÁLIDO (DANO) ---
+        bossCurrentHealth--;
+        score += 50; 
+        combo++;
+        playDamageSound(); 
+        createExplosion(bullet.x, bullet.y, 'var(--cor-acerto)');
+        boss.element.classList.add('hit');
+        setTimeout(() => boss.element.classList.remove('hit'), 400);
+
+        // Reinicia o ciclo do Boss
+        boss.isVulnerable = false; 
+        
+        // ⭐ CRÍTICO: Limpa o intervalo imediatamente.
+        if (bossInterval) clearInterval(bossInterval); 
+        
+        if (bossCurrentHealth <= 0) {
+            // O intervalo já está limpo.
+            bossInterval = null;
+            exitBossFight(true); // Chama a saída, que agora é imediata
+        } else {
+            // Se não morreu, define um NOVO intervalo para o próximo ciclo
+            bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+        }
+        
+    } else {
+        // --- ACERTO INVÁLIDO (TIRO REPELIDO / PUNIÇÃO) ---
+        playHitSound(); 
+        combo = 0;
+        
+        createExplosion(bullet.x, bullet.y, 'var(--cor-erro)');
+        boss.element.style.boxShadow = '0 0 50px var(--cor-erro)';
+        setTimeout(() => {
+            boss.element.style.boxShadow = '0 0 25px #ff00ff, 0 0 50px rgba(255, 0, 255, 0.5)';
+        }, 200);
+        
+        const repelMsg = getRandomMessage(NEGATIVE_FEEDBACK);
+        showTemporaryMessage(repelMsg + " Enxame de Asteroides!", 1500, 'error-msg');
+
+        // Gera o enxame de asteroides de punição 
+        if (bossInterval) clearInterval(bossInterval);
+        boss.isVulnerable = false;
+        boss.element.classList.remove('vulnerable');
+        boss.element.classList.add('invulnerable');
+        generatePunishmentAsteroids();
+    }
+    
+    updateHUD();
+    return true; 
+
+}
+// Logica após derrotar o ultimo
+function exitBossFight(success) {
+    // Certifique-se de que 'gameArea' esteja definida (Ex: const gameArea = document.getElementById('gameArea');)
+    const gameArea = document.getElementById('gameArea'); 
+
+    if (!isBossFight) return;
+
+    isBossFight = false;
+    if (bossInterval) clearInterval(bossInterval);
+
+    if (boss && boss.element.parentElement) {
+         if (success) {
+             // Explosão grande para o Boss
+             createExplosion(GAME_WIDTH / 2, 125, '#ffcc00'); 
+         }
+         // A linha que remove o elemento visual do Boss
+         boss.element.remove();
+         boss = null; 
+    }
+
+    if (success) {
+        score += 100; // Bônus extra
+        acertosDesdeUltimoBoss = 0;
+        
+        // --- LÓGICA DE VITÓRIA FINAL (ÚLTIMO BOSS) ---
+        const totalBosses = BOSS_CHARACTERS.length;
+        
+        if (currentLevel === totalBosses) {
+            // Se o nível atual é o último da lista
+            playBosswin(); 
+            
+            // ⭐ CRÍTICO: REMOÇÃO DO setTimeout. A tela final é chamada IMEDIATAMENTE. ⭐
+            // showTemporaryMessage é opcional, mas se mantiver, use um tempo bem curto (ex: 500ms)
+            showTemporaryMessage("PARABÉNS! VOCÊ VENCEU O JOGO!", 500);
+            
+            // Chama a função final do jogo. Isso irá parar o game loop e mostrar a tela.
+            endGame(true); 
+
+            // NOVO: Limpa o background do Boss (solução para o artefato visual)
+            if (gameArea) {
+                gameArea.style.backgroundImage = 'none'; 
+                gameArea.style.backgroundColor = '#000000';
+            }
+
+            // Impede que o código de incremento de nível execute
+            return; 
+        }
+        // --- FIM DA LÓGICA DE VITÓRIA FINAL ---
+
+        // Lógica normal de incremento de nível (para bosses 1 a 4)
+        currentLevel = Math.min(DIFFICULTY.length, currentLevel + 1);
+        playBosswin(); 
+        showTemporaryMessage(`BOSS DERROTADO! NÍVEL ${currentLevel} INICIADO!`, 2500);
+
+    } else {
+         // Se saiu do modo punição, volta ao modo normal.
+         showTemporaryMessage(`VOCÊ ESCAPOU...`, 1500);
+    }
+    
+    // Remove quaisquer asteroides de punição restantes
+    asteroids.forEach(a => { a.element.remove(); });
+    asteroids = [];
+
+    // Vai gerar nova pergunta depois do timer da mensagem (apenas se o jogo não terminou)
+    const delay = success ? 2500 : 1500;
+    
+    setTimeout(() => {
+        // Só gera a nova pergunta se o jogo não foi reiniciado/finalizado
+        if (isGameRunning) { 
+            generateNewQuestion();
+        }
+    }, delay);
+    
+    updateHUD();
+}
+    // --- Lógica da Nave e Tiros ---
+
+  function movePlayer() {
+    if (!isGameRunning) return;
+
+    let dx = 0;
+    let dy = 0;
+    let rotation = 0;
+    
+    // ⭐ AJUSTE CRÍTICO: Obtém as dimensões reais da nave (máximo 63px)
+    const playerWidth = player.offsetWidth || 63; 
+    const playerHeight = player.offsetHeight || 63; 
+    const marginBottom = 20; // Correspondente ao bottom: 20px no CSS
+
+    // ==========================================================
+    // LÓGICA DE MOVIMENTO (Digital e Analógico)
+    // ==========================================================
+    if (touchTargetX === null) {
+        // Lógica de Movimento PC (Digital)
+        if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) {
+            dx = -PLAYER_SPEED;
+            rotation = -10;
+        }
+        if (keysPressed['ArrowRight'] || keysPressed['KeyD']) {
+            // Verifica se ambas as teclas de direção horizontal estão pressionadas
+            if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) { 
+                dx = 0; // Anula o movimento horizontal
+                rotation = 0;
+            } else {
+                 dx = PLAYER_SPEED;
+                 rotation = 10;
+            }
+        }
+        if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
+        if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
+        
+        // Aplica o fator diagonal
+        if (dx !== 0 && dy !== 0) {
+            const diagFactor = Math.sqrt(2);
+            dx /= diagFactor;
+            dy /= diagFactor;
+        }
+
+    } else {
+        // Lógica de Movimento Mobile (Analógico/Touch)
+        const playerCenterX = playerX + (playerWidth / 2);
+        const playerCenterY = playerY + (playerHeight / 2);
+        const diffX = touchTargetX - playerCenterX;
+        const diffY = touchTargetY - playerCenterY;
+        const distance = Math.sqrt(diffX * diffX + diffY * diffY);
+        const STOPPING_DISTANCE = 5;
+
+        if (distance > STOPPING_DISTANCE) {
+            dx = diffX * TOUCH_MOVE_SPEED_FACTOR; 
+            dy = diffY * TOUCH_MOVE_SPEED_FACTOR;
+            const speedMagnitude = Math.sqrt(dx * dx + dy * dy);
+            if (speedMagnitude > PLAYER_SPEED) {
+                dx = (dx / speedMagnitude) * PLAYER_SPEED;
+                dy = (dy / speedMagnitude) * PLAYER_SPEED;
+            }
+            rotation = (dx / PLAYER_SPEED) * 15;
+        } else {
+            dx = 0;
+            dy = 0;
+        }
+    }
+
+    // ==========================================================
+    // APLICAÇÃO DO MOVIMENTO E CLAMPING CORRIGIDO
+    // ==========================================================
+    
+    // ⭐ LIMITE HORIZONTAL CORRIGIDO: Usa playerWidth para parar a nave na borda
+    playerX = Math.max(0, Math.min(GAME_WIDTH - playerWidth, playerX + dx));
+    
+    // LIMITE VERTICAL CORRIGIDO: Usa playerHeight e a margem inferior de 20px
+    playerY = Math.max(0, Math.min(GAME_HEIGHT - playerHeight - marginBottom, playerY + dy)); 
+
+    // Atualiza Posição e Rotação
+    player.style.left = `${playerX}px`; // Define a borda esquerda
+    player.style.top = `${playerY}px`;
+    player.style.transform = `rotate(${rotation}deg)`;
+
+    // Lógica de Disparo
+    const now = Date.now();
+    if ((keysPressed['Space'] || keysPressed['Mouse0']) && (now - lastShootTime > SHOOT_DELAY)) {
+        shoot();
+        lastShootTime = now;
+        player.classList.add('shooting');
+        setTimeout(() => player.classList.remove('shooting'), 100);
+    }
+}
+function shoot() {
+    const currentTime = Date.now();
+    
+    // Verifica tempo e estado do jogo
+    if (!isGameRunning || currentTime - lastShootTime < SHOOT_DELAY) {
+        return; 
+    }
+    lastShootTime = currentTime;
+
+    const bulletElement = document.createElement('div');
+    bulletElement.className = 'bullet';
+
+    // ⭐ AJUSTE CRÍTICO: Cálculo de centralização dinâmico
+    const playerWidth = player.offsetWidth || 63; // Largura real da nave
+    const bulletWidth = 4; // Largura do tiro (do seu CSS: width: 4px)
+
+    // Posição 'left' da bala: 
+    // playerX (borda esquerda) + (Meia Largura da Nave) - (Meia Largura da Bala)
+    const bulletX = playerX + (playerWidth / 2) - (bulletWidth / 2); 
+    const bulletY = playerY; // Topo da nave
+
+    playShootSound(); 
+
+    bulletElement.style.left = `${bulletX}px`;
+    bulletElement.style.top = `${bulletY}px`;
+    gameArea.appendChild(bulletElement);
+
+    bullets.push({
+        element: bulletElement,
+        x: bulletX,
+        y: bulletY,
+        value: (question && question.answer !== undefined) ? question.answer : null 
+    });
+}
+
+    // --- Loop Principal do Jogo ---
+
+    function gameLoop(timestamp) {
+        if (!isGameRunning) return;
+
+        // 1. Movimentação dos Tiros
+        const BULLET_SPEED = 10;
+        bullets = bullets.filter(bullet => {
+    bullet.y -= BULLET_SPEED;
+    bullet.element.style.top = `${bullet.y}px`;
+    
+    // Colisão com o Boss
+    if (isBossFight && handleBossHit(bullet)) {
+        
+        // ESSAS DUAS LINHAS GARANTEM A LIMPEZA
+        bullet.element.remove(); // Limpa o elemento visual
+        return false;           // Remove do array de dados
+    }
+
+
+    // Colisão com Asteroides
+    if (!isBossFight || asteroids.length > 0) {
+        const collidedIndex = asteroids.findIndex(asteroid => !asteroid.isDestroyed && checkCollision(bullet, asteroid));
+        if (collidedIndex !== -1) {
+            handleAsteroidHit(collidedIndex, bullet);
+            
+            // Garantia de limpeza para Asteroides também!
+            bullet.element.remove(); 
+            return false; 
+        }
+    }
+
+    // Remove tiros que saíram da tela
+    if (bullet.y < -20) {
+        bullet.element.remove();
+        return false;
+    }
+    return true;
+
+ // Colisão com Asteroides
+if (!isBossFight || asteroids.length > 0) {
+    
+    const collidedIndex = asteroids.findIndex(asteroid => !asteroid.isDestroyed && checkCollision(bullet, asteroid));
+    if (collidedIndex !== -1) {
+        
+        // 1. Executa a lógica do jogo (vidas, pontuação)
+        handleAsteroidHit(collidedIndex, bullet);
+        
+        // 2. CRÍTICO: Remove o elemento visual (fragmento)
+        bullet.element.remove(); 
+        
+        // 3. CRÍTICO: Remove o objeto do array 'bullets'
+        return false; // Destrói o tiro
+        
+    }
+}
+
+            // Remove tiros que saíram da tela
+            if (bullet.y < -20) {
+                bullet.element.remove();
+                return false;
+            }
+            return true;
+        });
+
+        // 2. Movimentação de Asteroides e Tamanho
+        const deltaTime = 16.666666 / 1700; // Aproximação de 60 FPS
+        asteroids = asteroids.filter(asteroid => {
+            if (asteroid.isDestroyed) {
+                // Os asteroides destruídos são removidos daqui
+                return false; 
+            }
+
+            // Oscilação Horizontal e movimento para baixo
+            asteroid.x = asteroid.baseX + Math.sin(timestamp / 700 + asteroid.oscillationOffset) * 15;
+            asteroid.y += asteroid.speed * deltaTime;
+            
+            asteroid.element.style.left = `${asteroid.x}px`;
+            asteroid.element.style.top = `${asteroid.y}px`;
+
+            // Aumenta a escala e opacidade ao se aproximar (efeito 3D)
+            const ratio = (GAME_HEIGHT - asteroid.y) / GAME_HEIGHT;
+            asteroid.scale = Math.min(1, 0.5 + (1 - ratio) * 0.3);
+            asteroid.element.style.transform = `translate(-50%, -50%) scale(${asteroid.scale})`;
+            asteroid.element.style.opacity = Math.min(1, 2.0 + (1 - ratio) * 0.5);
+
+            // Colisão com o Jogador
+            if (checkPlayerCollision(asteroid)) {
+                 playHitasteroidfail();
+                handlePlayerHit(asteroid);
+               
+                return false;
+                
+            }
+
+            // Asteróide passou da tela (PERDEU UMA VIDA se for alvo atual)
+            if (asteroid.y > GAME_HEIGHT + 50) {
+                playHitasteroidfail();
+                if (asteroid.isCurrentTarget) {
+                    handleMiss(asteroid.isCorrectAnswer);
+                }
+                asteroid.element.remove();
+                return false;
+            }
+
+            return true;
+        });
+        
+       // 3. Movimentação do Boss (Novo e Aprimorado com Paradas)
+if (isBossFight && boss) {
+    // DeltaTime é crucial para movimento baseado em tempo
+    // Assumindo que 'deltaTime' é o tempo (em segundos) que passou desde o último frame (ex: 0.02)
+    const deltaTime = 0.02; // Use a sua taxa de atualização real ou calcule o delta
+
+    bossMoveTimer += deltaTime; // Incrementa o tempo gasto no estado atual
+
+    if (bossMovementState === 'moving') {
+        // === Lógica de Movimento ===
+
+        // Calcula a nova posição baseada no tempo, partindo de bossStartX em direção a bossTargetX
+        let progress = bossMoveTimer / bossMoveDuration; // Progresso de 0 a 1
+
+        if (progress < 1) {
+            // Movimento suave (pode usar uma função de easing, mas 'linear' é bom por enquanto)
+            const currentX = bossStartX + (bossTargetX - bossStartX) * progress;
+            boss.element.style.left = `calc(50% + ${currentX}px)`;
+        } else {
+            // === Fim do Movimento: Transição para Parada ===
+            
+            // Garante que a posição final seja exata
+            boss.element.style.left = `calc(50% + ${bossTargetX}px)`;
+
+            // Transiciona o estado
+            bossMovementState = 'resting';
+            bossMoveTimer = 0; // Zera o timer para a parada
+        }
+
+    } else if (bossMovementState === 'resting') {
+        // === Lógica de Parada ===
+
+        if (bossMoveTimer >= bossRestDuration) {
+            // === Fim da Parada: Transição para Novo Movimento ===
+
+            // 1. Define o ponto de partida do novo movimento
+            bossStartX = bossTargetX;
+            
+            // 2. Define um novo ponto alvo (entre -maxSwing e +maxSwing)
+            const maxSwing = 450; // Amplitude máxima do movimento pela direta/esquerda
+            
+            // Gera um novo alvo aleatório que não seja muito perto do atual
+            let newTargetX;
+            do {
+                newTargetX = Math.floor(Math.random() * maxSwing * 2) - maxSwing; // Valor entre -maxSwing e +maxSwing
+            } while (Math.abs(newTargetX - bossStartX) < 50); // Garante um movimento mínimo de 50px
+
+            bossTargetX = newTargetX;
+
+            // 3. Calcula a duração do novo movimento
+            const distance = Math.abs(bossTargetX - bossStartX);
+            // Duração = Distância / Velocidade. Isso garante que a velocidade seja constante
+            bossMoveDuration = distance / bossMoveSpeed; 
+            
+            // 4. Transiciona o estado
+            bossMovementState = 'moving';
+            bossMoveTimer = 0; // Zera o timer para o movimento
+        }
+    }
+}
+
+
+        // 4. Se não há mais alvos e não é Boss Fight, gera nova pergunta
+        if (!isBossFight && asteroids.length === 0 && question.answer !== undefined) {
+            
+             // Isto significa que o tempo acabou e os asteroides desapareceram, ou foi um erro crítico
+             handleMiss(false); // Trata como erro/falha
+        }
+        
+        requestAnimationFrame(gameLoop);
+    }
+
+    // --- Funções de Colisão e Dano ---
+
+    function checkCollision(bullet, asteroid) {
+        const bulletRect = bullet.element.getBoundingClientRect();
+        const asteroidRect = asteroid.element.getBoundingClientRect();
+
+        return (
+            bulletRect.left < asteroidRect.right &&
+            bulletRect.right > asteroidRect.left &&
+            bulletRect.top < asteroidRect.bottom &&
+            bulletRect.bottom > asteroidRect.top
+        );
+    }
+    
+    function checkPlayerCollision(asteroid) {
+         if (asteroid.isDestroyed || asteroid.isCurrentTarget === false) return false;
+        
+        const playerRect = player.getBoundingClientRect();
+        const asteroidRect = asteroid.element.getBoundingClientRect();
+        
+        // Colisão simplificada para o jogo
+        return (
+            playerRect.left < asteroidRect.right &&
+            playerRect.right > asteroidRect.left &&
+            playerRect.top < asteroidRect.bottom &&
+            playerRect.bottom > asteroidRect.top
+        );
+    }
+
+ function handleAsteroidHit(index, bullet) {
+    const asteroid = asteroids[index];
+    createExplosion(bullet.x, bullet.y, 'white'); // Explosão do tiro
+    
+    // REMOVIDA: bullet.element.remove();
+    
+    // LÓGICA DO ASTEROIDE: Marca para remoção (o gameLoop remove o DOM e o objeto)
+    asteroid.isDestroyed = true; 
+    if (asteroid.element && asteroid.element.parentElement) {
+        // Remove o elemento visual do ASTEROIDE IMEDIATAMENTE
+        asteroid.element.remove(); 
+    }
+    
+    // Variável para rastrear se devemos gerar uma nova pergunta/retomar o Boss
+    let shouldResumeGame = false;
+
+    if (asteroid.isCorrectAnswer) {
+       
+        // ACERTOU!
+        score += 10 + (combo > 1 ? combo * 5 : 0);
+         playSucesso();
+        // Verifica se é um acerto no asteroide de PUNIÇÃO durante a luta contra o Boss
+        if (isBossFight) {
+            // LÓGICA DE ACERTO NO ENXAME DE PUNIÇÃO
+         
+showTemporaryMessage("PUNIÇÃO CANCELADA! Batalha Retomada!", 2000, 'alert-msg');
+            combo = 0; // Reinicia o combo após o desafio de punição
+            
+            // 1. Limpa TODOS os outros asteroides do enxame (marca para remoção no gameLoop)
+            asteroids.forEach(a => {
+                if (!a.isDestroyed && a.element) {
+                    a.isDestroyed = true;
+                    a.element.remove(); // Remove o DOM imediatamente para feedback
+                }
+            });
+            
+            // 2. REINICIA O CICLO DO BOSS
+            if (bossInterval) clearInterval(bossInterval);
+            
+            bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+            
+        } else {
+            
+            // LÓGICA DE ACERTO NO MODO NORMAL (Fora da Boss Fight)
+            combo++;
+            acertosDesdeUltimoBoss++;
+            // Define que o jogo deve gerar a próxima pergunta após a limpeza do loop.
+            shouldResumeGame = true; 
+        }
+        
+    } else {
+        playHitasteroidfail();
+        // ERROU! (Tiro em asteroide errado)
+        combo = 0;
+        lives--;
+        showTemporaryMessage("RESPOSTA INCORRETA! -1 Vida!", 1000);
+        
+        if (isBossFight) {
+            
+             // Se errou durante o Enxame de Punição, a punição falhou, reinicia o Boss
+             asteroids.forEach(a => { 
+                 if (!a.isDestroyed && a.element) {
+                     a.isDestroyed = true; 
+                     a.element.remove(); // Remove o DOM
+                 }
+             });
+             if (bossInterval) clearInterval(bossInterval);
+             bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+             
+        } else {
+             // Erro no modo normal também gera nova pergunta.
+             shouldResumeGame = true;
+        }
+    }
+    
+    if (lives <= 0) {
+        
+        endGame();
+        return;
+    }
+    
+    updateHUD();
+
+    // Chamada segura para a próxima pergunta/etapa no modo normal
+    if (shouldResumeGame) {
+        // Usa setTimeout para garantir que a remoção de elementos no gameLoop
+        // termine antes de gerarmos novos elementos.
+        setTimeout(() => generateNewQuestion(), 50); 
+    }
+}
+   function handlePlayerHit(asteroid) {
+    // 1. Penalidade de Colisão
+    lives--;
+    combo = 0;
+    score = Math.max(0, score - 10);
+    
+    // Feedback de dano visual (e auditivo, se você tiver playDamageSound())
+    createExplosion(playerX + 25, playerY + 25, 'var(--cor-erro)');
+    player.style.opacity = '0.5';
+    setTimeout(() => player.style.opacity = '1', 500); // Pisca
+    showTemporaryMessage("COLISÃO! -1 Vida! Pergunta Reiniciada!", 1500);
+
+    // 2. Limpeza Imediata de TODOS os Asteroides Ativos (Reset da Pergunta)
+    asteroids.forEach(a => {
+        // Marca e remove do DOM (o gameLoop remove do array)
+        if (a.element && a.element.parentElement && !a.isDestroyed) {
+            a.isDestroyed = true;
+            a.element.remove();
+        }
+    });
+
+    updateHUD();
+    if (lives <= 0) {
+        endGame();
+        return;
+    }
+
+    // 3. Reinicia o Ciclo do Jogo (Gera uma Nova Pergunta/Ciclo do Boss)
+    // Usa setTimeout para garantir que a limpeza (forEach) seja processada antes de criar novos elementos.
+    setTimeout(() => {
+        if (isBossFight) {
+            // Reinicia o ciclo normal de vulnerabilidade do Boss
+            showTemporaryMessage("Ciclo do Boss Resetado!", 1000);
+            if (bossInterval) clearInterval(bossInterval);
+            bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+        } else {
+            // Modo Normal: Gera uma nova pergunta
+            generateNewQuestion(); 
+        }
+    }, 50); 
+}
+
+function handleMiss(isCorrectAnswer) {
+    let shouldResetBoss = false;
+
+    if (isBossFight) {
+        // Se a luta contra o Boss está ativa, qualquer alvo perdido
+        // (incluindo asteroides de punição) reinicia o ciclo do Boss.
+        shouldResetBoss = true;
+        combo = 0;
+        showTemporaryMessage("ALVO PERDIDO! Ciclo do Boss Resetado!", 2000);
+
+    } else if (isCorrectAnswer) {
+         // Modo Normal: A resposta correta passou - penalidade máxima
+         lives--;
+         combo = 0;
+         score = Math.max(0, score - 10);
+         showTemporaryMessage("ALVO CORRETO PERDIDO! -1 Vida", 2000);
+    } else {
+         // Modo Normal: Uma resposta errada passou ou alvos esgotados
+         combo = 0;
+         showTemporaryMessage("ALVO PERDIDO...", 2000);
+    }
+    
+    updateHUD();
+    if (lives <= 0) endGame();
+
+    // 1. Limpeza de Asteroides (Se houver)
+    // O gameLoop já trata a remoção do asteroide que passou, mas garantimos a limpeza.
+    asteroids.forEach(a => {
+        if (a.element && a.element.parentElement && !a.isDestroyed) {
+            a.isDestroyed = true;
+            a.element.remove();
+        }
+    });
+
+    // 2. Reinicia o Ciclo Apropriado
+    setTimeout(() => {
+        if (shouldResetBoss) {
+            // Reinicia o ciclo normal de vulnerabilidade do Boss
+            if (bossInterval) clearInterval(bossInterval);
+            bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+        } else {
+            // Modo Normal: Gera a nova pergunta.
+            generateNewQuestion(); 
+        }
+    }, 50);
+}
+
+    // --- Eventos de Input ---
+    document.getElementById('startButton').addEventListener('click', startGame);
+    document.getElementById('restartButton').addEventListener('click', startGame);
+
+    window.addEventListener('keydown', (e) => {
+        if (!isGameRunning) return;
+        keysPressed[e.code] = true;
+        e.preventDefault(); 
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if (!isGameRunning) return;
+        keysPressed[e.code] = false;
+        e.preventDefault(); 
+    });
+
+    gameArea.addEventListener('mousedown', (e) => {
+        if (!isGameRunning) return;
+        keysPressed['Mouse0'] = true;
+        e.preventDefault();
+    });
+
+    gameArea.addEventListener('mouseup', (e) => {
+        if (!isGameRunning) return;
+        keysPressed['Mouse0'] = false;
+        e.preventDefault();
+    });
+
+// NOVO: Função para confirmar saída
+function confirmExit() {
+    // Para a música e o jogo se for sair
+    if (isGameRunning) {
+        isGameRunning = false;
+        clearInterval(movementInterval);
+        if (bossInterval) clearInterval(bossInterval);
+        // Não remove o boss ou asteroides, apenas para o loop, permitindo ao usuário voltar.
+        // Se o usuário clicar em SAIR, o jogo é interrompido.
+    }
+
+    // Confirma se o usuário quer sair
+    return confirm("Tem certeza que deseja sair da missão e voltar para a tela anterior?");
+}
