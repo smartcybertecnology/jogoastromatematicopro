@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <!-- Reduced initial-scale to slightly zoom out on mobile; allow user scaling -->
-    <meta name="viewport" content="width=device-width, initial-scale=0.95">
+    <!-- Make the page slightly zoomed-out by default on phones and allow reasonable user scaling -->
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=2.0">
     <title>Astro-Matemático PRO 🚀</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -72,35 +72,6 @@
     touch-action: none; 
 }
 
-        /* Mobile tweaks: reduce perceived zoom and scale down large elements */
-        @media (max-width: 480px) {
-            /* Slightly narrower game area so content feels less 'zoomed' */
-            #gameArea {
-                width: 92vw;
-                max-width: 480px;
-            }
-
-            /* Slightly smaller player on small screens */
-            #player {
-                width: clamp(36px, 9vw, 50px);
-                height: clamp(36px, 9vw, 50px);
-                bottom: 16px;
-            }
-
-            /* Reduce asteroid size a bit so they don't look oversized */
-            .asteroid {
-                width: 18vw;
-                height: 18vw;
-                max-width: 56px;
-                max-height: 56px;
-            }
-
-            /* Reduce HUD/question font sizes so layout stays comfortable */
-            .question-box { font-size: clamp(1.1em, 4.2vw, 1.6em); padding: 6px 18px; }
-
-            #shootButton { padding: 12px 20px; font-size: 1rem; bottom: 14px; right: 12px; }
-        }
-
         @keyframes move-stars {
             from { background-position-y: 0, 60px, 200px; }
             to { background-position-y: 550px, 410px, 700px; }
@@ -121,6 +92,39 @@
             /* REMOVIDO: margin-top: auto; (Não é mais necessário no layout Flexbox) */
             
             border-top: 2px solid var(--cor-principal);
+        }
+
+        /* Ensure the page and game area use the full viewport height so the game stretches from base to top */
+        html, body {
+            height: 100%;
+        }
+
+        /* Make the game area fill available vertical space and leave room for the ad */
+        #gameArea {
+            min-height: calc(100vh - 64px); /* leave room for ad area (approx 64px) */
+            width: 98vw;
+            max-width: 100%;
+        }
+
+        /* On small screens, pin the ad to the bottom and ensure the game area doesn't get hidden behind it */
+        @media (max-width: 600px) {
+            #adArea {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                z-index: 9999;
+            }
+            /* Give the game area padding at the bottom equal to ad height so content isn't obscured */
+            #gameArea {
+                padding-bottom: 64px;
+                min-height: calc(100vh - 64px);
+                width: 96vw;
+            }
+            body {
+                padding-bottom: 0; /* avoid extra page padding, handled by #gameArea */
+            }
         }
 
         #player {
