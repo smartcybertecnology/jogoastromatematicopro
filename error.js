@@ -192,40 +192,55 @@ function showTemporaryMessage(message, duration = 2000, className = '') {
 
     // Função para criar explosões de partículas
     function createExplosion(x, y, color) {
-        for (let i = 0; i < 20; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.background = color;
-            
-            // Posição inicial (no centro do impacto)
-            particle.style.left = `${x}px`;
-            particle.style.top = `${y}px`;
-            
-            // Movimento aleatório (vetor de velocidade)
-            const angle = Math.random() * 2 * Math.PI;
-            const speed = Math.random() * 5 + 2; 
-            const vx = Math.cos(angle) * speed;
-            const vy = Math.sin(angle) * speed;
-            
-            gameArea.appendChild(particle);
-            
-            // Animação usando requestAnimationFrame para movimento suave
-            let startTime = null;
-            function animateParticle(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const progress = timestamp - startTime;
-                
-                if (progress < 1000) { // Duração de 1 segundo
-                    particle.style.left = `${parseFloat(particle.style.left) + vx}px`;
-                    particle.style.top = `${parseFloat(particle.style.top) + vy}px`;
-                    particle.style.opacity = 1 - (progress / 1000); 
-                    requestAnimationFrame(animateParticle);
-                } else {
-                    particle.remove();
-                }
-            }
-            requestAnimationFrame(animateParticle);
+        // Guard against invalid coordinates
+        if (!isFinite(x)) x = (GAME_WIDTH || 320) / 2;
+        if (!isFinite(y)) y = (GAME_HEIGHT || 240) / 2;
+
+        // Reduce particle count on small screens to avoid jank
+        const isMobile = window.matchMedia && window.matchMedia('(max-width:768px)').matches;
+        const PARTICLES = isMobile ? 8 : 14;
+        const DURATION = 700; // ms
+
+        const parts = [];
+        for (let i = 0; i < PARTICLES; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.background = color;
+
+            // numeric properties for faster updates
+            p._x = x;
+            p._y = y;
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * (isMobile ? 3 : 5) + (isMobile ? 1 : 2);
+            p._vx = Math.cos(angle) * speed;
+            p._vy = Math.sin(angle) * speed;
+
+            p.style.left = `${p._x}px`;
+            p.style.top = `${p._y}px`;
+            p.style.opacity = '1';
+
+            gameArea.appendChild(p);
+            parts.push(p);
         }
+
+        let start = null;
+        function raf(ts) {
+            if (!start) start = ts;
+            const elapsed = ts - start;
+            const t = Math.min(1, elapsed / DURATION);
+
+            for (const p of parts) {
+                p._x += p._vx;
+                p._y += p._vy;
+                p.style.left = p._x + 'px';
+                p.style.top = p._y + 'px';
+                p.style.opacity = String(1 - t);
+            }
+
+            if (elapsed < DURATION) requestAnimationFrame(raf);
+            else parts.forEach(p => p.parentElement && p.remove());
+        }
+        requestAnimationFrame(raf);
     }
 // ... (Certifique-se de que 'keysPressed' é um objeto let ou const no escopo global)
 // Exemplo: const keysPressed = {};
@@ -246,12 +261,6 @@ function startGame() {
 
     loadAudio(); 
     updateGameDimensions();
-
-    // Disable browser touch gestures inside the game area while the game runs.
-    // This prevents accidental page panning/scroll while playing but we still
-    // allow multi-touch gestures (pinch-to-zoom) by not preventing default in
-    // handlers when there are multiple touches — see handlers below.
-    if (gameArea) gameArea.style.touchAction = 'none';
     
     // CORREÇÃO 1: Zera o estado das teclas pressionadas (para evitar movimento involuntário)
     for (const key in keysPressed) {
@@ -428,8 +437,6 @@ function endGame(isVictory = false) {
     if (gameArea) {
         gameArea.style.backgroundImage = 'none'; // Remove a imagem do fundo
         gameArea.style.backgroundColor = '#000000'; // Define cor de fundo preto
-        // Re-enable default touch handling when the game ends
-        gameArea.style.touchAction = '';
     }
     
     // GARANTIA DE RESET DO ESTADO DO BOSS
@@ -497,40 +504,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Lógica para o Botão Iniciar (Inalterada)
     if (startButton) {
+        // support both mouse click and pointer (touch) to improve reliability at different zoom levels
         startButton.addEventListener('click', startGame);
-        startButton.addEventListener('touchstart', (event) => {
-            event.preventDefault(); 
+        // pointerdown handles touch and mouse in a unified way
+        startButton.addEventListener('pointerdown', (ev) => {
+            ev.preventDefault && ev.preventDefault();
             startGame();
-        });
+        }, { passive: false });
+        // keep a fallback touchstart registration for older browsers
+        startButton.addEventListener('touchstart', (event) => {
+            event.preventDefault();
+            startGame();
+        }, { passive: false });
     }
 
     // ⭐ NOVO: Adiciona listener para o botão de disparo exclusivo
     if (shootButton) {
         // Disparo ao clicar (desktop se o botão for visível)
         shootButton.addEventListener('click', handleShootButtonTouch);
-        // Disparo ao tocar (mobile)
-        // We register touchstart with passive:false so we may call preventDefault()
-        // inside the handler when appropriate. Some browsers default to passive
-        // listeners for touch events which would ignore preventDefault()
-        // and cause warnings. We still avoid preventing default for multi-touch
-        // (pinch) in the handler itself.
+        // Disparo ao tocar (mobile) — ensure preventDefault works
         shootButton.addEventListener('touchstart', handleShootButtonTouch, { passive: false });
         // Opcional: Remove o 'pressionado' ao soltar (se estiver usando keysPressed)
         shootButton.addEventListener('touchend', () => { delete keysPressed[MOBILE_SHOOT]; });
+        // pointerdown as a unified fallback
+        shootButton.addEventListener('pointerdown', (ev) => {
+            ev.preventDefault && ev.preventDefault();
+            handleShootButtonTouch(ev);
+        }, { passive: false });
     }
     
     // 3. Adiciona suporte a toque na área do jogo
     if (gameAreaElement) {
-        // If you want to allow normal page gestures like pinch-to-zoom,
-        // we must not always call preventDefault() on multi-touch events.
-        // Register touchstart/touchmove with passive:false so our handler may
-        // call preventDefault() when we detect a single-finger action.
-        // touchend/touchcancel don't need passive:false.
-        // gameAreaElement.addEventListener('touchstart', handleGameAreaTouch); 
+        // Register touch listeners as non-passive so we can call preventDefault when appropriate.
+        // This avoids interfering with pinch-to-zoom when the user uses multi-touch.
         gameAreaElement.addEventListener('touchstart', handleMoveTouch, { passive: false });
-        gameAreaElement.addEventListener('touchmove', handleMoveTouch, { passive: false }); 
-        gameAreaElement.addEventListener('touchend', handleMoveEnd);
-        gameAreaElement.addEventListener('touchcancel', handleMoveEnd);
+        gameAreaElement.addEventListener('touchmove', handleMoveTouch, { passive: false });
+        gameAreaElement.addEventListener('touchend', handleMoveEnd, { passive: false });
+        gameAreaElement.addEventListener('touchcancel', handleMoveEnd, { passive: false });
+
+        // Pointer events fallback for some browsers/devices
+        gameAreaElement.addEventListener('pointermove', (ev) => {
+            if (!isGameRunning) return;
+            // Only handle primary pointer (finger)
+            if (ev.isPrimary === false) return;
+            const rect = gameAreaElement.getBoundingClientRect();
+            touchTargetX = ev.clientX - rect.left;
+            touchTargetY = ev.clientY - rect.top;
+        });
+        gameAreaElement.addEventListener('pointerdown', (ev) => {
+            ev.preventDefault && ev.preventDefault();
+        }, { passive: false });
     }
 });
 
@@ -538,35 +561,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Função para CAPTURAR a posição X/Y do toque
 function handleMoveTouch(event) {
-    // If there are multiple touches (two-finger pinch), do not steal the
-    // gesture — allow the browser to handle pinch-to-zoom. For single-finger
-    // control we preventDefault to stop scrolling.
-    const touchCount = (event.touches && event.touches.length) || 0;
-    if (touchCount > 1) {
-        // Reset any single-touch target so the ship won't drift when pinch ends.
+    // If this is a multi-touch event (pinch/zoom), don't interfere — let the browser handle it
+    const touches = event.touches || [];
+    if (touches.length > 1) {
+        // Clear any single-touch target to avoid stuck movement
         touchTargetX = null;
         touchTargetY = null;
         return;
     }
 
-    // 1. Previne o comportamento padrão (ex: scroll) apenas para single-touch
-    if (touchCount === 1) event.preventDefault();
+    // Prevent default only when handling a single-touch move (so we can keep the game area stable)
+    if (event.cancelable) {
+        try { event.preventDefault(); } catch (e) { /* ignore */ }
+    }
 
     // 2. Garante que o jogo está rodando
     if (!isGameRunning) return;
-    
-    // Certifique-se de que 'gameArea' está definida globalmente
-    const gameAreaElement = document.getElementById('gameArea'); 
-    if (!gameAreaElement) return;
-    
-    const gameAreaRect = gameAreaElement.getBoundingClientRect();
 
-    // 3. Pega a posição do primeiro toque (ou do toque que restou)
-    const touch = event.touches[0];
+    const gameAreaElement = document.getElementById('gameArea');
+    if (!gameAreaElement) return;
+
+    const gameAreaRect = gameAreaElement.getBoundingClientRect();
+    const touch = touches[0] || event; // pointer events may pass the event itself
     if (touch) {
-        // Define o alvo no sistema de coordenadas do jogo
-        touchTargetX = touch.clientX - gameAreaRect.left;
-        touchTargetY = touch.clientY - gameAreaRect.top;
+        touchTargetX = (touch.clientX - gameAreaRect.left);
+        touchTargetY = (touch.clientY - gameAreaRect.top);
     }
 }
 
@@ -576,18 +595,13 @@ function handleMoveEnd(event) {
     // 1. Garante que o jogo está rodando
     if (!isGameRunning) return;
 
-    // Be defensive: event.touches may be undefined in some contexts — use a
-    // safe length check.
-    const remaining = (event.touches && event.touches.length) || 0;
-
-    // 2. Se não houver toques remanescentes, reseta os alvos de movimento.
-    if (remaining === 0) {
+    // Some browsers may not provide event.touches on touchend; guard defensively
+    const touches = event.touches || [];
+    if (touches.length === 0) {
         touchTargetX = null;
         touchTargetY = null;
-    }
-    // 3. Se houver toques remanescentes (multitouch ou single), atualiza o alvo com o que sobrou.
-    else {
-        // Forward the event to the move handler so it computes the new target.
+    } else if (touches.length > 0) {
+        // Update target based on remaining touch
         handleMoveTouch(event);
     }
 }
