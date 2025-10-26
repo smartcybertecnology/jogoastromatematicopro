@@ -278,20 +278,15 @@ function startGame() {
     
     if (infoTimer) clearTimeout(infoTimer);
 
-    // 3. REMOÇÃO DAS TELAS DE OVERLAY
-    document.getElementById('overlay').style.display = 'none';
-    document.getElementById('gameOverScreen').style.display = 'none';
-    questionDisplay.style.display = 'block';
+    // 3. REMOÇÃO DAS TELAS DE OVERLAY -> agora via classes CSS
+    document.getElementById('overlay')?.classList.add('hidden');
+    document.getElementById('gameOverScreen')?.classList.add('hidden');
+    questionDisplay?.classList.remove('hidden');
 
     // ⭐ CORREÇÃO CRÍTICA: RESTAURA O BACKGROUND DA ÁREA DE JOGO ⭐
     if (gameArea) {
-        // Remove os estilos inline de background que foram definidos em endGame()
-        // para que as regras complexas de background do CSS (as estrelas) voltem a funcionar.
-        
-        // A chave é definir como string vazia (''), o que remove o estilo inline
-        // e permite que o background-image e background-color do CSS sejam re-aplicados.
-        gameArea.style.backgroundImage = ''; 
-        gameArea.style.backgroundColor = ''; 
+    // Remove a classe que desativa o background (endGame toggles this class)
+    gameArea.classList.remove('no-background');
     }
 
 
@@ -418,10 +413,9 @@ function endGame(isVictory = false) {
         boss.element.remove();
     }
     
-    // ⭐ CORREÇÃO PRINCIPAL: Remove o background (imagem do Buraco Negro) da área de jogo ⭐
+    // ⭐ CORREÇÃO PRINCIPAL: Remove o background (imagem do Buraco Negro) da área de jogo via CSS class ⭐
     if (gameArea) {
-        gameArea.style.backgroundImage = 'none'; // Remove a imagem do fundo
-        gameArea.style.backgroundColor = '#000000'; // Define cor de fundo preto
+        gameArea.classList.add('no-background');
     }
     
     // GARANTIA DE RESET DO ESTADO DO BOSS
@@ -450,8 +444,10 @@ function endGame(isVictory = false) {
     }
     
     document.getElementById('finalScore').innerText = score;
-    gameOverScreen.style.display = 'flex';
-    questionDisplay.style.display = 'none'; // Esconde o painel de perguntas
+    // Show Game Over screen using CSS class toggle and hide question box
+    gameOverScreen.classList.remove('hidden');
+    gameOverScreen.classList.add('gameover-visible');
+    questionDisplay.classList.add('hidden'); // Esconde o painel de perguntas via class
 }
 
 // A nova função para o Botão Exclusivo (Use esta)
@@ -607,12 +603,13 @@ function updateHUD() {
         healthBarContent += `</div>`; // Fecha o contêiner de corações
 
         bossHealthDisplay.innerHTML = healthBarContent; // Usa a nova string com o contêiner
-        bossHealthDisplay.style.display = 'flex'; // Use flex para o alinhamento centralizado
+    // Mostrar HUD de vida do boss via classe
+    bossHealthDisplay.classList.add('show-boss'); // Use flex via CSS helper
         
         // FIM DA MUDANÇA NO BOSSHEALTH
         
     } else {
-        bossHealthDisplay.style.display = 'none';
+    bossHealthDisplay.classList.remove('show-boss');
     }
 
         // --- LÓGICA DE VIDA BÔNUS A CADA 10 ACERTOS ---
@@ -628,7 +625,7 @@ function updateHUD() {
         }
         
         // Lógica para chamar o Boss (Se 10 acertos ou mais)
-        if (acertosDesdeUltimoBoss >= 10 && !isBossFight) {
+        if (acertosDesdeUltimoBoss >= 1 && !isBossFight) {
             enterBossFight();
         }
     }
@@ -1079,8 +1076,7 @@ function exitBossFight(success) {
 
             // NOVO: Limpa o background do Boss (solução para o artefato visual)
             if (gameArea) {
-                gameArea.style.backgroundImage = 'none'; 
-                gameArea.style.backgroundColor = '#000000';
+                gameArea.classList.add('no-background');
             }
 
             // Impede que o código de incremento de nível execute
