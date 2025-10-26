@@ -210,85 +210,8 @@
     }
 
     function updateGameDimensions() {
-        const oldWidth = GAME_WIDTH;
-        const oldHeight = GAME_HEIGHT;
-        
         GAME_WIDTH = gameArea.clientWidth;
         GAME_HEIGHT = gameArea.clientHeight;
-        
-        // 🎯 CORREÇÃO: Reposiciona elementos quando dimensões mudam
-        if (isGameRunning && (oldWidth !== GAME_WIDTH || oldHeight !== GAME_HEIGHT)) {
-            // Ajusta posição do jogador proporcionalmente
-            if (oldWidth > 0 && oldHeight > 0) {
-                const ratioX = GAME_WIDTH / oldWidth;
-                const ratioY = GAME_HEIGHT / oldHeight;
-                
-                playerX = Math.max(0, Math.min(GAME_WIDTH - (player.offsetWidth || 63), playerX * ratioX));
-                playerY = Math.max(0, Math.min(GAME_HEIGHT - (player.offsetHeight || 63) - 20, playerY * ratioY));
-                
-                player.style.left = `${playerX}px`;
-                player.style.top = `${playerY}px`;
-            }
-            
-            // Ajusta asteroides para caber na nova tela
-            asteroids.forEach(asteroid => {
-                if (asteroid.element && !asteroid.isDestroyed) {
-                    if (oldWidth > 0) {
-                        const ratioX = GAME_WIDTH / oldWidth;
-                        asteroid.baseX = asteroid.baseX * ratioX;
-                        asteroid.x = asteroid.baseX;
-                        asteroid.element.style.left = `${asteroid.baseX}px`;
-                    }
-                    
-                    // Remove asteroides que saíram da tela após redimensionar
-                    if (asteroid.x < -100 || asteroid.x > GAME_WIDTH + 100) {
-                        asteroid.isDestroyed = true;
-                        asteroid.element.remove();
-                    }
-                }
-            });
-            
-            // Limpa tiros que ficaram fora da tela
-            bullets.forEach(bullet => {
-                if (bullet.x < 0 || bullet.x > GAME_WIDTH) {
-                    bullet.element.remove();
-                }
-            });
-            bullets = bullets.filter(b => b.x >= 0 && b.x <= GAME_WIDTH);
-            
-            // Cancela movimento touch se ficou fora da tela
-            if (touchTargetX !== null) {
-                if (touchTargetX < 0 || touchTargetX > GAME_WIDTH || touchTargetY < 0 || touchTargetY > GAME_HEIGHT) {
-                    touchTargetX = null;
-                    touchTargetY = null;
-                }
-            }
-        }
-    }
-
-    // 🎯 NOVO: Debounce para redimensionamento
-    let resizeTimeout = null;
-    let isResizing = false;
-    const MIN_GAME_WIDTH = 280;
-    const MIN_GAME_HEIGHT = 400;
-
-    function handleResize() {
-        if (resizeTimeout) clearTimeout(resizeTimeout);
-        
-        isResizing = true;
-        
-        resizeTimeout = setTimeout(() => {
-            updateGameDimensions();
-            
-            // 🎯 PROTEÇÃO: Tela muito pequena
-            if (GAME_WIDTH < MIN_GAME_WIDTH || GAME_HEIGHT < MIN_GAME_HEIGHT) {
-                if (isGameRunning) {
-                    showTemporaryMessage("⚠️ Tela muito pequena! Aumente o tamanho.", 2000, 'error-msg');
-                }
-            }
-            
-            isResizing = false;
-        }, 100);
     }
 
     function startGame() {
@@ -342,9 +265,7 @@
         updateHUD();
         generateNewQuestion(); 
 
-        // 🎯 CORREÇÃO: Usa handleResize com debounce
-        window.removeEventListener('resize', updateGameDimensions);
-        window.addEventListener('resize', handleResize);
+        window.addEventListener('resize', updateGameDimensions);
 
         movementInterval = setInterval(movePlayer, 1000 / 60);
 
@@ -440,10 +361,7 @@
         clearInterval(movementInterval);
         if (bossInterval) clearInterval(bossInterval); 
         if (infoTimer) clearTimeout(infoTimer);
-        if (resizeTimeout) clearTimeout(resizeTimeout);
-        
-        // 🎯 CORREÇÃO: Remove listener correto
-        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('resize', updateGameDimensions);
         
         if (isVictory) {
             playBosswin(); 
@@ -1035,13 +953,7 @@
     }
 
     function movePlayer() {
-        if (!isGameRunning || isResizing) return;
-
-        // 🎯 CORREÇÃO: Validação extra de dimensões
-        if (GAME_WIDTH <= 0 || GAME_HEIGHT <= 0) {
-            updateGameDimensions();
-            return;
-        }
+        if (!isGameRunning) return;
 
         if (!isFinite(playerX) || playerX === null) playerX = (GAME_WIDTH || 320) / 2;
         if (!isFinite(playerY) || playerY === null) playerY = (GAME_HEIGHT || 240) - 70;
@@ -1155,12 +1067,6 @@
 
     function gameLoop(timestamp) {
         if (!isGameRunning) return;
-        
-        // 🎯 CORREÇÃO: Pausa o loop durante redimensionamento
-        if (isResizing) {
-            requestAnimationFrame(gameLoop);
-            return;
-        }
         
         if (isMobile) {
             const elapsed = timestamp - lastFrameTime;
