@@ -155,6 +155,22 @@
     .question-box { top: calc(var(--hud-padding) + 8px); z-index: 1800; }
     .temp-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1800; pointer-events: none; }
 
+    /* Utility classes to let JS toggle layout without inline styles */
+    .hidden { display: none !important; }
+
+    /* When the game area should hide its fancy background (end game), add this */
+    #gameArea.no-background {
+        background-image: none !important;
+        background-color: #000000 !important;
+        animation: none !important;
+    }
+
+    /* Show boss health when class added */
+    .show-boss { display: flex !important; }
+
+    /* Game over screen visibility toggle */
+    .gameover-visible { display: flex !important; }
+
         #player {
     position: absolute;
     bottom: 20px;
@@ -650,7 +666,7 @@
  <button id="startButton">INICIAR MISSÃO</button>
 </div>
 
-<div id="gameOverScreen" style="display: none;">
+<div id="gameOverScreen" class="hidden">
 <h2>MISSÃO FRACASSADA</h2>
 
 <p>Pontuação Final: <span id="finalScore">0</span></p>
