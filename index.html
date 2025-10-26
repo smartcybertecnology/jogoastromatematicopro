@@ -155,28 +155,9 @@
     .question-box { top: calc(var(--hud-padding) + 8px); z-index: 1800; }
     .temp-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1800; pointer-events: none; }
 
-    /* Utility classes to let JS toggle layout without inline styles */
-    .hidden { display: none !important; }
-
-    /* When the game area should hide its fancy background (end game), add this */
-    #gameArea.no-background {
-        background-image: none !important;
-        background-color: #000000 !important;
-        animation: none !important;
-    }
-
-    /* Show boss health when class added */
-    .show-boss { display: flex !important; }
-
-    /* Game over screen visibility toggle */
-    .gameover-visible { display: flex !important; }
-
         #player {
     position: absolute;
     bottom: 20px;
-    
-    /* REMOVIDO: left: 50%; */
-    /* REMOVIDO: transform: translateX(-50%); */
     
     width: clamp(42px, 10vw, 63px); 
     height: clamp(42px, 10vw, 63px);
@@ -482,21 +463,30 @@
         }
 
         /* Caixa de Pergunta Central */
-        .question-box {
-            position: absolute;
-            top: 0%;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 1px 30px;
-            font-size: clamp(1.5em, 5vw, 2em);
-            font-weight: 900;
-            background: rgba(0, 0, 0, 0.7);
-            border: 3px solid var(--cor-principal);
-            box-shadow: 0 0 15px var(--cor-principal);
-            border-radius: 10px;
-            z-index: 25;
-            animation: pulse-question 1.5s infinite alternate;
-        }
+       /* Caixa de Pergunta Central */
+.question-box {
+    /* PROPRIEDADES REMOVIDAS PARA CORRIGIR A SOBREPOSIÇÃO */
+    /* position: absolute; */
+    /* top: 0%; */
+    /* left: 50%; */
+    /* transform: translateX(-50%); */
+    /* z-index: 25; */
+
+    /* AJUSTES PARA RESPONSIVIDADE */
+    /* Padding lateral reduzido para caber melhor */
+    padding: 1px 10px; 
+
+    /* O clamp já é ótimo. Ajustei um pouco para telas menores */
+    font-size: clamp(1.2em, 4.5vw, 1.8em); 
+
+    /* O resto dos seus estilos permanece igual */
+    font-weight: 900;
+    background: rgba(0, 0, 0, 0.7);
+    border: 3px solid var(--cor-principal);
+    box-shadow: 0 0 15px var(--cor-principal);
+    border-radius: 10px;
+    animation: pulse-question 1.5s infinite alternate;
+}
         /* NOVO ESTILO: Para mensagens de erro/repelidas */
         .question-box.error-msg {
             color: var(--cor-erro); /* Muda a cor do texto para laranja/vermelho */
@@ -666,7 +656,7 @@
  <button id="startButton">INICIAR MISSÃO</button>
 </div>
 
-<div id="gameOverScreen" class="hidden">
+<div id="gameOverScreen" style="display: none;">
 <h2>MISSÃO FRACASSADA</h2>
 
 <p>Pontuação Final: <span id="finalScore">0</span></p>
@@ -684,7 +674,6 @@ atOptions = {
  'params' : {}
 };
  </script>
- 
  <script type="text/javascript" src="https://www.highperformanceformat.com/bbf348585df7afae438e1754d1003d92/invoke.js"></script>
 </div>
 </div>
