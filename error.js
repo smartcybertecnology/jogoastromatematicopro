@@ -295,13 +295,60 @@ function startGame() {
     }
 
 
-    // 4. POSIÇÃO INICIAL DA NAVE
-    playerX = GAME_WIDTH / 2 - 25;
-    playerY = GAME_HEIGHT - 70;
-    player.style.left = `${playerX}px`;
-    player.style.top = `${playerY}px`;
-    player.style.transform = 'rotate(0deg)'; 
+// 4. POSIÇÃO INICIAL DA NAVE
 
+// Variáveis para a posição padrão (Desktop)
+let initialPlayerX = GAME_WIDTH / 2 - 25;
+let initialPlayerY = GAME_HEIGHT - 70;
+
+const shootButton = document.getElementById('shootButton');
+
+// VERIFICAÇÃO PARA DISPOSITIVOS MÓVEIS (onde o botão de atirar aparece)
+// O botão 'shootButton' só aparece em max-width: 768px (veja o CSS)
+// O 'offsetParent' verifica se o elemento está sendo renderizado e não está 'display: none'
+if (shootButton && window.getComputedStyle(shootButton).display !== 'none') {
+    // 1. Obter a posição e o tamanho do botão
+    const buttonRect = shootButton.getBoundingClientRect();
+    const gameAreaRect = gameArea.getBoundingClientRect(); // Assumindo que gameArea é o elemento pai (importante para cálculo relativo)
+
+    // 2. Calcular a nova posição da nave (Relativa à Game Area)
+    
+    // A nave deve iniciar à esquerda do botão, com uma pequena margem.
+    // player.offsetWidth é necessário para centralizar o foguete
+    const playerWidth = player.offsetWidth; // Obtém a largura da nave
+    const margin = 10; // Margem de 10px entre a nave e o botão
+    
+    // Calcula a posição X: Borda esquerda do botão - largura da nave - margem
+    initialPlayerX = (buttonRect.left - gameAreaRect.left) - playerWidth - margin;
+    
+    // Calcula a posição Y: Alinha a nave verticalmente no centro ou na base do botão.
+    // Como a nave está alinhada pelo topo (player.style.top), usaremos:
+    // Posição Y (base do botão) - altura da nave
+    // Como a nave é posicionada via bottom no CSS, podemos precisar inverter a lógica Y
+    
+    // Posição Y padrão para 'bottom: 20px' é GAME_HEIGHT - 70. 
+    // Vamos manter a altura padrão, a não ser que o CSS for mais complexo.
+    // Manter a altura Y padrão (parte inferior da tela) é geralmente mais seguro para jogos:
+    initialPlayerY = GAME_HEIGHT - 70; 
+    
+    // Garante que a nave não comece fora da tela à esquerda
+    if (initialPlayerX < 0) {
+        initialPlayerX = margin; // Inicia com uma margem mínima
+    }
+
+} 
+// Senão, initialPlayerX e initialPlayerY mantêm os valores padrão (GAME_WIDTH / 2 - 25, etc.)
+
+// 3. Aplicar a nova posição
+playerX = initialPlayerX;
+playerY = initialPlayerY;
+player.style.left = `${playerX}px`;
+player.style.top = `${playerY}px`; // No seu CSS, o 'bottom: 20px' pode conflitar. É melhor usar apenas 'top' ou apenas 'bottom/height' para posicionamento.
+player.style.transform = 'rotate(0deg)';
+
+// NOVO: IMPORTANTE para evitar conflito com o CSS 'bottom: 20px' em #player. 
+// Remova o 'bottom: 20px' do CSS de #player ou adicione a seguinte linha para ignorá-lo:
+player.style.bottom = 'auto'; // Usar 'top' anula 'bottom' se ambos estiverem definidos.
     // 5. INICIA O JOGO
     updateHUD();
     generateNewQuestion(); 
