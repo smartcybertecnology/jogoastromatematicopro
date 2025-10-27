@@ -2,7 +2,6 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <!-- Make the page slightly zoomed-out by default on phones and allow reasonable user scaling -->
     <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=2.0">
     <title>Astro-Matemático PRO 🚀</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -372,33 +371,40 @@
             border: 1px solid var(--cor-principal);
         }
 
-        /* NOVO: Contêiner para manter Score e Combo agrupados e alinhados à esquerda */
+        /* NOVO: Contêiner para o grupo Esquerdo (SAIR e Pontos/Combo) */
+        #leftSideHUD {
+            display: flex;
+            flex-direction: column; /* Organiza os itens verticalmente: SAIR em cima, Pontos embaixo */
+            align-items: flex-start; /* Alinha todos os itens à esquerda */
+        }
+        
+        /* Contêiner para manter Score e Combo agrupados */
         #scoreComboGroup {
             display: flex;
             flex-direction: column; /* Coloca os filhos (score e combo) um abaixo do outro */
-            align-items: flex-start; /* Alinha o grupo à esquerda */
+            align-items: flex-start; /* Alinha o texto do score/combo à esquerda */
+            margin-top: 5px; /* Adiciona um pequeno espaço entre SAIR e Pontos */
         }
 
         /* Estrutura do Score (Label acima do valor) */
-        #scoreContainer { /* NOVO CONTÊINER NECESSÁRIO NO HTML */
+        #scoreContainer {
             display: flex;
             flex-direction: column; 
-            align-items: center; /* Centraliza o texto "Pontos:" e o número */
+            align-items: flex-start; /* Alinha o texto "Pontos:" e o número à esquerda */
             padding: 0;
         }
 
-        .score-label { /* NOVA CLASSE NECESSÁRIA NO HTML */
+        .score-label {
             font-size: 0.8em; 
             color: #aaa; 
             text-shadow: 1px 1px 2px #000;
-            margin-bottom: -5px; /* Ajusta o espaçamento entre label e número */
+            margin-bottom: -5px; 
         }
 
         #score {
             font-size: 1.5em;
             font-weight: bold;
             color: var(--cor-principal);
-            /* Regras de flexbox antigas foram removidas aqui */
         }
 
         /* Estilo do Combo ajustado para ficar abaixo do score */
@@ -407,8 +413,7 @@
             font-size: 1.0em;
             text-shadow: 0 0 8px var(--cor-combo);
             text-align: left;
-            margin-top: 5px; /* Espaço entre o Score e o Combo */
-            /* Regras de flexbox antigas foram removidas aqui */
+            margin-top: 5px; 
             display: none; 
         }
 
@@ -457,23 +462,28 @@
         #lives {
             color: var(--cor-erro);
             font-size: 1.5em;
-           
+            
         }
 
+      /* 🚀 ALTERAÇÃO AQUI: Garante o perfeito alinhamento centralizado */
+      .question-box {
+        position: absolute; /* ESSENCIAL */
+        left: 50%; /* MOVE PARA O MEIO */
+        transform: translateX(-50%); /* COMPENSA O TAMANHO */
+        top: calc(var(--hud-padding) + 8px); /* MANTÉM A POSIÇÃO VERTICAL */
+        z-index: 1800; /* MANTÉM A ORDEM DE CAMADAS */
+
+        /* Estilos de aparência */
+        padding: 1px 10px; 
+        font-size: clamp(1.2em, 4.5vw, 1.8em); 
+        font-weight: 900;
+        background: rgba(0, 0, 0, 0.7);
+        border: 3px solid var(--cor-principal);
+        box-shadow: 0 0 15px var(--cor-principal);
+        border-radius: 10px;
+        animation: pulse-question 1.5s infinite alternate;
+      }
       
-.question-box {
-
-    padding: 1px 10px; 
-
-    font-size: clamp(1.2em, 4.5vw, 1.8em); 
-
-    font-weight: 900;
-    background: rgba(0, 0, 0, 0.7);
-    border: 3px solid var(--cor-principal);
-    box-shadow: 0 0 15px var(--cor-principal);
-    border-radius: 10px;
-    animation: pulse-question 1.5s infinite alternate;
-}
         .question-box.error-msg {
             color: var(--cor-erro); /* Muda a cor do texto para laranja/vermelho */
             border-color: var(--cor-erro); /* Muda a borda */
@@ -556,8 +566,8 @@
             transition: all 0.3s;
             text-decoration: none; /* Para parecer um botão, não um link */
 
-            order: -1; /* Força a ir para o início do flex container */
-            margin-right: 15px; /* Espaço à direita para separar do score/combo */
+            /* REMOVIDO: order: -1; */
+            /* REMOVIDO: margin-right: 15px; */
         }
 
         #exitButton:hover {
@@ -602,55 +612,59 @@
 
 <div id="gameArea">
 
- <div id="hud">
- <a id="exitButton" href="brincadeiras3.html" onclick="return confirmExit();">SAIR</a>
- <div id="scoreComboGroup">
- <div id="scoreContainer">
- <div class="score-label">Pontos:</div>
-<div id="score">0</div>
- </div>
-<div id="combo"></div> 
- </div>
- 
- <div id="question" class="question-box"></div>
-<div id="rightSideHUD">
-<div id="lives">Vidas: 💖💖💖</div>
- <div id="bossHealth"></div>
- </div>
- </div>
+    <div id="hud">
+        <div id="leftSideHUD">
+            <a id="exitButton" href="brincadeiras3.html" onclick="return confirmExit();">SAIR</a>
+            
+            <div id="scoreComboGroup">
+                <div id="scoreContainer">
+                    <div class="score-label">Pontos:</div>
+                    <div id="score">0</div>
+                </div>
+                <div id="combo"></div> 
+            </div>
+        </div>
+        
+        <div id="rightSideHUD">
+            <div id="lives">Vidas: 💖💖💖</div>
+            <div id="bossHealth"></div>
+        </div>
+    </div>
+    
+    <div id="question" class="question-box"></div>
 
-<div id="player"></div>
+    <div id="player"></div>
 
 </div> <button id="shootButton">🔫 DISPARAR</button>
 
 <div id="overlay">
- <h1>Astro-Matemático PRO 🌌</h1>
- <p>Destrua o asteroide com a resposta correta e veja seu combo aumentar!</p>
- <p>A cada 10 acertos, um **Boss de Fase** surgirá!</p>
-<p>Use **Setas** ou **WASD** para mover, **Espaço** ou **Mouse Click** para atirar.</p>
- <button id="startButton">INICIAR MISSÃO</button>
+    <h1>Astro-Matemático PRO 🌌</h1>
+    <p>Destrua o asteroide com a resposta correta e veja seu combo aumentar!</p>
+    <p>A cada 10 acertos, um **Boss de Fase** surgirá!</p>
+    <p>Use **Setas** ou **WASD** para mover, **Espaço** ou **Mouse Click** para atirar.</p>
+    <button id="startButton">INICIAR MISSÃO</button>
 </div>
 
 <div id="gameOverScreen" style="display: none;">
-<h2>MISSÃO FRACASSADA</h2>
+    <h2>MISSÃO FRACASSADA</h2>
 
-<p>Pontuação Final: <span id="finalScore">0</span></p>
- 
- <button id="restartButton" onclick="startGame()">TENTAR NOVAMENTE</button>
+    <p>Pontuação Final: <span id="finalScore">0</span></p>
+    
+    <button id="restartButton" onclick="startGame()">TENTAR NOVAMENTE</button>
 </div> <script src="error.js"></script>
 <div id="adArea">
-<div> 
- <script type="text/javascript">
-atOptions = {
- 'key' : 'bbf348585df7afae438e1754d1003d92',
- 'format' : 'iframe',
-'height' : 50,
-'width' : 320,
- 'params' : {}
-};
- </script>
- <script type="text/javascript" src="https://www.highperformanceformat.com/bbf348585df7afae438e1754d1003d92/invoke.js"></script>
-</div>
+    <div> 
+        <script type="text/javascript">
+        atOptions = {
+        'key' : 'bbf348585df7afae438e1754d1003d92',
+        'format' : 'iframe',
+        'height' : 50,
+        'width' : 320,
+        'params' : {}
+        };
+        </script>
+        <script type="text/javascript" src="https://www.highperformanceformat.com/bbf348585df7afae438e1754d1003d92/invoke.js"></script>
+    </div>
 </div>
 
 </body>
