@@ -1,36 +1,35 @@
+// --- Variáveis Globais de Estado ---
+const gameArea = document.getElementById('gameArea');
+const player = document.getElementById('player');
+const questionDisplay = document.getElementById('question');
+const scoreDisplay = document.getElementById('score');
+const livesDisplay = document.getElementById('lives');
+const comboDisplay = document.getElementById('combo');
+const bossHealthDisplay = document.getElementById('bossHealth');
 
- // --- Variáveis Globais de Estado ---
-    const gameArea = document.getElementById('gameArea');
-    const player = document.getElementById('player');
-    const questionDisplay = document.getElementById('question');
-    const scoreDisplay = document.getElementById('score');
-    const livesDisplay = document.getElementById('lives');
-    const comboDisplay = document.getElementById('combo');
-    const bossHealthDisplay = document.getElementById('bossHealth');
+let GAME_WIDTH = 0;
+let GAME_HEIGHT = 0;
 
-    let GAME_WIDTH = 0;
-    let GAME_HEIGHT = 0;
+let isGameRunning = false;
+let score = 0;
+let lives = 3;
+let combo = 0;
+let acertosDesdeUltimoBoss = 0; 
+let currentLevel = 1;
 
-    let isGameRunning = false;
-    let score = 0;
-    let lives = 3;
-    let combo = 0;
-    let acertosDesdeUltimoBoss = 0; 
-    let currentLevel = 1;
+let playerX = 0;
+let playerY = 0;
+const PLAYER_SPEED = 5;
 
-    let playerX = 0;
-    let playerY = 0;
-    const PLAYER_SPEED = 5;
-
-    let asteroids = [];
-    let bullets = [];
-    let question = {};
-    const keysPressed = {};
+let asteroids = [];
+let bullets = [];
+let question = {};
+const keysPressed = {};
 
 let lastShootTime = 0;
-    const SHOOT_DELAY = 150;
+const SHOOT_DELAY = 150;
 
-const MOBILE_SHOOT = 'MobileShoot'; // ⭐ NOVO: Constante para identificar o disparo via botão móvel
+const MOBILE_SHOOT = 'MobileShoot'; // Constante para identificar o disparo via botão móvel
 const MOBILE_MOVE_LEFT = 'MobileLeft';
 const MOBILE_MOVE_RIGHT = 'MobileRight';
 // VARIÁVEIS PARA CONTROLE ANALÓGICO (LIVRE) VIA TOQUE
@@ -39,29 +38,26 @@ let touchTargetY = null; // Posição Y para onde a nave deve ir
 // Fator que determina a velocidade e suavidade do movimento de toque
 const TOUCH_MOVE_SPEED_FACTOR = 0.05; 
 // O PLAYER_SPEED (ex: 5) ainda será o limite de velocidade.
-// ... (Suas outras variáveis: SHOOT_DELAY, player, gameArea, keysPressed etc.)
 
-    let movementInterval = null;
-    
-    let infoTimer = null; // Novo timer para gerenciar mensagens temporárias
+let movementInterval = null;
 
-    // --- Variáveis do Boss ---
-    let isBossFight = false;
-    let boss = null;
-    let bossCurrentHealth = 0;
-    let isBossVulnerable = false;
-    let bossInterval = null;
-    let bossMovementTime = 0; // Variável para a oscilação do boss
-    let audioShoot;
-    let audioHit;
-    let audioDamage;
-    let audioHitasteroid;
-    let audioHitasteroidfail;
-    let audioGameOver;
-    let audioSucesso;
-    let audioBosswin;
-    // Estas variáveis precisam ser persistentes, provavelmente fora da sua função de atualização
-// ou como propriedades do seu objeto 'boss' ou 'gameState'
+let infoTimer = null; // Novo timer para gerenciar mensagens temporárias
+
+// --- Variáveis do Boss ---
+let isBossFight = false;
+let boss = null;
+let bossCurrentHealth = 0;
+let isBossVulnerable = false;
+let bossInterval = null;
+let bossMovementTime = 0; // Variável para a oscilação do boss
+let audioShoot;
+let audioHit;
+let audioDamage;
+let audioHitasteroid;
+let audioHitasteroidfail;
+let audioGameOver;
+let audioSucesso;
+let audioBosswin;
 
 let bossMovementState = 'moving'; // Pode ser 'moving' ou 'resting'
 let bossMoveTimer = 0; // Tempo gasto no estado atual
@@ -73,10 +69,10 @@ let bossMoveSpeed = 80; // Velocidade de movimento (em pixels por segundo, ajust
 
 const ASTEROID_GIFS = [
     'asteroid2.gif', // Asteroid 1º GIF
-    'asteroid.gif', //  Asteroid 2º GIF
+    'asteroid.gif', //  Asteroid 2º GIF
     'asteroid2.gif', // Asteroid 3º GIF
     'asteroid3.gif', // Asteroid 4º GIF
-    'asteroid1.gif'  // Asteroid 5º GIF
+    'asteroid1.gif'  // Asteroid 5º GIF
 ];
 
 // URLs dos GIFs - AGORA COM 'maxHealth' PARA CADA CHEFE
@@ -84,44 +80,43 @@ const BOSS_CHARACTERS = [
     { 
         name: 'Dr. nervoso', 
         gifUrl: 'boss1.gif',
-        maxHealth: 3 // Vida para o BOSS 1
+        maxHealth: 3 
     },
     { 
         name: 'Cloud Mad', 
         gifUrl: 'boss2.gif',
-        maxHealth: 4 // Vida para o BOSS 2
+        maxHealth: 4 
     },
     { 
         name: 'UFO', 
         gifUrl: 'boss3.gif',
-        maxHealth: 5 // Vida para o BOSS 3
+        maxHealth: 5 
     },
     { 
         name: 'ghost', 
         gifUrl: 'boss4.gif',
-        maxHealth: 6 // Vida para o BOSS 4
-    },  
+        maxHealth: 6 
+    },  
     { 
         name: 'Buraco negro', 
         gifUrl: 'boss5.gif',
-        maxHealth: 8 // Vida para o BOSS 4
+        maxHealth: 8 
     }
 ];
 
-    // --- Configurações de Dificuldade ---
-    const DIFFICULTY = [
-        { name: 'NÍVEL 1: SOMA (1-10)', maxNum: 10, op: '+' },
-        { name: 'NÍVEL 2: SOMA AVANÇADA (1-25)', maxNum: 25, op: '+' },
-        { name: 'NÍVEL 3: SUBTRAÇÃO (1-25)', maxNum: 25, op: '-' },
-        { name: 'NÍVEL 4: MULTIPLICAÇÃO (2-10)', maxNum: 10, op: '*' },
-        { name: 'NÍVEL 5: MISTURA (1-30)', maxNum: 30, op: '+-*' }
-    ];
-    const MAX_ASTEROIDS = 4;
-    let BASE_ASTEROID_SPEED = 50;
-    const ASTEROID_TYPES = ['type-a', 'type-b', 'type-c'];
+// --- Configurações de Dificuldade ---
+const DIFFICULTY = [
+    { name: 'NÍVEL 1: SOMA (1-10)', maxNum: 10, op: '+' },
+    { name: 'NÍVEL 2: SOMA AVANÇADA (1-25)', maxNum: 25, op: '+' },
+    { name: 'NÍVEL 3: SUBTRAÇÃO (1-25)', maxNum: 25, op: '-' },
+    { name: 'NÍVEL 4: MULTIPLICAÇÃO (2-10)', maxNum: 10, op: '*' },
+    { name: 'NÍVEL 5: MISTURA (1-30)', maxNum: 30, op: '+-*' }
+];
+const MAX_ASTEROIDS = 4;
+let BASE_ASTEROID_SPEED = 50;
+const ASTEROID_TYPES = ['type-a', 'type-b', 'type-c'];
 
-    // --- Funções Auxiliares ---
-    // --- Arrays para Mensagens Aleatórias ---
+// --- Arrays para Mensagens Aleatórias ---
 const NEGATIVE_FEEDBACK = [
     "MENSAGEM DO BOSS: TIRO REPELIDO! ENXAME A CAMINHO!!",
     "O Boss repele seu ataque com facilidade!",
@@ -139,35 +134,26 @@ const NEUTRAL_FEEDBACK = [
 ];
 
 
-// --- Funções Auxiliares (ADICIONE AQUI) ---
+// --- Funções Auxiliares (EXISTENTES) ---
 
-// Função para pegar uma mensagem aleatória de um array
 function getRandomMessage(messageArray) {
-    // Certifica-se de que o array existe e não está vazio
     if (!messageArray || messageArray.length === 0) {
         return "Alerta de Foco!"; 
     }
-    // Reutiliza a sua função existente getRandomInt
     const randomIndex = getRandomInt(0, messageArray.length - 1);
     return messageArray[randomIndex];
 }
-   // Função para exibir mensagem temporária
+
 function showTemporaryMessage(message, duration = 2000, className = '') {
     if (infoTimer) clearTimeout(infoTimer);
-
-    // Limpa classes anteriores e adiciona a nova
     questionDisplay.className = 'question-box'; 
     if (className) {
         questionDisplay.classList.add(className);
     }
-    
     questionDisplay.innerText = message;
     
     infoTimer = setTimeout(() => {
-        // Remove a classe de erro/bônus antes de restaurar o texto
         questionDisplay.className = 'question-box'; 
-        
-        // Volta para a pergunta atual (ou 'BOSS FIGHT')
         if (isBossFight) {
             questionDisplay.innerText = "BOSS FIGHT!";
         } else if (question.text) {
@@ -179,75 +165,188 @@ function showTemporaryMessage(message, duration = 2000, className = '') {
     }, duration);
 }
 
-    function getRandomInt(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
-    function shuffleArray(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
     }
+}
 
-    // Função para criar explosões de partículas
-    function createExplosion(x, y, color) {
-        for (let i = 0; i < 20; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.background = color;
+function createExplosion(x, y, color) {
+    for (let i = 0; i < 20; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.background = color;
+        
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+        
+        const angle = Math.random() * 2 * Math.PI;
+        const speed = Math.random() * 5 + 2; 
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+        
+        gameArea.appendChild(particle);
+        
+        let startTime = null;
+        function animateParticle(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const progress = timestamp - startTime;
             
-            // Posição inicial (no centro do impacto)
-            particle.style.left = `${x}px`;
-            particle.style.top = `${y}px`;
-            
-            // Movimento aleatório (vetor de velocidade)
-            const angle = Math.random() * 2 * Math.PI;
-            const speed = Math.random() * 5 + 2; 
-            const vx = Math.cos(angle) * speed;
-            const vy = Math.sin(angle) * speed;
-            
-            gameArea.appendChild(particle);
-            
-            // Animação usando requestAnimationFrame para movimento suave
-            let startTime = null;
-            function animateParticle(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const progress = timestamp - startTime;
-                
-                if (progress < 1000) { // Duração de 1 segundo
-                    particle.style.left = `${parseFloat(particle.style.left) + vx}px`;
-                    particle.style.top = `${parseFloat(particle.style.top) + vy}px`;
-                    particle.style.opacity = 1 - (progress / 1000); 
-                    requestAnimationFrame(animateParticle);
-                } else {
-                    particle.remove();
-                }
+            if (progress < 1000) { 
+                particle.style.left = `${parseFloat(particle.style.left) + vx}px`;
+                particle.style.top = `${parseFloat(particle.style.top) + vy}px`;
+                particle.style.opacity = 1 - (progress / 1000); 
+                requestAnimationFrame(animateParticle);
+            } else {
+                particle.remove();
             }
-            requestAnimationFrame(animateParticle);
+        }
+        requestAnimationFrame(animateParticle);
+    }
+}
+
+// --- Funções de Input (Adicionadas/Verificadas) ---
+
+function handleKeyDown(e) {
+    // Adiciona KeyA e KeyD para movimento WASD, além das setas
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+        keysPressed['ArrowLeft'] = true;
+    } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+        keysPressed['ArrowRight'] = true;
+    }
+    // Adiciona Space para disparo
+    if (e.code === 'Space') {
+        keysPressed['Space'] = true;
+    }
+
+    if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD', 'Space'].includes(e.code)) {
+        e.preventDefault();
+    }
+}
+
+function handleKeyUp(e) {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+        keysPressed['ArrowLeft'] = false;
+    } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+        keysPressed['ArrowRight'] = false;
+    }
+    if (e.code === 'Space') {
+        keysPressed['Space'] = false;
+    }
+}
+
+// Adiciona os event listeners para o movimento funcionar no PC
+window.addEventListener('keydown', handleKeyDown);
+window.addEventListener('keyup', handleKeyUp);
+
+// --- Função de Movimento do Player (Adicionada/Verificada) ---
+
+function movePlayer() {
+    if (!isGameRunning) return;
+
+    let moved = false;
+    let rotation = 0;
+
+    // 1. Movimento pelo teclado (PC) e Botões Móveis
+    if (keysPressed['ArrowLeft'] || keysPressed['KeyA'] || keysPressed[MOBILE_MOVE_LEFT]) {
+        playerX -= PLAYER_SPEED;
+        rotation = -10;
+        moved = true;
+    }
+    if (keysPressed['ArrowRight'] || keysPressed['KeyD'] || keysPressed[MOBILE_MOVE_RIGHT]) {
+        playerX += PLAYER_SPEED;
+        rotation = 10;
+        moved = true;
+    }
+
+    // 2. Movimento por Toque (Analógico, se estiver ativo)
+    if (touchTargetX !== null) {
+        const dx = touchTargetX - (playerX + player.offsetWidth / 2);
+
+        if (Math.abs(dx) > 1) { 
+            let moveAmount = dx * TOUCH_MOVE_SPEED_FACTOR;
+
+            if (Math.abs(moveAmount) > PLAYER_SPEED) {
+                moveAmount = moveAmount > 0 ? PLAYER_SPEED : -PLAYER_SPEED;
+            }
+
+            playerX += moveAmount;
+            rotation = moveAmount * 2; 
+            moved = true;
+
+            if (Math.abs(dx) < 5) {
+                touchTargetX = null;
+            }
         }
     }
-// ... (Certifique-se de que 'keysPressed' é um objeto let ou const no escopo global)
-// Exemplo: const keysPressed = {};
 
-// --- Funções de Inicialização e Jogo ---
 
-    function updateGameDimensions() {
-        GAME_WIDTH = gameArea.clientWidth;
-        GAME_HEIGHT = gameArea.clientHeight;
-    }
+    // 3. Limites de Borda 
+    playerX = Math.max(0, Math.min(playerX, GAME_WIDTH - player.offsetWidth));
 
+    // 4. Aplica a posição e rotação
+    player.style.left = `${playerX}px`;
+    player.style.transform = `rotate(${rotation}deg)`;
     
+    // IMPORTANTE: Manter o playerY fixo (ou definido pelo CSS no PC)
+    // No modo PC, o CSS define 'bottom', então não precisamos setar 'top'
+    // Se o estilo 'top' foi definido, precisamos mantê-lo ou redefini-lo:
+    if (player.style.bottom === '') { 
+         player.style.top = `${playerY}px`;
+    }
+}
+
+// --- Funções de Jogo VAZIAS (Apenas para evitar erros de referência) ---
+// Você deve preencher estas funções com a sua lógica real.
+function updateHUD() {
+    scoreDisplay.innerText = score;
+    livesDisplay.innerText = lives;
+    comboDisplay.innerText = combo;
+    // ... lógica para bossHealthDisplay
+}
+
+function generateNewQuestion() {
+    // Lógica para criar a pergunta e os asteroides
+    console.log("Gerando nova questão...");
+}
+
+let lastFrameTime = 0;
+function gameLoop(timestamp) {
+    if (!isGameRunning) return;
+    
+    const deltaTime = timestamp - lastFrameTime; // Usado para física baseada no tempo
+    lastFrameTime = timestamp;
+
+    // movePlayer já é chamado pelo setInterval, mas algumas lógicas podem ser feitas aqui
+    // Ex: Mover balas e asteroides
+    
+    // ... Lógica para mover asteroides e balas
+    
+    requestAnimationFrame(gameLoop);
+}
+
+
+// --- Funções de Inicialização e Jogo (COM A CORREÇÃO DE POSICIONAMENTO) ---
+
+function updateGameDimensions() {
+    GAME_WIDTH = gameArea.clientWidth;
+    GAME_HEIGHT = gameArea.clientHeight;
+}
+
 function startGame() {
     if (isGameRunning) return;
     
-    // Certifique-se de que a variável 'gameArea' esteja acessível
     const gameArea = document.getElementById('gameArea'); 
 
     loadAudio(); 
     updateGameDimensions();
     
-    // CORREÇÃO 1: Zera o estado das teclas pressionadas (para evitar movimento involuntário)
+    // Zera o estado das teclas pressionadas
     for (const key in keysPressed) {
         delete keysPressed[key];
     }
@@ -258,10 +357,10 @@ function startGame() {
     combo = 0;
     acertosDesdeUltimoBoss = 0;
     currentLevel = 1;
-    BASE_ASTEROID_SPEED = 35; // Velocidade do asteroid no boss
+    BASE_ASTEROID_SPEED = 35; 
     isGameRunning = true;
     
-    // CORREÇÃO 2: Zera o estado do Boss antes de iniciar o novo jogo
+    // Zera o estado do Boss
     isBossFight = false; 
     if (boss && boss.element.parentElement) {
         boss.element.remove();
@@ -283,72 +382,64 @@ function startGame() {
     document.getElementById('gameOverScreen').style.display = 'none';
     questionDisplay.style.display = 'block';
 
-    // ⭐ CORREÇÃO CRÍTICA: RESTAURA O BACKGROUND DA ÁREA DE JOGO ⭐
+    // RESTAURA O BACKGROUND DA ÁREA DE JOGO
     if (gameArea) {
-        // Remove os estilos inline de background que foram definidos em endGame()
-        // para que as regras complexas de background do CSS (as estrelas) voltem a funcionar.
-        
-        // A chave é definir como string vazia (''), o que remove o estilo inline
-        // e permite que o background-image e background-color do CSS sejam re-aplicados.
         gameArea.style.backgroundImage = ''; 
         gameArea.style.backgroundColor = ''; 
     }
 
 
-// 4. POSIÇÃO INICIAL DA NAVE
+    // --------------------------------------------------------------------------------
+    // 4. POSIÇÃO INICIAL DA NAVE (CORRIGIDA)
+    // --------------------------------------------------------------------------------
+    
+    const shootButton = document.getElementById('shootButton'); 
 
-// Variáveis para a posição padrão (Desktop)
-let initialPlayerX = GAME_WIDTH / 2 - 25;
-let initialPlayerY = GAME_HEIGHT - 70;
+    // LÓGICA CONDICIONAL: CELULAR OU DESKTOP
+    // Se o botão 'shootButton' existir E estiver visível (modo móvel)
+    if (shootButton && shootButton.offsetWidth > 0) {
+        
+        // 🚀 MODO CELULAR: Calcula a posição Y e X acima/longe do botão de tiro
+        const playerHeight = player.offsetHeight;
+        const gameAreaRect = gameArea.getBoundingClientRect(); 
+        const buttonRect = shootButton.getBoundingClientRect();
+        
+        const buttonTopInGameArea = buttonRect.top - gameAreaRect.top;
+        
+        playerY = buttonTopInGameArea - playerHeight - 5; 
+        
+        const playerWidth = player.offsetWidth;
+        const marginBetween = 30; 
+        const buttonWidth = shootButton.offsetWidth;
+        
+        const buttonPositionInsideGameArea = GAME_WIDTH - buttonWidth - 30; 
+        playerX = buttonPositionInsideGameArea - marginBetween - (playerWidth / 2);
+        
+        if (playerX < 10) { playerX = 10; }
 
-const shootButton = document.getElementById('shootButton');
-
-// VERIFICAÇÃO PARA DISPOSITIVOS MÓVEIS (onde o botão de atirar aparece)
-// O botão 'shootButton' só aparece em max-width: 768px (veja o CSS)
-// O 'offsetParent' verifica se o elemento está sendo renderizado e não está 'display: none'
-if (shootButton && window.getComputedStyle(shootButton).display !== 'none') {
-    // 1. Obter a posição e o tamanho do botão
-    const buttonRect = shootButton.getBoundingClientRect();
-    const gameAreaRect = gameArea.getBoundingClientRect(); // Assumindo que gameArea é o elemento pai (importante para cálculo relativo)
-
-    // 2. Calcular a nova posição da nave (Relativa à Game Area)
-    
-    // A nave deve iniciar à esquerda do botão, com uma pequena margem.
-    // player.offsetWidth é necessário para centralizar o foguete
-    const playerWidth = player.offsetWidth; // Obtém a largura da nave
-    const margin = 10; // Margem de 10px entre a nave e o botão
-    
-    // Calcula a posição X: Borda esquerda do botão - largura da nave - margem
-    initialPlayerX = (buttonRect.left - gameAreaRect.left) - playerWidth - margin;
-    
-    // Calcula a posição Y: Alinha a nave verticalmente no centro ou na base do botão.
-    // Como a nave está alinhada pelo topo (player.style.top), usaremos:
-    // Posição Y (base do botão) - altura da nave
-    // Como a nave é posicionada via bottom no CSS, podemos precisar inverter a lógica Y
-    
-    // Posição Y padrão para 'bottom: 20px' é GAME_HEIGHT - 70. 
-    // Vamos manter a altura padrão, a não ser que o CSS for mais complexo.
-    // Manter a altura Y padrão (parte inferior da tela) é geralmente mais seguro para jogos:
-    initialPlayerY = GAME_HEIGHT - 70; 
-    
-    // Garante que a nave não comece fora da tela à esquerda
-    if (initialPlayerX < 0) {
-        initialPlayerX = margin; // Inicia com uma margem mínima
+        // Aplica estilos MÓVEIS (usa 'top' e zera 'bottom')
+        player.style.left = `${playerX}px`;
+        player.style.top = `${playerY}px`;
+        player.style.bottom = 'auto'; 
+        
+    } else {
+        
+        // 💻 MODO DESKTOP: Usa a posição X central e depende do CSS para o Y (bottom: 20px)
+        playerX = GAME_WIDTH / 2 - 25; 
+        
+        // Aplica estilos DESKTOP (zera 'top' e usa 'bottom' do CSS)
+        player.style.left = `${playerX}px`;
+        player.style.top = ''; 
+        player.style.bottom = ''; 
+        
+        // Define a variável playerY para a lógica do jogo (aproximadamente a posição do CSS)
+        playerY = GAME_HEIGHT - 70; 
     }
 
-} 
-// Senão, initialPlayerX e initialPlayerY mantêm os valores padrão (GAME_WIDTH / 2 - 25, etc.)
+    // Estilo de inicialização (comum a ambos)
+    player.style.transform = 'rotate(0deg)';
 
-// 3. Aplicar a nova posição
-playerX = initialPlayerX;
-playerY = initialPlayerY;
-player.style.left = `${playerX}px`;
-player.style.top = `${playerY}px`; // No seu CSS, o 'bottom: 20px' pode conflitar. É melhor usar apenas 'top' ou apenas 'bottom/height' para posicionamento.
-player.style.transform = 'rotate(0deg)';
 
-// NOVO: IMPORTANTE para evitar conflito com o CSS 'bottom: 20px' em #player. 
-// Remova o 'bottom: 20px' do CSS de #player ou adicione a seguinte linha para ignorá-lo:
-player.style.bottom = 'auto'; // Usar 'top' anula 'bottom' se ambos estiverem definidos.
     // 5. INICIA O JOGO
     updateHUD();
     generateNewQuestion(); 
@@ -360,29 +451,23 @@ player.style.bottom = 'auto'; // Usar 'top' anula 'bottom' se ambos estiverem de
 
     requestAnimationFrame(gameLoop);
 }
-// --- Funções Auxiliares para Tocar Áudio ---
+
+// --- Funções Auxiliares para Tocar Áudio (EXISTENTES) ---
 function loadAudio() {
     audioShoot = new Audio('shoot.mp3');
     audioShoot.volume = 0.3;
-
-     audioHit = new Audio('hit.mp3');
+    audioHit = new Audio('hit.mp3');
     audioHit.volume = 0.3;
-
-     audioDamage = new Audio('damage.mp3');
+    audioDamage = new Audio('damage.mp3');
     audioDamage.volume = 0.3;
-
-     audioHitasteroid = new Audio('hitasteroid.mp3');
+    audioHitasteroid = new Audio('hitasteroid.mp3');
     audioHitasteroid.volume = 0.3;
-
     audioHitasteroidfail = new Audio('hitasteroidfail.mp3');
     audioHitasteroidfail.volume = 0.3;
-
-     audioSucesso = new Audio('Sucesso.mp3');
+    audioSucesso = new Audio('Sucesso.mp3');
     audioSucesso.volume = 0.3;
-
     audioGameOver = new Audio('game-over.mp3');
     audioGameOver.volume = 0.3;
-
     audioBosswin = new Audio('bosswin.mp3');
     audioBosswin.volume = 0.3;
 }
@@ -396,49 +481,47 @@ function playShootSound() {
 
 function playHitSound() {
     if (audioHit) {
-        const sound = audioHit.cloneNode(); // Clona para que o som do acerto não seja cortado
+        const sound = audioHit.cloneNode(); 
         sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
     }
 }
 function playDamageSound() {
     if (audioDamage) {
-        const sound = audioDamage.cloneNode(); // Clona para que o som do acerto não seja cortado
+        const sound = audioDamage.cloneNode(); 
         sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
     }
 }
 function playHitasteroid() {
     if (audioHitasteroid) {
-        const sound = audioHitasteroid.cloneNode(); // Clona para que o som do acerto não seja cortado
+        const sound = audioHitasteroid.cloneNode(); 
         sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
     }
 }
 
 function playHitasteroidfail() {
     if (audioHitasteroidfail) {
-        const sound = audioHitasteroidfail.cloneNode(); // Clona para que o som do acerto não seja cortado
+        const sound = audioHitasteroidfail.cloneNode(); 
         sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
     }
 }
 function playSucesso() {
     if (audioSucesso) {
-        const sound = audioSucesso.cloneNode(); // Clona para que o som do acerto não seja cortado
+        const sound = audioSucesso.cloneNode(); 
         sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
     }
 }
 function playgameover() {
     if (audioGameOver) {
-        const sound = audioGameOver.cloneNode(); // Clona para que o som do acerto não seja cortado
+        const sound = audioGameOver.cloneNode(); 
         sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
     }
 }
 function playBosswin() {
     if (audioBosswin) {
-        const sound = audioBosswin.cloneNode(); // Clona para que o som do acerto não seja cortado
+        const sound = audioBosswin.cloneNode(); 
         sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
     }
 }
-
-
 
 function endGame(isVictory = false) { 
     // Certifique-se de que 'gameArea' esteja definida (ex: const gameArea = document.getElementById('gameArea');)
