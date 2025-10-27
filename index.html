@@ -144,14 +144,12 @@
             }
             #player { width: clamp(var(--player-min), 12vw, var(--player-max)); height: clamp(var(--player-min), 12vw, var(--player-max)); bottom: calc(12px + env(safe-area-inset-bottom, 0)); }
             .asteroid { width: 18vw; height: 18vw; max-width: calc(var(--asteroid-max) - 8px); max-height: calc(var(--asteroid-max) - 8px); }
-            #hud { padding: calc(var(--hud-padding) - 2px); }
-            .question-box { font-size: clamp(1.0em, 4vw, 1.4em); padding: 6px 12px; }
+            #hud { padding: 5px 10px; } /* Ajustado */
+            .question-box { font-size: clamp(1.0em, 4vw, 1.4em); padding: 6px 12px; top: 60px; } /* Ajustado */
             #shootButton { padding: 10px 14px; font-size: 0.95rem; bottom: calc(var(--ad-height) + env(safe-area-inset-bottom, 0) + 8px); z-index: 1200; }
         }
     /* Ensure HUD sits above messages and ad */
     #hud { z-index: 2000; }
-    /* Place question messages and temporary messages under HUD so they don't hide HUD text */
-    /* REMOVIDO: .question-box { top: calc(var(--hud-padding) + 8px); z-index: 1800; } - Centralização absoluta será tratada no seletor principal. */
     .temp-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1800; pointer-events: none; }
 
         #player {
@@ -292,7 +290,8 @@
             
             /* Centraliza o Boss (mantendo a flutuação do JS) */
             position: absolute;
-            top: 8vh; /* Posiciona o boss usando a altura da tela */ 
+            /* CRÍTICO: Posiciona o Boss abaixo da área do HUD */
+            top: 60px; 
             left: 50%; 
             transform: translateX(-50%); 
             
@@ -361,42 +360,55 @@
             width: 96%;
             left: 1%;
             display: flex; 
-            flex-wrap: wrap;
-            /* CRÍTICO: Usa space-between para fixar os grupos nos cantos */
+            /* CRÍTICO: Removido flex-wrap para garantir que tudo fique em uma linha */
             justify-content: space-between; 
-            align-items: flex-start; 
-            padding: 10px;
+            align-items: center; /* Alinha verticalmente os itens no centro da altura do HUD */
+            padding: 5px 10px; /* Reduzindo o padding vertical */
+            height: auto; /* Deixa a altura ser definida pelo conteúdo */
             z-index: 30;
             background: rgba(0, 0, 0, 0.6);
             border-radius: 10px;
             border: 1px solid var(--cor-principal);
-            /* NOVO: Adiciona um espaço superior, garantindo que a margem de 10px do HUD
-            não se sobreponha à caixa de pergunta/Boss centralizado que está logo abaixo. */
-            padding-top: calc(var(--hud-padding) + 40px);
         }
 
         /* NOVO: Contêiner para o grupo Esquerdo (SAIR e Pontos/Combo) */
         #leftSideHUD {
             display: flex;
-            flex-direction: column; /* Organiza os itens verticalmente: SAIR em cima, Pontos embaixo */
-            align-items: flex-start; /* Alinha todos os itens à esquerda */
+            flex-direction: row; /* Alterado para row, para colocar Pontos ao lado de SAIR, se houver espaço */
+            align-items: center; /* Alinha verticalmente */
+            gap: 10px; /* Espaçamento entre SAIR e Pontos */
         }
         
         /* Contêiner para manter Score e Combo agrupados */
         #scoreComboGroup {
             display: flex;
-            flex-direction: column; /* Coloca os filhos (score e combo) um abaixo do outro */
-            align-items: flex-start; /* Alinha o texto do score/combo à esquerda */
-            margin-top: 5px; /* Adiciona um pequeno espaço entre SAIR e Pontos */
+            flex-direction: row; /* Alterado para row para Pontos ficar ao lado, mas o label e o score devem ser coluna */
+            align-items: center; 
+            margin-top: 0; /* Removido margin-top */
         }
 
         /* Estrutura do Score (Label acima do valor) */
         #scoreContainer {
             display: flex;
             flex-direction: column; 
-            align-items: flex-start; /* Alinha o texto "Pontos:" e o número à esquerda */
+            align-items: flex-start; 
             padding: 0;
+            margin-top: 3px; /* Pequeno ajuste para alinhar com o botão SAIR */
         }
+        /* Ajuste para o celular: Pontos ao lado de Sair */
+        @media (max-width: 600px) {
+             #leftSideHUD {
+                flex-direction: row; 
+                gap: 10px; 
+            }
+            #scoreContainer {
+                flex-direction: row;
+                align-items: center;
+            }
+            .score-label { margin-bottom: 0; margin-right: 5px;}
+            #score { font-size: 1.2em; }
+        }
+
 
         .score-label {
             font-size: 0.8em; 
@@ -429,8 +441,8 @@
         /* Novo Contêiner para Lado Direito */
         #rightSideHUD {
             display: flex;
-            flex-direction: column; /* FORÇA LIVES E BOSSHEALTH A FICAREM UM ABAIXO DO OUTRO */
-            align-items: flex-end; /* Alinha o texto das divs à direita */
+            flex-direction: row; /* MANTIDO: Vidas e Boss HP lado a lado, mas Vidas vem primeiro */
+            align-items: center; /* Alinha verticalmente */
             margin-left: auto; /* Empurra o grupo para o lado direito */
         }
 
@@ -442,18 +454,18 @@
             
             /* NOVO: Usa Flexbox para alinhar o texto 'BOSS HP:' e o conteúdo da barra */
             display: flex; 
-            align-items: center; /* Alinhamento vertical entre texto e corações */
-            justify-content: flex-end; /* Alinha o conteúdo à direita */
+            align-items: center; 
+            justify-content: flex-end; 
+            margin-left: 10px; /* Espaço entre Vidas e Boss HP */
 
-            width: 100%; /* Ocupa a largura total do contêiner direito */
+            width: auto; 
             min-width: 150px; 
-            /* display: none; // Essa linha é controlada pelo JS, mas precisa ser alterada para 'flex' ou 'block' no JS durante a luta */
         }
 
         /* NOVO: Estilo para o contêiner dos corações (boss-hp-bar) */
         .boss-hp-bar {
             margin-left: 5px; /* Espaço entre o texto 'BOSS HP:' e a barra de corações */
-            display: flex; /* Garante que os spans de coração fiquem lado a lado */
+            display: flex; 
             align-items: center;
         }
 
@@ -474,8 +486,8 @@
         position: absolute; /* ESSENCIAL */
         left: 50%; /* MOVE PARA O MEIO */
         transform: translateX(-50%); /* COMPENSA O TAMANHO */
-        top: calc(var(--hud-padding)); /* POSIÇÃO NO TOPO (com o padding do HUD) */
-        z-index: 1800; /* MANTÉM A ORDEM DE CAMADAS */
+        top: 60px; /* CRÍTICO: Posiciona a caixa abaixo da área do HUD */
+        z-index: 1800; 
 
         /* Estilos de aparência */
         padding: 1px 10px; 
@@ -488,18 +500,18 @@
         animation: pulse-question 1.5s infinite alternate;
       }
       
-        /* NOVO: Estilo específico para o texto "BOSS FIGHT!" (se for um elemento separado) */
+        /* NOVO: Estilo específico para o texto "BOSS FIGHT!" */
         #bossFightTitle {
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
-            top: var(--hud-padding); /* Mesma altura ou um pouco acima da caixa de pergunta */
-            z-index: 1900; /* Acima da caixa de pergunta */
+            top: 5px; /* CRÍTICO: Posiciona bem no topo, acima do HUD e da pergunta/Boss */
+            z-index: 1900; 
             
-            font-size: clamp(1.5em, 6vw, 2.5em);
+            font-size: clamp(1.5em, 6vw, 2.0em);
             color: var(--cor-acerto);
             border: 3px solid var(--cor-acerto);
-            padding: 5px 15px;
+            padding: 3px 10px;
             border-radius: 8px;
             background: rgba(0, 0, 0, 0.8);
             box-shadow: 0 0 20px var(--cor-acerto);
@@ -587,9 +599,6 @@
             border-radius: 5px;
             transition: all 0.3s;
             text-decoration: none; /* Para parecer um botão, não um link */
-
-            /* REMOVIDO: order: -1; */
-            /* REMOVIDO: margin-right: 15px; */
         }
 
         #exitButton:hover {
@@ -600,19 +609,19 @@
         }
 
         #shootButton {
-            position: absolute; /* Usamos 'absolute' se estiver dentro de #gameArea (que deve ser 'relative') */
+            position: absolute; 
             bottom: 20px;
             right: 20px;
             
             /* Estilo do botão */
             padding: 15px 25px;
             font-size: 1.2rem;
-            background-color: var(--cor-acerto); /* Ex: verde */
+            background-color: var(--cor-acerto); 
             color: white;
             border: 3px solid white;
             border-radius: 10px;
             cursor: pointer;
-            z-index: 1000; /* Garante que fique acima de tudo */
+            z-index: 1000; 
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
             
             display: none; 
@@ -620,7 +629,7 @@
 
         @media (max-width: 768px) {
             #shootButton {
-                display: block; /* Oculta a visualização para telas grandes (desktop) */
+                display: block; 
                 position: fixed;
                 z-index: 1100;
                 right: 12px;
