@@ -752,7 +752,7 @@ function updateHUD() {
         }
         
         // Lógica para chamar o Boss (Se 10 acertos ou mais)
-        if (acertosDesdeUltimoBoss >= 10 && !isBossFight) {
+        if (acertosDesdeUltimoBoss >= 1 && !isBossFight) {
             enterBossFight();
         }
     }
