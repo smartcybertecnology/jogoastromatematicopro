@@ -157,7 +157,7 @@
 
         #player {
     position: absolute;
- 
+    bottom: 20px;
     
     width: clamp(42px, 10vw, 63px); 
     height: clamp(42px, 10vw, 63px);
@@ -454,32 +454,19 @@
             margin: 0 1px;
         }
 
-        /* Você pode precisar ajustar #lives para remover o flex-grow */
         #lives {
             color: var(--cor-erro);
             font-size: 1.5em;
-            /* Removido: flex-basis: auto; */
-            /* Removido: text-align: right; */
+           
         }
 
-        /* Caixa de Pergunta Central */
-       /* Caixa de Pergunta Central */
+      
 .question-box {
-    /* PROPRIEDADES REMOVIDAS PARA CORRIGIR A SOBREPOSIÇÃO */
-    /* position: absolute; */
-    /* top: 0%; */
-    /* left: 50%; */
-    /* transform: translateX(-50%); */
-    /* z-index: 25; */
 
-    /* AJUSTES PARA RESPONSIVIDADE */
-    /* Padding lateral reduzido para caber melhor */
     padding: 1px 10px; 
 
-    /* O clamp já é ótimo. Ajustei um pouco para telas menores */
     font-size: clamp(1.2em, 4.5vw, 1.8em); 
 
-    /* O resto dos seus estilos permanece igual */
     font-weight: 900;
     background: rgba(0, 0, 0, 0.7);
     border: 3px solid var(--cor-principal);
@@ -487,7 +474,6 @@
     border-radius: 10px;
     animation: pulse-question 1.5s infinite alternate;
 }
-        /* NOVO ESTILO: Para mensagens de erro/repelidas */
         .question-box.error-msg {
             color: var(--cor-erro); /* Muda a cor do texto para laranja/vermelho */
             border-color: var(--cor-erro); /* Muda a borda */
@@ -500,7 +486,6 @@
             25% { transform: translateX(calc(-50% - 5px)); }
             75% { transform: translateX(calc(-50% + 5px)); }
         }
-        /* NOVO ESTILO: Para mensagens de Alerta/Foco */
         .question-box.alert-msg {
             color: var(--cor-secundaria); /* Magenta Neon */
             border-color: var(--cor-secundaria);
@@ -520,7 +505,6 @@
         }
 
 
-        /* Telas de Overlay */
         #overlay, #gameOverScreen {
             position: absolute;
             top: 0;
@@ -528,7 +512,6 @@
             width: 100%;
             height: 100%;
             
-            /* ⭐ CORREÇÃO 1: Fundo SÓLIDO (opacidade 1) para esconder o jogo por baixo. ⭐ */
             background: rgba(0, 0, 0, 1); 
             
             display: flex;
@@ -537,7 +520,6 @@
             justify-content: center;
             text-align: center;
             
-            /* ⭐ CORREÇÃO 2: Aumentar o z-index para garantir que esteja acima de TUDO. ⭐ */
             z-index: 10000; 
         }
 
@@ -561,7 +543,6 @@
             box-shadow: 0 0 25px var(--cor-principal);
             transform: scale(1.05);
         }
-        /* NOVO: Estilo para o Botão SAIR */
         #exitButton {
             /* Estilos base */
             background: var(--cor-fundo);
@@ -575,7 +556,6 @@
             transition: all 0.3s;
             text-decoration: none; /* Para parecer um botão, não um link */
 
-            /* Posicionamento no HUD (canto superior esquerdo) */
             order: -1; /* Força a ir para o início do flex container */
             margin-right: 15px; /* Espaço à direita para separar do score/combo */
         }
@@ -586,10 +566,8 @@
             box-shadow: 0 0 10px var(--cor-erro);
             transform: scale(1.05);
         }
-        /* style.css (Adicione estas regras) */
 
         #shootButton {
-            /* Posição fixa no canto inferior direito */
             position: absolute; /* Usamos 'absolute' se estiver dentro de #gameArea (que deve ser 'relative') */
             bottom: 20px;
             right: 20px;
@@ -605,15 +583,12 @@
             z-index: 1000; /* Garante que fique acima de tudo */
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
             
-            /* Inicialmente esconde o botão para desktop */
             display: none; 
         }
 
-        /* 📱 Media Query: Mostra o botão APENAS em telas menores (celulares/tablets) */
         @media (max-width: 768px) {
             #shootButton {
                 display: block; /* Oculta a visualização para telas grandes (desktop) */
-                /* Make shoot button fixed on small screens so it remains reachable above ad */
                 position: fixed;
                 z-index: 1100;
                 right: 12px;
