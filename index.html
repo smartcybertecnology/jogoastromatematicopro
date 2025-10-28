@@ -404,7 +404,7 @@
 /* Caixa da questão - abaixo do HUD */
 .question-box {
     position: absolute;
-    top: 92px; /* distância do topo para ficar abaixo do HUD */
+    top: 92px;  /* mantém a mesma distância do HUD */
     left: 50%;
     transform: translateX(-50%);
     display: inline-block;
@@ -416,27 +416,11 @@
     box-shadow: 0 0 15px var(--cor-principal);
     border-radius: 10px;
     color: var(--cor-principal);
-    z-index: 90; /* abaixo do HUD, acima do fundo */
+    z-index: 90;
     text-align: center;
 }
 
-/* Responsividade para telas pequenas */
-@media (max-width: 600px) {
-    #hud {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        width: 94%;
-        padding: 6px 8px;
-    }
 
-    .question-box {
-        top: 92px; /* ajusta mais abaixo para telas menores */
-        font-size: clamp(1em, 5vw, 1.4em);
-        padding: 4px 10px;
-        max-width: 90%;
-    }
-}
 
        
         #bossFightTitle {
