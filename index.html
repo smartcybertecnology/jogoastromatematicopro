@@ -401,24 +401,24 @@
     box-shadow: 0 0 15px var(--cor-principal);
 }
 
-/* Caixa da questão - abaixo do HUD */
 .question-box {
     position: absolute;
-    top: 92px;  /* mantém a mesma distância do HUD */
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     display: inline-block;
     padding: 6px 14px;
     font-size: clamp(1.1em, 4vw, 1.6em);
     font-weight: 900;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.95); /* mais opaco */
     border: 3px solid var(--cor-principal);
     box-shadow: 0 0 15px var(--cor-principal);
     border-radius: 10px;
     color: var(--cor-principal);
-    z-index: 90;
+    z-index: 5000;  /* agora está acima de praticamente tudo */
     text-align: center;
 }
+
 
 
 
