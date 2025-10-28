@@ -297,46 +297,57 @@
             align-items: flex-start; 
         }
         
-        #scoreComboGroup {
-            display: flex;
-            flex-direction: column; 
-            align-items: flex-start; 
-            margin-top: 5px;
-        }
+      /* Grupo de pontuação e combo lado a lado */
+#scoreComboGroup {
+    display: flex;
+    flex-direction: row; /* lado a lado */
+    align-items: center;
+    gap: 10px; /* espaçamento entre o score e o combo */
+    margin-top: 5px;
+}
 
-        #scoreContainer {
-            display: flex;
-            flex-direction: column; 
-            align-items: flex-start; 
-            padding: 0;
-        }
+/* Caixa de pontuação */
+#scoreContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
 
-        .score-label {
-            font-size: 0.8em; 
-            color: #aaa; 
-            text-shadow: 1px 1px 2px #000;
-            margin-bottom: -5px; 
-        }
+/* Rótulo “Pontos:” */
+.score-label {
+    font-size: 0.8em;
+    color: #aaa;
+    text-shadow: 1px 1px 2px #000;
+    margin-bottom: -5px;
+}
 
-        #score {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: var(--cor-principal);
-        }
+/* Valor da pontuação */
+#score {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: var(--cor-principal);
+}
 
-        #combo {
-            color: var(--cor-combo);
-            font-size: 1.0em;
-            text-shadow: 0 0 8px var(--cor-combo);
-            text-align: left;
-            margin-top: 5px; 
-            display: none; 
-        }
+/* Combo ao lado do score */
+#combo {
+    color: var(--cor-combo);
+    font-size: 1.2em;
+    font-weight: 900;
+    text-shadow: 0 0 8px var(--cor-combo);
+    display: none; /* só aparece quando ativo */
+}
 
-        .combo-active {
-            display: block !important;
-            animation: combo-pulse 0.5s infinite alternate;
-        }
+/* Efeito visual quando o combo está ativo */
+.combo-active {
+    display: block !important;
+    animation: combo-pulse 0.6s infinite alternate;
+}
+
+@keyframes combo-pulse {
+    from { text-shadow: 0 0 5px var(--cor-combo), 0 0 10px white; transform: scale(1); }
+    to   { text-shadow: 0 0 15px var(--cor-combo), 0 0 25px white; transform: scale(1.1); }
+}
+
         #rightSideHUD {
             display: flex;
             flex-direction: column; 
@@ -432,7 +443,7 @@
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
-            top: var(--hud-padding);
+            top: 92px; 
             z-index: 1900; 
             
             font-size: clamp(1.5em, 6vw, 2.5em);
