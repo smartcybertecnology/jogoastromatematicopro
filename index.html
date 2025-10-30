@@ -355,34 +355,48 @@
             margin-left: auto; 
         }
 
-        #bossHealth {
-            font-size: 1.2em;
-            font-weight: 900;
-            color: var(--cor-erro);
-            display: flex; 
-            align-items: center;
-            justify-content: flex-end; 
+      /* Container principal da barra */
+.boss-hp-bar {
+    width: 300px; /* Largura da barra (ajuste se precisar) */
+    height: 20px; /* Altura da barra */
+    background-color: #333; /* Cor de fundo da barra vazia (cinza escuro) */
+    border: 2px solid #fff; /* Borda branca para destaque */
+    border-radius: 5px;
+    margin-left: 10px; /* Espaçamento após o texto 'BOSS HP:' */
+    position: relative; /* Importante para posicionar o fill e o texto */
+    overflow: hidden; /* Garante que o fill não exceda a borda */
+}
 
-            width: 100%; 
-            min-width: 150px; 
-         
-        }
-        .boss-hp-bar {
-            margin-left: 5px; 
-            display: flex; 
-            align-items: center;
-        }
+/* Preenchimento da vida */
+.boss-hp-fill {
+    height: 100%;
+    /* A cor de fundo será definida no JavaScript (verde ou vermelho) */
+    transition: width 0.3s ease-out; /* Animação suave na mudança de vida */
+    position: absolute;
+    left: 0;
+    top: 0;
+}
 
-        .boss-hp-bar span {
-            font-size: 1.2em; 
-            margin: 0 1px;
-        }
+/* Estilização opcional do texto de HP */
+.boss-hp-bar .hp-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    line-height: 20px; /* Centraliza verticalmente com a altura da barra */
+    color: white;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px #000;
+    z-index: 2; /* Fica acima do preenchimento */
+}
 
-        #lives {
-            color: var(--cor-erro);
-            font-size: 1.5em;
-            
-        }
+/* Se o seu bossHealthDisplay for um flexbox, o alinhamento ficará bom: */
+#bossHealthDisplay {
+    display: flex;
+    align-items: center;
+    font-size: 1.2em;
+    color: white;
+    text-shadow: 1px 1px 2px #000;
+}
 
 #hud {
     position: absolute;
