@@ -133,9 +133,36 @@ const NEUTRAL_FEEDBACK = [
     "ALVO DESCARTADO."
 ];
 
+/* Função showBossTitle (coloque esta em seu código) */
+function showBossTitle(text = "BOSS FIGHT!") {
+    // 0. ESCONDE a caixa de pergunta original **IMEDIATAMENTE**
+    if (questionDisplay) {
+        questionDisplay.style.display = 'none'; // ✅ Oculta
+        questionDisplay.innerText = ""; 
+    }
 
-// --- Funções Auxiliares (EXISTENTES) ---
+    // 1. Cria o elemento dinâmico... (Lógica inalterada)
+    const bossTitle = document.createElement('div');
+    bossTitle.id = 'dynamicBossTitle';
+    bossTitle.className = 'boss-title-popup';
+    bossTitle.innerText = text;
+    document.getElementById('gameArea').appendChild(bossTitle);
 
+    const animationDuration = 2000; 
+
+    setTimeout(() => {
+        // 4. Remove o elemento do DOM
+        bossTitle.remove();
+
+        // 5. MANTÉM OCULTA a caixa de pergunta original.
+        if (questionDisplay) {
+            questionDisplay.style.display = 'none'; // ✅ MANTÉM OCULTA
+            questionDisplay.innerText = "";
+            questionDisplay.classList.remove('error-msg', 'alert-msg');
+        }
+
+    }, animationDuration);
+}
 function getRandomMessage(messageArray) {
     if (!messageArray || messageArray.length === 0) {
         return "Alerta de Foco!"; 
@@ -143,23 +170,38 @@ function getRandomMessage(messageArray) {
     const randomIndex = getRandomInt(0, messageArray.length - 1);
     return messageArray[randomIndex];
 }
-
 function showTemporaryMessage(message, duration = 2000, className = '') {
+    // ... (Proteção contra o título animado) ...
+    if (document.getElementById('dynamicBossTitle')) {
+        return; 
+    }
+    
     if (infoTimer) clearTimeout(infoTimer);
-    questionDisplay.className = 'question-box'; 
+    
+    // ✅ NOVO: Exibe a caixa ANTES de setar o texto/classe
+    questionDisplay.style.display = 'block'; 
+    questionDisplay.className = 'question-box'; 
+    
     if (className) {
         questionDisplay.classList.add(className);
     }
     questionDisplay.innerText = message;
-    
+     
     infoTimer = setTimeout(() => {
-        questionDisplay.className = 'question-box'; 
+        questionDisplay.className = 'question-box'; 
+        
+        // 🛑 LÓGICA FINAL: Define o estado pós-mensagem
         if (isBossFight) {
-            questionDisplay.innerText = "BOSS FIGHT!";
+            // Se for Boss Fight, oculta TUDO de novo
+            questionDisplay.innerText = "";
+            questionDisplay.style.display = 'none'; // ✅ OCULTA DEPOIS DO FEEDBACK
         } else if (question.text) {
+            // Volta para a pergunta normal (modo asteroide)
             questionDisplay.innerText = question.text;
+            questionDisplay.style.display = 'block'; // Volta a exibir a pergunta
         } else {
             questionDisplay.innerText = "Preparando...";
+            questionDisplay.style.display = 'block';
         }
         infoTimer = null;
     }, duration);
@@ -901,55 +943,58 @@ function updateHUD() {
 }
     // --- Lógica do Boss Aprimorada ---
 
-    function enterBossFight() {
-        isBossFight = true;
+function enterBossFight() {
+    isBossFight = true;
 
-        // Limpa a tela
-        asteroids.forEach(a => { a.element.remove(); });
-        asteroids = [];
+    // Limpa a tela
+    asteroids.forEach(a => { a.element.remove(); });
+    asteroids = [];
 
-        // Limpa mensagens temporárias e exibe "BOSS FIGHT!"
-        if (infoTimer) clearTimeout(infoTimer);
-        questionDisplay.innerText = "BOSS FIGHT!";
-        
-        // Seleciona um Boss
-        const bossIndex = (currentLevel - 1) % BOSS_CHARACTERS.length;
-        const bossInfo = BOSS_CHARACTERS[bossIndex];
+    // Limpa mensagens temporárias e GARANTE A LIMPEZA IMEDIATA
+    if (infoTimer) clearTimeout(infoTimer);
+    questionDisplay.innerText = ""; 
+    questionDisplay.style.display = 'none'; // ✅ GARANTE OCULTAMENTO
+    
+    // ... (restante da lógica do Boss) ...
+    const bossIndex = (currentLevel - 1) % BOSS_CHARACTERS.length;
+    const bossInfo = BOSS_CHARACTERS[bossIndex];
 
-        const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
-        question = generateQuestionData(currentDiff);
+    // 🌟 CHAMA a função que lida com a animação e o estado final (oculto).
+    showBossTitle(`${bossInfo.name.toUpperCase()} HAS APPEARED!`);
+    
+    const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
+    question = generateQuestionData(currentDiff);
 
-        // *** AQUI É USADA A PROPRIEDADE maxHealth DO CHEFE SELECIONADO ***
-        bossCurrentHealth = bossInfo.maxHealth; 
-        // ***************************************************************
-        bossMovementTime = 0; // Inicializa a variável de tempo para o movimento de oscilação
+    // *** AQUI É USADA A PROPRIEDADE maxHealth DO CHEFE SELECIONADO ***
+    bossCurrentHealth = bossInfo.maxHealth; 
+    // ***************************************************************
+    bossMovementTime = 0; // Inicializa a variável de tempo para o movimento de oscilação
 
-        // Cria o elemento do Boss
-        boss = {
-            element: document.createElement('div'),
-            info: bossInfo,
-            currentAnswer: null,
-            isVulnerable: false
-        };
-        boss.element.id = 'boss';
-        
-        // LINHAS ALTERADAS: Usamos a tag <img> com o 'gifUrl'
-        boss.element.innerHTML = `
-            <img class="boss-gif" src="${bossInfo.gifUrl}" alt="${bossInfo.name}">
-            <span class="boss-question">${question.text} = ?</span>
-            <div class="boss-answer-display">...</div>
-        `;
-        
-        gameArea.appendChild(boss.element);
-        boss.element.classList.add('invulnerable'); // Inicia invulnerável
+    // Cria o elemento do Boss
+    boss = {
+        element: document.createElement('div'),
+        info: bossInfo,
+        currentAnswer: null,
+        isVulnerable: false
+    };
+    boss.element.id = 'boss';
+    
+    // LINHAS INALTERADAS: Elementos visuais do boss
+    boss.element.innerHTML = `
+        <img class="boss-gif" src="${bossInfo.gifUrl}" alt="${bossInfo.name}">
+        <span class="boss-question">${question.text} = ?</span>
+        <div class="boss-answer-display">...</div>
+    `;
+    
+    gameArea.appendChild(boss.element);
+    boss.element.classList.add('invulnerable'); // Inicia invulnerável
 
-        updateHUD();
+    updateHUD();
 
-        // Inicia a mecânica de resposta aleatória
-        if (bossInterval) clearInterval(bossInterval);
-        bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
-    }
-
+    // Inicia a mecânica de resposta aleatória
+    if (bossInterval) clearInterval(bossInterval);
+    bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+}
     function toggleBossVulnerability() {
         const answerDisplay = boss.element.querySelector('.boss-answer-display');
         const questionDisplayBoss = boss.element.querySelector('.boss-question');
