@@ -75,34 +75,15 @@ const ASTEROID_GIFS = [
     'asteroid1.gif'  // Asteroid 5º GIF
 ];
 
-// URLs dos GIFs - AGORA COM 'maxHealth' PARA CADA CHEFE
-const BOSS_CHARACTERS = [
-    { 
-        name: 'Dr. nervoso', 
-        gifUrl: 'boss1.gif',
-        maxHealth: 3 
-    },
-    { 
-        name: 'Cloud Mad', 
-        gifUrl: 'boss2.gif',
-        maxHealth: 4 
-    },
-    { 
-        name: 'UFO', 
-        gifUrl: 'boss3.gif',
-        maxHealth: 5 
-    },
-    { 
-        name: 'ghost', 
-        gifUrl: 'boss4.gif',
-        maxHealth: 6 
-    },  
-    { 
-        name: 'Buraco negro', 
-        gifUrl: 'boss5.gif',
-        maxHealth: 8 
-    }
-];
+const bossNames = ['Dr. nervoso', 'Cloud Mad', 'UFO', 'ghost', 'Buraco negro'];
+const bossHealth = [3, 4, 5, 6, 8];
+
+const BOSS_CHARACTERS = bossNames.map((name, i) => ({
+  name,
+  gifUrl: `boss${i + 1}.gif`,
+  maxHealth: bossHealth[i]
+}));
+
 
 // --- Configurações de Dificuldade ---
 const DIFFICULTY = [
@@ -494,109 +475,75 @@ function startGame() {
     requestAnimationFrame(gameLoop);
 }
 
-// --- Funções Auxiliares para Tocar Áudio (EXISTENTES) ---
+// --- Áudios e Função de Carregamento ---
+const audios = {
+    shoot: 'shoot.mp3',
+    hit: 'hit.mp3',
+    damage: 'damage.mp3',
+    hitasteroid: 'hitasteroid.mp3',
+    hitasteroidfail: 'hitasteroidfail.mp3',
+    sucesso: 'Sucesso.mp3',
+    gameOver: 'game-over.mp3',
+    bosswin: 'bosswin.mp3'
+};
+
+const audioObjects = {};
+
 function loadAudio() {
-    audioShoot = new Audio('shoot.mp3');
-    audioShoot.volume = 0.3;
-    audioHit = new Audio('hit.mp3');
-    audioHit.volume = 0.3;
-    audioDamage = new Audio('damage.mp3');
-    audioDamage.volume = 0.3;
-    audioHitasteroid = new Audio('hitasteroid.mp3');
-    audioHitasteroid.volume = 0.3;
-    audioHitasteroidfail = new Audio('hitasteroidfail.mp3');
-    audioHitasteroidfail.volume = 0.3;
-    audioSucesso = new Audio('Sucesso.mp3');
-    audioSucesso.volume = 0.3;
-    audioGameOver = new Audio('game-over.mp3');
-    audioGameOver.volume = 0.3;
-    audioBosswin = new Audio('bosswin.mp3');
-    audioBosswin.volume = 0.3;
-}
-
-function playShootSound() {
-    if (audioShoot) {
-        const sound = audioShoot.cloneNode(); 
-        sound.play().catch(e => console.log("Erro ao tocar áudio de disparo:", e));
+    for (const key in audios) {
+        const audio = new Audio(audios[key]);
+        audio.volume = 0.3;
+        audioObjects[key] = audio;
     }
 }
 
-function playHitSound() {
-    if (audioHit) {
-        const sound = audioHit.cloneNode(); 
-        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
-    }
-}
-function playDamageSound() {
-    if (audioDamage) {
-        const sound = audioDamage.cloneNode(); 
-        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
-    }
-}
-function playHitasteroid() {
-    if (audioHitasteroid) {
-        const sound = audioHitasteroid.cloneNode(); 
-        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
+// --- Função Genérica para Tocar Áudio ---
+function playSound(key) {
+    const audio = audioObjects[key];
+    if (audio) {
+        const sound = audio.cloneNode();
+        sound.play().catch(e => console.log(`Erro ao tocar áudio ${key}:`, e));
     }
 }
 
-function playHitasteroidfail() {
-    if (audioHitasteroidfail) {
-        const sound = audioHitasteroidfail.cloneNode(); 
-        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
-    }
-}
-function playSucesso() {
-    if (audioSucesso) {
-        const sound = audioSucesso.cloneNode(); 
-        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
-    }
-}
-function playgameover() {
-    if (audioGameOver) {
-        const sound = audioGameOver.cloneNode(); 
-        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
-    }
-}
-function playBosswin() {
-    if (audioBosswin) {
-        const sound = audioBosswin.cloneNode(); 
-        sound.play().catch(e => console.log("Erro ao tocar áudio de acerto:", e));
-    }
-}
+// --- Exemplos de uso ---
+function playShootSound() { playSound('shoot'); }
+function playHitSound() { playSound('hit'); }
+function playDamageSound() { playSound('damage'); }
+function playHitasteroid() { playSound('hitasteroid'); }
+function playHitasteroidfail() { playSound('hitasteroidfail'); }
+function playSucesso() { playSound('sucesso'); }
+function playgameover() { playSound('gameOver'); }
+function playBosswin() { playSound('bosswin'); }
+
 
 function endGame(isVictory = false) { 
-    // Certifique-se de que 'gameArea' esteja definida (ex: const gameArea = document.getElementById('gameArea');)
     const gameArea = document.getElementById('gameArea'); 
 
-    // 1. PARADA DE LOOPS E FLAGS
     isGameRunning = false;
     clearInterval(movementInterval);
     if (bossInterval) clearInterval(bossInterval); 
     if (infoTimer) clearTimeout(infoTimer);
-    window.removeEventListener('resize', updateGameDimensions); // Limpa listener de redimensionamento
+    window.removeEventListener('resize', updateGameDimensions); 
     
-    // 2. TOCA SOM
     if (isVictory) {
         playBosswin(); 
     } else {
         playgameover(); 
     }
 
-    // 3. LIMPEZA VISUAL (Boss e Fundo)
+
     if (boss && boss.element.parentElement) {
-        // Remove o elemento do Boss
+    
         createExplosion(GAME_WIDTH / 2, 125, 'var(--cor-erro)'); 
         boss.element.remove();
     }
-    
-    // ⭐ CORREÇÃO PRINCIPAL: Remove o background (imagem do Buraco Negro) da área de jogo ⭐
+ 
     if (gameArea) {
-        gameArea.style.backgroundImage = 'none'; // Remove a imagem do fundo
-        gameArea.style.backgroundColor = '#000000'; // Define cor de fundo preto
+        gameArea.style.backgroundImage = 'none';
+        gameArea.style.backgroundColor = '#000000'; 
     }
     
-    // GARANTIA DE RESET DO ESTADO DO BOSS
     isBossFight = false;
     boss = null;
     
@@ -613,7 +560,6 @@ function endGame(isVictory = false) {
     // 4. EXIBE TELA DE FIM DE JOGO
     const gameOverScreen = document.getElementById('gameOverScreen');
     
-    // Altera o título dinamicamente (MISSÃO CUMPRIDA/FRACASSADA)
     const titleElement = gameOverScreen.querySelector('h2');
     if (titleElement) {
         titleElement.innerText = isVictory ? "MISSÃO CUMPRIDA!" : "MISSÃO FRACASSADA";
@@ -623,26 +569,19 @@ function endGame(isVictory = false) {
     
     document.getElementById('finalScore').innerText = score;
     gameOverScreen.style.display = 'flex';
-    questionDisplay.style.display = 'none'; // Esconde o painel de perguntas
+    questionDisplay.style.display = 'none'; 
 }
 
-// A nova função para o Botão Exclusivo (Use esta)
 function handleShootButtonTouch(event) {
-    // 1. Previne o movimento (se for um touch) e o clique padrão
     event.preventDefault();
-    event.stopPropagation(); // Impede que o toque suba para o gameArea e cause movimento
+    event.stopPropagation(); 
     
-    // 2. Garante que o jogo está rodando
     if (!isGameRunning) return;
     
-    // 3. Simula o pressionar de tecla para quem usa keysPressed
-    // Se você usa o keysPressed para disparo (tecla Espaço), adicione isso:
     keysPressed[MOBILE_SHOOT] = true;
-    
-    // 4. Chama a função de disparo diretamente
+
     shoot();
-    
-    // Opcional: Feedback visual rápido no botão
+
     const button = event.currentTarget;
     button.classList.add('active');
     setTimeout(() => {
@@ -650,18 +589,12 @@ function handleShootButtonTouch(event) {
     }, SHOOT_DELAY / 2);
 }
 
-// O restante do seu código JavaScript, a partir de `document.addEventListener('DOMContentLoaded', ...`
-
-// Listener principal (deve estar no final do script para garantir que todos os elementos existam)
 document.addEventListener('DOMContentLoaded', () => {
     const startButton = document.getElementById('startButton');
     const gameAreaElement = document.getElementById('gameArea'); 
     // ⭐ NOVO: Referência ao botão de disparo exclusivo
     const shootButton = document.getElementById('shootButton'); 
 
-    // Start button listeners are attached later with improved mobile handling.
-
-    // ⭐ NOVO: Adiciona listener para o botão de disparo exclusivo
     if (shootButton) {
         // Disparo ao clicar (desktop se o botão for visível)
         shootButton.addEventListener('click', handleShootButtonTouch);
@@ -675,8 +608,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 3. Adiciona suporte a toque na área do jogo
     if (gameAreaElement) {
-        // Se você não quer mais disparo ao tocar na gameArea, REMOVA o listener abaixo:
-        // gameAreaElement.addEventListener('touchstart', handleGameAreaTouch); 
         
         // ⭐ Movimento Touch (Inalterado) ⭐
         gameAreaElement.addEventListener('touchstart', handleMoveTouch);
@@ -686,43 +617,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- FIM DO CÓDIGO DE SUPORTE TOUCH/CLICK ---
-
-// Função para CAPTURAR a posição X/Y do toque
 function handleMoveTouch(event) {
-    // 1. Previne o comportamento padrão (ex: scroll, zoom)
     event.preventDefault();
-
-    // 2. Garante que o jogo está rodando
     if (!isGameRunning) return;
-    
-    // Certifique-se de que 'gameArea' está definida globalmente
     const gameAreaElement = document.getElementById('gameArea'); 
     if (!gameAreaElement) return;
     
     const gameAreaRect = gameAreaElement.getBoundingClientRect();
 
-    // 3. Pega a posição do primeiro toque (ou do toque que restou)
+
     const touch = event.touches[0];
     if (touch) {
-        // Define o alvo no sistema de coordenadas do jogo
+    
         touchTargetX = touch.clientX - gameAreaRect.left;
         touchTargetY = touch.clientY - gameAreaRect.top;
     }
 }
 
-
-// Função para PARAR o Movimento quando os dedos são levantados
 function handleMoveEnd(event) {
-    // 1. Garante que o jogo está rodando
     if (!isGameRunning) return;
 
-    // 2. Se não houver toques remanescentes, reseta os alvos de movimento.
     if (event.touches.length === 0) {
         touchTargetX = null;
         touchTargetY = null;
     } 
-    // 3. Se houver toques remanescentes (multitouch), atualiza o alvo com o que sobrou.
     else if (event.touches.length > 0) {
         handleMoveTouch(event); 
     }
@@ -732,7 +650,6 @@ function handleMoveEnd(event) {
 function updateHUD() {
     scoreDisplay.innerText = score;
     
-    // ... (Lógica de ícones de Vidas e Combo inalterada) ...
     const MAX_LIVES_DISPLAY = 5; 
     let heartIcons = 'Vidas: ';
 
@@ -755,27 +672,33 @@ function updateHUD() {
         comboDisplay.innerText = '';
     }
 
-    if (isBossFight) {
-        const bossMaxHealth = boss ? boss.info.maxHealth : 0; 
-
-        // INÍCIO DA MUDANÇA NO BOSSHEALTH
+   // ⭐ NOVO: Lógica da Barra de Vida do Boss (Health Bar) ⭐
+    if (isBossFight && boss) {
+        const bossMaxHealth = boss.info.maxHealth; 
+        // Calcula a porcentagem de vida
+        const healthPercentage = (bossCurrentHealth / bossMaxHealth) * 100;
         
-        let healthBarContent = `BOSS HP: `; // O TEXTO agora fica fora da barra
-
-        healthBarContent += `<div class="boss-hp-bar">`; // Abre o contêiner de corações
-        for(let i = 1; i <= bossMaxHealth; i++) {
-            if (i <= bossCurrentHealth) {
-                healthBarContent += `<span style="color:red;">❤️</span>`; // Coração cheio
-            } else {
-                healthBarContent += `<span style="color:#555;">🤍</span>`; // Coração vazio
-            }
-        }
-        healthBarContent += `</div>`; // Fecha o contêiner de corações
-
-        bossHealthDisplay.innerHTML = healthBarContent; // Usa a nova string com o contêiner
-        bossHealthDisplay.style.display = 'flex'; // Use flex para o alinhamento centralizado
+        // Define a cor da barra: VERDE se Vulnerável, LARANJA/VERMELHO caso contrário
+        // Você pode ajustar 'var(--cor-acerto)' se tiver uma variável para verde
+        const barColor = boss.isVulnerable ? 'var(--cor-acerto, green)' : 'red'; 
         
-        // FIM DA MUDANÇA NO BOSSHEALTH
+        let healthBarContent = `BOSS HP: `; 
+
+        healthBarContent += `<div class="boss-hp-bar">`; 
+        
+        // A DIV interna que representa a vida atual
+        healthBarContent += `<div 
+            class="boss-hp-fill" 
+            style="width: ${healthPercentage}%; background-color: ${barColor};">
+        </div>`;
+        
+        // Exibe a porcentagem/número dentro ou ao lado da barra (opcional)
+        healthBarContent += `<span class="hp-text">${bossCurrentHealth}/${bossMaxHealth}</span>`;
+
+        healthBarContent += `</div>`; 
+
+        bossHealthDisplay.innerHTML = healthBarContent; 
+        bossHealthDisplay.style.display = 'flex'; 
         
     } else {
         bossHealthDisplay.style.display = 'none';
@@ -784,8 +707,6 @@ function updateHUD() {
         // --- LÓGICA DE VIDA BÔNUS A CADA 10 ACERTOS ---
         // Verifica se é um múltiplo de 10, está no modo normal, e se já passou do primeiro acerto
         if (!isBossFight && acertosDesdeUltimoBoss > 0 && acertosDesdeUltimoBoss % 10 === 0) {
-            // Verifica se a vida já foi concedida para este múltiplo (e evita vidas infinitas acima de MAX_LIVES_DISPLAY)
-            // Se o contador for 10, ele ganha. No 11, ele não ganha. No 20, ele ganha de novo.
             if (lives < MAX_LIVES_DISPLAY) { 
                 lives++;
                 playSucesso(); // Toca o som de sucesso/ganho
@@ -799,7 +720,6 @@ function updateHUD() {
         }
     }
     
-// --- Lógica da Matemática e Geração de Asteroides ---
 
     function generateQuestionData(diff) {
         let num1, num2, answer, operator, questionText;
@@ -831,27 +751,18 @@ function updateHUD() {
    function generateNewQuestion(clearOld = true) {
     if (!isGameRunning || isBossFight) return;
 
-    // Limpa mensagens temporárias e volta ao estado normal
     if (infoTimer) clearTimeout(infoTimer);
-
-    // 1. LIMPEZA IMEDIATA DOS ASTEROIDES ANTIGOS
-    // Remove todos os elementos de asteroides que ainda estão no DOM.
     asteroids.forEach(a => {
         if (a.element && a.element.parentElement) {
             a.element.remove();
         }
     });
-    // Zera o array de asteroides para uma tela limpa
     asteroids = [];
     
-    // 2. LÓGICA DA PERGUNTA
     const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
     question = generateQuestionData(currentDiff);
-    
-    // Exibe a nova pergunta imediatamente
     questionDisplay.innerText = question.text;
 
-    // 3. Gera e coleta respostas
     const answers = new Set();
     answers.add(question.answer);
     const answerRange = Math.max(5, Math.floor(currentDiff.maxNum * 0.3));
@@ -867,47 +778,31 @@ function updateHUD() {
 
     let answerArray = Array.from(answers);
     shuffleArray(answerArray);
-
-    // --- BLOCO CORRIGIDO (INÍCIO) ---
-    // 4. Posicionamento horizontal (Lógica segura contra loop infinito)
     const posicoesX = [];
-    
-    // Define uma margem segura nas laterais (ex: 40px de cada lado)
     const safeMargin = 40;
     const availableWidth = GAME_WIDTH - (safeMargin * 2);
 
     if (availableWidth <= 0) {
-        // Caso extremo: tela minúscula, joga tudo no meio
         for (let i = 0; i < MAX_ASTEROIDS; i++) {
             posicoesX.push(GAME_WIDTH / 2);
         }
     } else {
-        // Divide a largura disponível em "slots" para cada asteroide
         const slotWidth = availableWidth / MAX_ASTEROIDS;
 
         for (let i = 0; i < MAX_ASTEROIDS; i++) {
-            // Calcula o centro do slot
             let slotCenter = safeMargin + (slotWidth / 2) + (i * slotWidth);
-            
-            // Adiciona uma pequena variação aleatória (para não parecerem alinhados)
             let randomOffset = (Math.random() - 0.5) * (slotWidth * 0.2);
             
             posicoesX.push(slotCenter + randomOffset);
         }
     }
-    // --- BLOCO CORRIGIDO (FIM) ---
-
-    // 5. Cria os novos elementos dos asteroides (COM CORREÇÃO DO GIF)
+  
     for(let i = 0; i < MAX_ASTEROIDS; i++) {
         const value = answerArray[i];
         const asteroidElement = document.createElement('div');
         asteroidElement.className = 'asteroid';
-        
-        // 🚀 CORREÇÃO 1: Define o GIF como a imagem de fundo
         const gifUrl = ASTEROID_GIFS[getRandomInt(0, ASTEROID_GIFS.length - 1)];
         asteroidElement.style.backgroundImage = `url('${gifUrl}')`; 
-        
-        // 🚀 CORREÇÃO 2: Cria o SPAN para o número e o anexa (para ficar por cima do GIF)
         const answerSpan = document.createElement('span');
         answerSpan.innerText = value;
         asteroidElement.appendChild(answerSpan);
@@ -926,19 +821,22 @@ function updateHUD() {
 
         gameArea.appendChild(asteroidElement);
         asteroids.push({
-            element: asteroidElement,
-            x: baseX,
-            y: y,
-            baseX: posicoesX[i], // A posição 'left' inicial
-            value: value,
-            isDestroyed: false,
-            isCurrentTarget: true,
-            isCorrectAnswer: (value === question.answer),
-            speed: BASE_ASTEROID_SPEED + getRandomInt(0, 15),
-            scale: 0.5,
-            vx: (Math.random() - 0.5) * 20,
-            oscillationOffset: Math.random() * 10
-        });
+    element: asteroidElement,
+    x: baseX,
+    y: y,
+    baseX: posicoesX[i], // A posição 'left' inicial
+    value: value,
+    isDestroyed: false,
+    isCurrentTarget: true,
+    isCorrectAnswer: (value === question.answer),
+    speed: BASE_ASTEROID_SPEED + getRandomInt(0, 15),
+    scale: 0.5,
+    vx: (Math.random() - 0.5) * 20,
+    oscillationOffset: Math.random() * 10,
+    // ⭐ NOVO: Propriedades de vida do asteroide
+    hits: 0,
+    maxHits: 5 // 1/2 função outra logo a baixo na handleAsteroidHit
+});
     }
 }
     // --- Lógica do Boss Aprimorada ---
@@ -946,31 +844,22 @@ function updateHUD() {
 function enterBossFight() {
     isBossFight = true;
 
-    // Limpa a tela
     asteroids.forEach(a => { a.element.remove(); });
     asteroids = [];
 
-    // Limpa mensagens temporárias e GARANTE A LIMPEZA IMEDIATA
+   
     if (infoTimer) clearTimeout(infoTimer);
     questionDisplay.innerText = ""; 
-    questionDisplay.style.display = 'none'; // ✅ GARANTE OCULTAMENTO
-    
-    // ... (restante da lógica do Boss) ...
+    questionDisplay.style.display = 'none';
     const bossIndex = (currentLevel - 1) % BOSS_CHARACTERS.length;
     const bossInfo = BOSS_CHARACTERS[bossIndex];
-
-    // 🌟 CHAMA a função que lida com a animação e o estado final (oculto).
-    showBossTitle(`${bossInfo.name.toUpperCase()} HAS APPEARED!`);
+    showBossTitle(`${bossInfo.name.toUpperCase()} APARECEU!`);
     
     const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
     question = generateQuestionData(currentDiff);
 
-    // *** AQUI É USADA A PROPRIEDADE maxHealth DO CHEFE SELECIONADO ***
     bossCurrentHealth = bossInfo.maxHealth; 
-    // ***************************************************************
-    bossMovementTime = 0; // Inicializa a variável de tempo para o movimento de oscilação
-
-    // Cria o elemento do Boss
+    bossMovementTime = 0;
     boss = {
         element: document.createElement('div'),
         info: bossInfo,
@@ -1192,9 +1081,7 @@ function handleBossHit(bullet) {
         boss.element.classList.add('hit');
         setTimeout(() => boss.element.classList.remove('hit'), 400);
 
-        // Reinicia o ciclo do Boss
-        boss.isVulnerable = false; 
-        
+       
         // ⭐ CRÍTICO: Limpa o intervalo imediatamente.
         if (bossInterval) clearInterval(bossInterval); 
         
@@ -1455,23 +1342,27 @@ function shoot() {
     // Colisão com o Boss
     if (isBossFight && handleBossHit(bullet)) {
         
-        // ESSAS DUAS LINHAS GARANTEM A LIMPEZA
+        // ESSAS DUAS LINHAS GARANTEM A LIMPEZAAW
         bullet.element.remove(); // Limpa o elemento visual
         return false;           // Remove do array de dados
     }
 
-
-    // Colisão com Asteroides
-    if (!isBossFight || asteroids.length > 0) {
-        const collidedIndex = asteroids.findIndex(asteroid => !asteroid.isDestroyed && checkCollision(bullet, asteroid));
-        if (collidedIndex !== -1) {
-            handleAsteroidHit(collidedIndex, bullet);
-            
-            // Garantia de limpeza para Asteroides também!
-            bullet.element.remove(); 
-            return false; 
-        }
-    }
+   // Colisão com Asteroides
+if (!isBossFight || asteroids.length > 0) {
+    const collidedIndex = asteroids.findIndex(asteroid => !asteroid.isDestroyed && checkCollision(bullet, asteroid));
+    if (collidedIndex !== -1) {
+        
+        // 1. Executa a lógica do jogo (aplica dano ou destrói)
+        handleAsteroidHit(collidedIndex, bullet);
+        
+        // 2. CRÍTICO: Remove o elemento visual (fragmento)
+        bullet.element.remove(); 
+        
+        // 3. CRÍTICO: Remove o objeto do array 'bullets'
+        return false; // Retorna false, indicando que o tiro deve ser removido do array
+        
+    }
+}
 
     // Remove tiros que saíram da tela
     if (bullet.y < -20) {
@@ -1609,19 +1500,14 @@ if (isBossFight && boss) {
         }
     }
 }
-
-
-        // 4. Se não há mais alvos e não é Boss Fight, gera nova pergunta
         if (!isBossFight && asteroids.length === 0 && question.answer !== undefined) {
             
-             // Isto significa que o tempo acabou e os asteroides desapareceram, ou foi um erro crítico
-             handleMiss(false); // Trata como erro/falha
+
+             handleMiss(false); 
         }
         
         requestAnimationFrame(gameLoop);
     }
-
-    // --- Funções de Colisão e Dano ---
 
     function checkCollision(bullet, asteroid) {
         const bulletRect = bullet.element.getBoundingClientRect();
@@ -1640,8 +1526,6 @@ if (isBossFight && boss) {
         
         const playerRect = player.getBoundingClientRect();
         const asteroidRect = asteroid.element.getBoundingClientRect();
-        
-        // Colisão simplificada para o jogo
         return (
             playerRect.left < asteroidRect.right &&
             playerRect.right > asteroidRect.left &&
@@ -1651,121 +1535,117 @@ if (isBossFight && boss) {
     }
 
  function handleAsteroidHit(index, bullet) {
-    const asteroid = asteroids[index];
-    createExplosion(bullet.x, bullet.y, 'white'); // Explosão do tiro
-    
-    // REMOVIDA: bullet.element.remove();
-    
-    // LÓGICA DO ASTEROIDE: Marca para remoção (o gameLoop remove o DOM e o objeto)
-    asteroid.isDestroyed = true; 
-    if (asteroid.element && asteroid.element.parentElement) {
-        // Remove o elemento visual do ASTEROIDE IMEDIATAMENTE
-        asteroid.element.remove(); 
-    }
-    
-    // Variável para rastrear se devemos gerar uma nova pergunta/retomar o Boss
-    let shouldResumeGame = false;
+    const asteroid = asteroids[index];
+    
+    // 1. APLICA DANO E REMOVE A BALA
+    asteroid.hits = (asteroid.hits || 0) + 1; // Incrementa o contador de acertos
+    
+    // Esta explosão é apenas o feedback de que o tiro acertou
+    createExplosion(bullet.x, bullet.y, 'white'); 
+    playHitSound(); // Toca um som de acerto/dano (não destruição)
+    
+    const MAX_HITS = asteroid.maxHits || 5; // Define o número máximo de acertos para destruir
+    const shouldBeDestroyed = asteroid.hits >= MAX_HITS;
 
-    if (asteroid.isCorrectAnswer) {
-       
-        // ACERTOU!
-        score += 10 + (combo > 1 ? combo * 5 : 0);
-         playSucesso();
-        // Verifica se é um acerto no asteroide de PUNIÇÃO durante a luta contra o Boss
-        if (isBossFight) {
-            // LÓGICA DE ACERTO NO ENXAME DE PUNIÇÃO
-         
-showTemporaryMessage("PUNIÇÃO CANCELADA! Batalha Retomada!", 2000, 'alert-msg');
-            combo = 0; // Reinicia o combo após o desafio de punição
-            
-            // 1. Limpa TODOS os outros asteroides do enxame (marca para remoção no gameLoop)
-            asteroids.forEach(a => {
-                if (!a.isDestroyed && a.element) {
-                    a.isDestroyed = true;
-                    a.element.remove(); // Remove o DOM imediatamente para feedback
-                }
-            });
-            
-            // 2. REINICIA O CICLO DO BOSS
-            if (bossInterval) clearInterval(bossInterval);
-            
-            bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
-            
-        } else {
-            
-            // LÓGICA DE ACERTO NO MODO NORMAL (Fora da Boss Fight)
-            combo++;
-            acertosDesdeUltimoBoss++;
-            // Define que o jogo deve gerar a próxima pergunta após a limpeza do loop.
-            shouldResumeGame = true; 
-        }
-        
-    } else {
-        playHitasteroidfail();
-        // ERROU! (Tiro em asteroide errado)
-        combo = 0;
-        lives--;
-        showTemporaryMessage("RESPOSTA INCORRETA! -1 Vida!", 1000);
-        
-        if (isBossFight) {
-            
-             // Se errou durante o Enxame de Punição, a punição falhou, reinicia o Boss
-             asteroids.forEach(a => { 
-                 if (!a.isDestroyed && a.element) {
-                     a.isDestroyed = true; 
-                     a.element.remove(); // Remove o DOM
-                 }
-             });
-             if (bossInterval) clearInterval(bossInterval);
-             bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
-             
-        } else {
-             // Erro no modo normal também gera nova pergunta.
-             shouldResumeGame = true;
-        }
-    }
-    
-    if (lives <= 0) {
-        
-        endGame();
-        return;
-    }
-    
-    updateHUD();
+    if (!shouldBeDestroyed) {
+        // --- ASTEROIDE LEVOU DANO, MAS NÃO FOI DESTRUÍDO ---
+        
+        // Feedback Visual de Dano: Aumenta escala e opacidade para parecer mais próximo/danificado
+        const currentScale = parseFloat(asteroid.element.style.transform.match(/scale\(([^)]+)\)/)[1] || 0.5);
+        asteroid.element.style.transform = `translate(-50%, -50%) scale(${currentScale + 0.1})`;
+        
+        // Faz o asteroide "brilhar" mais forte a cada acerto (0.5 -> 1.0)
+        const opacityChange = 0.5 + (asteroid.hits / MAX_HITS) * 0.5;
+        asteroid.element.style.opacity = opacityChange.toString();
+        
+        // Pára a execução aqui, pois o asteroide ainda está vivo.
+        return; 
+    }
+    
+    // -----------------------------------------------------------
+    // LÓGICA DE DESTRUIÇÃO FINAL (Só continua se shouldBeDestroyed for true)
+    // -----------------------------------------------------------
 
-    // Chamada segura para a próxima pergunta/etapa no modo normal
-    if (shouldResumeGame) {
-        // Usa setTimeout para garantir que a remoção de elementos no gameLoop
-        // termine antes de gerarmos novos elementos.
-        setTimeout(() => generateNewQuestion(), 50); 
-    }
+    // Remove o elemento visual (o asteroide)
+    asteroid.isDestroyed = true; 
+    if (asteroid.element && asteroid.element.parentElement) {
+        // Garante a explosão final e remoção
+        createExplosion(asteroid.x, asteroid.y, asteroid.isCorrectAnswer ? 'yellow' : 'gray'); 
+        asteroid.element.remove(); 
+    }
+
+    let shouldResumeGame = false;
+
+    if (asteroid.isCorrectAnswer) {
+        // Lógica de acerto correto
+        score += 10 + (combo > 1 ? combo * 5 : 0);
+        playSucesso();
+
+        if (isBossFight) {
+            showTemporaryMessage("PUNIÇÃO CANCELADA! Batalha Retomada!", 2000, 'alert-msg');
+            combo = 0;
+            asteroids.forEach(a => {
+                if (!a.isDestroyed && a.element) { a.isDestroyed = true; a.element.remove(); }
+            });
+            if (bossInterval) clearInterval(bossInterval);
+            bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+            
+        } else {
+            combo++;
+            acertosDesdeUltimoBoss++;
+            shouldResumeGame = true; 
+        }
+        
+    } else {
+        // Lógica de acerto INCORRETO
+        playHitasteroidfail();
+        combo = 0;
+        lives--;
+        showTemporaryMessage("RESPOSTA INCORRETA! -1 Vida!", 1000);
+        
+        if (isBossFight) {
+            // ... (Sua lógica para o Boss)
+            asteroids.forEach(a => { 
+                if (!a.isDestroyed && a.element) { a.isDestroyed = true; a.element.remove(); }
+            });
+            if (bossInterval) clearInterval(bossInterval);
+            bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+            
+        } else {
+            shouldResumeGame = true;
+        }
+    }
+    
+    if (lives <= 0) {
+        endGame();
+        return;
+    }
+    
+    updateHUD();
+    if (shouldResumeGame) {
+        // Se a resposta estiver correta/incorreta, o jogo avança
+        setTimeout(() => generateNewQuestion(), 50); 
+    }
 }
    function handlePlayerHit(asteroid) {
     // 1. Penalidade de Colisão
     lives--;
     combo = 0;
     score = Math.max(0, score - 10);
-    
-    // Feedback de dano visual (e auditivo, se você tiver playDamageSound())
     createExplosion(playerX + 25, playerY + 25, 'var(--cor-erro)');
     player.style.opacity = '0.5';
     setTimeout(() => player.style.opacity = '1', 500); // Pisca
     showTemporaryMessage("COLISÃO! -1 Vida! Pergunta Reiniciada!", 1500);
 
-    // 2. Limpeza Imediata de TODOS os Asteroides Ativos (Reset da Pergunta)
     asteroids.forEach(a => {
-        // Marca e remove do DOM (o gameLoop remove do array)
         if (a.element && a.element.parentElement && !a.isDestroyed) {
             a.isDestroyed = true;
             a.element.remove();
         }
     });
 
-    // Avoid stuck movement after collision: clear any touch-targets
     touchTargetX = null;
     touchTargetY = null;
-
-    // Also clear any digital/mouse movement flags to avoid a stuck input state
     const movementKeys = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Mouse0', MOBILE_MOVE_LEFT, MOBILE_MOVE_RIGHT, MOBILE_SHOOT];
     movementKeys.forEach(k => { if (keysPressed[k]) keysPressed[k] = false; });
 
@@ -1775,16 +1655,12 @@ showTemporaryMessage("PUNIÇÃO CANCELADA! Batalha Retomada!", 2000, 'alert-msg'
         return;
     }
 
-    // 3. Reinicia o Ciclo do Jogo (Gera uma Nova Pergunta/Ciclo do Boss)
-    // Usa setTimeout para garantir que a limpeza (forEach) seja processada antes de criar novos elementos.
     setTimeout(() => {
         if (isBossFight) {
-            // Reinicia o ciclo normal de vulnerabilidade do Boss
             showTemporaryMessage("Ciclo do Boss Resetado!", 1000);
             if (bossInterval) clearInterval(bossInterval);
             bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
         } else {
-            // Modo Normal: Gera uma nova pergunta
             generateNewQuestion(); 
         }
     }, 50); 
@@ -1794,29 +1670,23 @@ function handleMiss(isCorrectAnswer) {
     let shouldResetBoss = false;
 
     if (isBossFight) {
-        // Se a luta contra o Boss está ativa, qualquer alvo perdido
-        // (incluindo asteroides de punição) reinicia o ciclo do Boss.
         shouldResetBoss = true;
         combo = 0;
         showTemporaryMessage("ALVO PERDIDO! Ciclo do Boss Resetado!", 2000);
 
     } else if (isCorrectAnswer) {
-         // Modo Normal: A resposta correta passou - penalidade máxima
+ 
          lives--;
          combo = 0;
          score = Math.max(0, score - 10);
          showTemporaryMessage("ALVO CORRETO PERDIDO! -1 Vida", 2000);
     } else {
-         // Modo Normal: Uma resposta errada passou ou alvos esgotados
          combo = 0;
          showTemporaryMessage("ALVO PERDIDO...", 2000);
     }
     
     updateHUD();
     if (lives <= 0) endGame();
-
-    // 1. Limpeza de Asteroides (Se houver)
-    // O gameLoop já trata a remoção do asteroide que passou, mas garantimos a limpeza.
     asteroids.forEach(a => {
         if (a.element && a.element.parentElement && !a.isDestroyed) {
             a.isDestroyed = true;
@@ -1824,21 +1694,19 @@ function handleMiss(isCorrectAnswer) {
         }
     });
 
-    // 2. Reinicia o Ciclo Apropriado
+  
     setTimeout(() => {
         if (shouldResetBoss) {
-            // Reinicia o ciclo normal de vulnerabilidade do Boss
+         
             if (bossInterval) clearInterval(bossInterval);
             bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
         } else {
-            // Modo Normal: Gera a nova pergunta.
+         
             generateNewQuestion(); 
         }
     }, 50);
 }
 
-    // --- Eventos de Input ---
-    // Attach start/restart listeners safely (use pointerdown + touchstart for better mobile reliability)
     const _startBtn = document.getElementById('startButton');
     const _restartBtn = document.getElementById('restartButton');
     if (_startBtn) {
@@ -1874,17 +1742,15 @@ function handleMiss(isCorrectAnswer) {
         e.preventDefault();
     });
 
-// NOVO: Função para confirmar saída
+
 function confirmExit() {
-    // Para a música e o jogo se for sair
+
     if (isGameRunning) {
         isGameRunning = false;
         clearInterval(movementInterval);
         if (bossInterval) clearInterval(bossInterval);
-        // Não remove o boss ou asteroides, apenas para o loop, permitindo ao usuário voltar.
-        // Se o usuário clicar em SAIR, o jogo é interrompido.
+      
     }
 
-    // Confirma se o usuário quer sair
     return confirm("Tem certeza que deseja sair da missão e voltar para a tela anterior?");
 }
