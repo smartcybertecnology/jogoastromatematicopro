@@ -383,7 +383,7 @@
             font-size: 1.5em;
             
         }
-/* HUD fixo no topo e compacto */
+
 #hud {
     position: absolute;
     top: 0;
@@ -395,10 +395,10 @@
     align-items: flex-start;
     padding: 8px 12px;
     z-index: 100;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 10px;
-    border: 1px solid var(--cor-principal);
-    box-shadow: 0 0 15px var(--cor-principal);
+    background: none;
+    border-radius:none;
+    border: none;
+    box-shadow:none;
 }
 
 /* Caixa da questão - abaixo do HUD */
@@ -419,26 +419,46 @@
     z-index: 90;
     text-align: center;
 }
+/* NOVO ESTILO PARA O TÍTULO DO BOSS (será criado dinamicamente) */
+.boss-title-popup {
+    /* Base do estilo anterior de #bossFightTitle */
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 92px; 
+    z-index: 1900; /* Alto z-index */
+    
+    font-size: clamp(1.5em, 6vw, 2.5em);
+    color: var(--cor-acerto);
+    border: 3px solid var(--cor-acerto);
+    padding: 5px 15px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 25px var(--cor-acerto), 0 0 10px white; /* Mais brilho! */
 
+    /* Efeito de 2 segundos */
+    animation: boss-intro 2s ease-out forwards;
+}
 
-
-       
-        #bossFightTitle {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            top: 92px; 
-            z-index: 1900; 
-            
-            font-size: clamp(1.5em, 6vw, 2.5em);
-            color: var(--cor-acerto);
-            border: 3px solid var(--cor-acerto);
-            padding: 5px 15px;
-            border-radius: 8px;
-            background: rgba(0, 0, 0, 0.8);
-            box-shadow: 0 0 20px var(--cor-acerto);
-            display: none; 
-        }
+/* NOVO KEYFRAMES: Desaparecimento com Escala e Opacidade */
+@keyframes boss-intro {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -20px) scale(0.8);
+    }
+    10% {
+        opacity: 1; /* Aparece rapidamente */
+        transform: translate(-50%, 0) scale(1);
+    }
+    90% {
+        opacity: 1; /* Fica visível por quase 2 segundos */
+        transform: translate(-50%, 0) scale(1.05); /* Pequeno pulso */
+    }
+    100% {
+        opacity: 0; /* Desaparece */
+        transform: translate(-50%, 0) scale(1.1); /* Escale um pouco para o efeito 'top' */
+    }
+}
 
         .question-box.error-msg {
             color: var(--cor-erro); 
@@ -562,7 +582,6 @@
 
 <div id="gameArea">
 
-    <div id="bossFightTitle" style="display: none;">BOSS FIGHT!</div>
 
     <div id="hud">
         <div id="leftSideHUD">
