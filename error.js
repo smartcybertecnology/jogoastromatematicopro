@@ -25,7 +25,8 @@ let asteroids = [];
 let bullets = [];
 let question = {};
 const keysPressed = {};
-
+let bossProjectiles = [];
+let bossAttackInterval = null;
 let lastShootTime = 0;
 const SHOOT_DELAY = 150;
 
@@ -76,7 +77,7 @@ const ASTEROID_GIFS = [
 ];
 
 const bossNames = ['Dr. nervoso', 'Cloud Mad', 'UFO', 'ghost', 'Buraco negro'];
-const bossHealth = [3, 4, 5, 6, 8];
+const bossHealth = [6, 8, 12, 18, 20];
 
 const BOSS_CHARACTERS = bossNames.map((name, i) => ({
   name,
@@ -338,7 +339,7 @@ function generateNewQuestion() {
     console.log("Gerando nova questão...");
 }
 
-let lastFrameTime = 0;
+
 function gameLoop(timestamp) {
     if (!isGameRunning) return;
     
@@ -715,40 +716,40 @@ function updateHUD() {
         }
         
         // Lógica para chamar o Boss (Se 10 acertos ou mais)
-        if (acertosDesdeUltimoBoss >= 1 && !isBossFight) {
+        if (acertosDesdeUltimoBoss >= 10 && !isBossFight) {
             enterBossFight();
         }
     }
     
 
-    function generateQuestionData(diff) {
-        let num1, num2, answer, operator, questionText;
-        const op = diff.op.length > 1 ? diff.op[getRandomInt(0, diff.op.length - 1)] : diff.op;
-        operator = op;
+function generateQuestionData(diff) {
+let num1, num2, answer, operator, questionText;
+const op = diff.op.length > 1 ? diff.op[getRandomInt(0, diff.op.length - 1)] : diff.op;
+operator = op;
 
-        const maxNum = diff.maxNum;
+ const maxNum = diff.maxNum;
 
-        if (operator === '+') {
-            num1 = getRandomInt(Math.floor(maxNum / 2) + 1, maxNum);
-            num2 = getRandomInt(1, maxNum);
-            answer = num1 + num2;
-            questionText = `${num1} + ${num2}`;
-        } else if (operator === '-') {
-            num1 = getRandomInt(Math.floor(maxNum / 2) + 1, maxNum);
-            num2 = getRandomInt(1, num1);
-            answer = num1 - num2;
-            questionText = `${num1} - ${num2}`;
-        } else if (operator === '*') {
-            num1 = getRandomInt(2, Math.min(maxNum, 10));
-            num2 = getRandomInt(2, Math.min(maxNum, 10));
-            answer = num1 * num2;
-            questionText = `${num1} x ${num2}`;
-        }
+if (operator === '+') {
+ num1 = getRandomInt(Math.floor(maxNum / 2) + 1, maxNum);
+num2 = getRandomInt(1, maxNum);
+answer = num1 + num2;
+questionText = `${num1} + ${num2}`;
+} else if (operator === '-') {
+ num1 = getRandomInt(Math.floor(maxNum / 2) + 1, maxNum);
+num2 = getRandomInt(1, num1);
+answer = num1 - num2;
+questionText = `${num1} - ${num2}`;
+} else if (operator === '*') {
+ num1 = getRandomInt(2, Math.min(maxNum, 10));
+num2 = getRandomInt(2, Math.min(maxNum, 10));
+ answer = num1 * num2;
+ questionText = `${num1} x ${num2}`;
+ }
 
-        return { text: questionText, answer: answer, maxRange: maxNum };
-    }
+ return { text: questionText, answer: answer, maxRange: maxNum };
+}
 
-   function generateNewQuestion(clearOld = true) {
+function generateNewQuestion(clearOld = true) {
     if (!isGameRunning || isBossFight) return;
 
     if (infoTimer) clearTimeout(infoTimer);
@@ -839,7 +840,7 @@ function updateHUD() {
 });
     }
 }
-    // --- Lógica do Boss Aprimorada ---
+
 
 function enterBossFight() {
     isBossFight = true;
@@ -883,71 +884,74 @@ function enterBossFight() {
     // Inicia a mecânica de resposta aleatória
     if (bossInterval) clearInterval(bossInterval);
     bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+    // (Ataque a cada 7 segundos, por exemplo)
+    if (bossAttackInterval) clearInterval(bossAttackInterval);
+    bossAttackInterval = setInterval(spawnBossAttack, 7000);
 }
-    function toggleBossVulnerability() {
-        const answerDisplay = boss.element.querySelector('.boss-answer-display');
-        const questionDisplayBoss = boss.element.querySelector('.boss-question');
+ function toggleBossVulnerability() {
+ const answerDisplay = boss.element.querySelector('.boss-answer-display');
+ const questionDisplayBoss = boss.element.querySelector('.boss-question');
 
-        const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
-        const answerRange = Math.max(5, Math.floor(currentDiff.maxNum * 0.3));
+ const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
+ const answerRange = Math.max(5, Math.floor(currentDiff.maxNum * 0.3));
 
-        if (boss.isVulnerable) {
-            // Fica Invulnerável (esconde a resposta)
-            boss.isVulnerable = false;
-            boss.element.classList.remove('vulnerable');
-            boss.element.classList.add('invulnerable');
-            answerDisplay.innerText = '...';
+ if (boss.isVulnerable) {
 
-        } else {
-            // PASSO CHAVE: GERA UMA NOVA PERGUNTA A CADA NOVO CICLO
-            question = generateQuestionData(currentDiff);
-            questionDisplayBoss.innerText = `${question.text} = ?`; // Atualiza a pergunta no Boss
-            
-            // Determina se o Boss será VULNERÁVEL ou se será uma ISCA
-            const isVulnerableWindow = Math.random() < 0.5; // 50% de chance de ser o correto
-            
-            // Prepara para a exibição no visor
-            if (isVulnerableWindow) {
-                // JANELA DE VULNERABILIDADE (Mostra a resposta correta)
-                boss.isVulnerable = true;
-                boss.currentAnswer = question.answer;
-                boss.element.classList.remove('invulnerable');
-                boss.element.classList.add('vulnerable');
-                answerDisplay.innerText = question.answer;
+boss.isVulnerable = false;
+ boss.element.classList.remove('vulnerable');
+ boss.element.classList.add('invulnerable');
+ answerDisplay.innerText = '...';
 
-                // Define o timer para voltar a ser invulnerável
-                setTimeout(() => {
-                    if(boss && boss.isVulnerable) { 
-                        boss.isVulnerable = false;
-                        boss.element.classList.remove('vulnerable');
-                        boss.element.classList.add('invulnerable');
-                        answerDisplay.innerText = '...';
-                    }
-                }, 3000 + getRandomInt(500, 1500)); 
+ } else {
 
-            } else {
-                // JANELA DE ISCA (Mostra uma resposta errada, continua invulnerável)
-                boss.isVulnerable = false; // Garante que é falso
-                boss.element.classList.remove('vulnerable');
-                boss.element.classList.add('invulnerable');
-                
-                let fakeAnswer;
-                do {
-                    fakeAnswer = question.answer + getRandomInt(-answerRange, answerRange);
-                } while (fakeAnswer <= 0 || fakeAnswer === question.answer || Math.abs(fakeAnswer - question.answer) < 3);
+question = generateQuestionData(currentDiff);
+ questionDisplayBoss.innerText = `${question.text} = ?`; 
 
-                boss.currentAnswer = fakeAnswer; // O Boss exibe o erro
-                answerDisplay.innerText = fakeAnswer; 
 
-                // Define o timer para limpar a isca
-                setTimeout(() => {
-                    if(boss && !boss.isVulnerable) { 
-                        answerDisplay.innerText = '...';
-                    }
-                }, 1000 + getRandomInt(500, 1500)); 
-            }
-        }
-    }
+const isVulnerableWindow = Math.random() < 0.5; // 50% de chance de ser o correto
+
+
+if (isVulnerableWindow) {
+
+boss.isVulnerable = true;
+ boss.currentAnswer = question.answer;
+boss.element.classList.remove('invulnerable');
+boss.element.classList.add('vulnerable');
+answerDisplay.innerText = question.answer;
+
+
+setTimeout(() => {
+ if(boss && boss.isVulnerable) { 
+ boss.isVulnerable = false;
+ boss.element.classList.remove('vulnerable');
+boss.element.classList.add('invulnerable');
+answerDisplay.innerText = '...';
+ }
+}, 3000 + getRandomInt(500, 1500)); 
+
+} else {
+
+boss.isVulnerable = false; // Garante que é falso
+ boss.element.classList.remove('vulnerable');
+boss.element.classList.add('invulnerable');
+
+let fakeAnswer;
+do {
+fakeAnswer = question.answer + getRandomInt(-answerRange, answerRange);
+ } while (fakeAnswer <= 0 || fakeAnswer === question.answer || Math.abs(fakeAnswer - question.answer) < 3);
+
+boss.currentAnswer = fakeAnswer; // O Boss exibe o erro
+ answerDisplay.innerText = fakeAnswer; 
+
+
+setTimeout(() => {
+if(boss && !boss.isVulnerable) { 
+answerDisplay.innerText = '...';
+ }
+}, 1000 + getRandomInt(500, 1500)); 
+ }
+}
+ }
 
 function generatePunishmentAsteroids() {
     // Limpa os asteroides atuais primeiro
@@ -1120,6 +1124,115 @@ function handleBossHit(bullet) {
     return true; 
 
 }
+
+// ⭐ Função que gera um único pulso do Buraco Negro e os projéteis
+function spawnBossAttack() {
+    if (!isBossFight || !boss || !boss.element) return;
+
+    // Pega a posição ATUAL do boss
+    const bossRect = boss.element.getBoundingClientRect();
+    const gameRect = gameArea.getBoundingClientRect();
+
+    // Ponto de spawn: abaixo e no centro do boss
+    const spawnX = (bossRect.left - gameRect.left) + (bossRect.width / 2);
+    const spawnY = (bossRect.bottom - gameRect.top);
+
+    // 1. Cria o efeito visual do "Buraco Negro"
+    const blackHoleEl = document.createElement('div');
+    blackHoleEl.className = 'black-hole-visual';
+    blackHoleEl.style.left = `${spawnX}px`;
+    blackHoleEl.style.top = `${spawnY}px`;
+    gameArea.appendChild(blackHoleEl);
+
+    // Remove o efeito visual após a animação
+    setTimeout(() => {
+        if (blackHoleEl.parentElement) {
+            blackHoleEl.remove();
+        }
+    }, 1500); // Duração da animação CSS
+
+    // 2. Cria os projéteis (asteroides) após um pequeno atraso
+    setTimeout(() => {
+        if (!isBossFight) return; 
+
+        const numProjectiles = 5; 
+        const spreadAngle = Math.PI / 2; 
+        const startAngle = Math.PI / 4; 
+        const projectileSpeed = 1;
+
+        for (let i = 0; i < numProjectiles; i++) {
+            // Calcula o ângulo para espalhar os projéteis
+            const angle = startAngle + (i / (numProjectiles - 1)) * spreadAngle;
+
+            // Calcula vetores de velocidade (vx, vy)
+            const vx = Math.cos(angle) * projectileSpeed;
+            const vy = Math.sin(angle) * projectileSpeed;
+
+            const projEl = document.createElement('div');
+            projEl.className = 'asteroid boss-projectile'; 
+            
+            const gifUrl = ASTEROID_GIFS[getRandomInt(0, ASTEROID_GIFS.length - 1)];
+            projEl.style.backgroundImage = `url('${gifUrl}')`;
+            
+            projEl.style.left = `${spawnX}px`;
+            projEl.style.top = `${spawnY}px`;
+            
+            gameArea.appendChild(projEl);
+
+            bossProjectiles.push({
+                element: projEl,
+                x: spawnX,
+                y: spawnY,
+                // Usando a velocidade VX/VY para movimento em leque
+                vx: vx * 100, // Ajuste: Multiplicar por um fator para compensar o delta time do gameLoop
+                vy: vy * 100, // Ajuste: (Seu gameLoop usa deltaSeconds, 3 é muito lento)
+                hits: 0,
+                maxHits: 1 
+            });
+        }
+    }, 500); 
+}
+
+// ⭐ NOVO: O que acontece quando um TIRO acerta um projétil do boss
+// ⭐ NOVA FUNÇÃO: O Jogador acerta um Projétil/Asteroide de Ataque do Boss
+function handleBossProjectileHit(index, bullet) {
+    // Para projéteis que não estão no array 'asteroids'
+    const projectile = bossProjectiles[index];
+
+    createExplosion(bullet.x, bullet.y, 'gray');
+    playHitSound(); // Toca um som de acerto/repelir
+
+    // Lógica: Projéteis do Boss (que não são asteroides) são destruídos com 1 hit
+    if (projectile) {
+        projectile.element.remove();
+        bossProjectiles.splice(index, 1); // Remove do array
+        
+        // Dá um pequeno bônus por repelir o ataque
+        score = Math.min(score + 1, 99999); 
+    }
+}
+// ⭐ NOVA FUNÇÃO: O Jogador é atingido por um Projétil/Asteroide de Ataque do Boss
+function handlePlayerHitByBossProjectile(projectile) {
+    lives--;
+    combo = 0;
+    score = Math.max(0, score - 5);
+    playDamageSound();
+    
+    createExplosion(playerX + 25, playerY + 25, 'red');
+    player.style.opacity = '0.5';
+    setTimeout(() => player.style.opacity = '1', 500); // Pisca
+
+    showTemporaryMessage("ATINGIDO! -1 Vida!", 1500, 'error-msg');
+
+    // Remove o projétil que colidiu
+    projectile.element.remove();
+    
+    // Atualiza o estado
+    updateHUD();
+    if (lives <= 0) {
+        endGame();
+    }
+}
 // Logica após derrotar o ultimo
 function exitBossFight(success) {
     // Certifique-se de que 'gameArea' esteja definida (Ex: const gameArea = document.getElementById('gameArea');)
@@ -1129,6 +1242,10 @@ function exitBossFight(success) {
 
     isBossFight = false;
     if (bossInterval) clearInterval(bossInterval);
+    if (bossAttackInterval) clearInterval(bossAttackInterval);
+    bossAttackInterval = null;
+    bossProjectiles.forEach(p => p.element.remove());
+    bossProjectiles = [];
 
     if (boss && boss.element.parentElement) {
          if (success) {
@@ -1195,9 +1312,9 @@ function exitBossFight(success) {
     
     updateHUD();
 }
-    // --- Lógica da Nave e Tiros ---
 
-  function movePlayer() {
+
+function movePlayer() {
     if (!isGameRunning) return;
 
     // Defensive guards: ensure player coordinates are valid numbers
@@ -1325,216 +1442,242 @@ function shoot() {
     });
 }
 
-    // --- Loop Principal do Jogo ---
+// --- Loop Principal do Jogo ---
 
-    function gameLoop(timestamp) {
+let lastFrameTime = 0;
+    const BULLET_SPEED = 10;
+    
+    function gameLoop(timestamp) {
         if (!isGameRunning) return;
+        
+        // 1. Cálculo do Delta Time para movimentos suaves e baseados no tempo
+        if (lastFrameTime === 0) lastFrameTime = timestamp; // Inicializa na primeira chamada
+        const deltaSeconds = (timestamp - lastFrameTime) / 1000; // Tempo em segundos
+        lastFrameTime = timestamp;
 
-        // Refresh measurements to stay in sync with CSS/layout changes
         updateGameDimensions();
 
-        // 1. Movimentação dos Tiros
-        const BULLET_SPEED = 10;
-        bullets = bullets.filter(bullet => {
-    bullet.y -= BULLET_SPEED;
-    bullet.element.style.top = `${bullet.y}px`;
-    
-    // Colisão com o Boss
-    if (isBossFight && handleBossHit(bullet)) {
-        
-        // ESSAS DUAS LINHAS GARANTEM A LIMPEZAAW
-        bullet.element.remove(); // Limpa o elemento visual
-        return false;           // Remove do array de dados
-    }
-
-   // Colisão com Asteroides
-if (!isBossFight || asteroids.length > 0) {
-    const collidedIndex = asteroids.findIndex(asteroid => !asteroid.isDestroyed && checkCollision(bullet, asteroid));
-    if (collidedIndex !== -1) {
+        // ----------------------------------------------------------------------
+        // 1. Movimentação dos Tiros (Bullets)
+        // ----------------------------------------------------------------------
+        bullets = bullets.filter(bullet => {
+            // Movimento (Baseado no tempo, para suavidade)
+            bullet.y -= BULLET_SPEED * (deltaSeconds * 60); // Ajuste a velocidade se necessário
+            bullet.element.style.top = `${bullet.y}px`;
         
-        // 1. Executa a lógica do jogo (aplica dano ou destrói)
-        handleAsteroidHit(collidedIndex, bullet);
+            // Colisão com o Boss
+            if (isBossFight && boss && handleBossHit(bullet)) {
+                bullet.element.remove(); 
+                return false;       
+            }
+
+            // Colisão com Asteroides (de pergunta ou punição do Boss)
+            if (asteroids.length > 0) { // Simplificando a condição
+                const collidedIndex = asteroids.findIndex(asteroid => !asteroid.isDestroyed && checkCollision(bullet, asteroid));
+                if (collidedIndex !== -1) {
+                    handleAsteroidHit(collidedIndex, bullet);
+                    bullet.element.remove(); 
+                    return false; 
+                }
+            }
+
+            // ⭐ Colisão com Projéteis do Boss (Diferentes de Asteroides)
+            if (isBossFight && bossProjectiles.length > 0) {
+                const collidedProjIndex = bossProjectiles.findIndex(proj => checkCollision(bullet, proj));
+                if (collidedProjIndex !== -1) {
+                    // Chama a nova função para lidar com o acerto
+                    handleBossProjectileHit(collidedProjIndex, bullet); 
+                    bullet.element.remove(); // Destrói o tiro
+                    return false; 
+                }
+            }
+
+            // Remove tiros que saíram da tela
+            if (bullet.y < -20) {
+                bullet.element.remove();
+                return false;
+            }
+            return true;
+        });
+
+        // ----------------------------------------------------------------------
+        // 2. Movimentação de Asteroides e Tamanho
+        // ----------------------------------------------------------------------
+        // Constante de conversão, se estiver usando a lógica antiga de velocidade:
+        // const deltaTimeOld = (deltaSeconds * 1000) / 1700; 
+
+        asteroids = asteroids.filter(asteroid => {
+            if (asteroid.isDestroyed) {
+                return false; 
+            }
+
+            // Oscilação Horizontal e movimento para baixo
+            asteroid.x = asteroid.baseX + Math.sin(timestamp / 700 + asteroid.oscillationOffset) * 15;
+            // Movimento Y baseado no DeltaTime em segundos (mais preciso)
+            asteroid.y += asteroid.speed * deltaSeconds; 
+            
+            asteroid.element.style.left = `${asteroid.x}px`;
+            asteroid.element.style.top = `${asteroid.y}px`;
+
+            // Aumenta a escala e opacidade ao se aproximar (efeito 3D)
+            const ratio = (GAME_HEIGHT - asteroid.y) / GAME_HEIGHT;
+            asteroid.scale = Math.min(1, 0.5 + (1 - ratio) * 0.3);
+            asteroid.element.style.transform = `translate(-50%, -50%) scale(${asteroid.scale})`;
+            asteroid.element.style.opacity = Math.min(1, 0.5 + (1 - ratio) * 0.5); // Corrigido a opacidade
+
+            // Colisão com o Jogador (Agora usa a função CORRIGIDA)
+            if (checkPlayerCollision(asteroid)) {
+                playHitasteroidfail();
+                // A colisão com asteroides de pergunta/ataque é a mesma:
+                handlePlayerHit(asteroid); 
+                // Se for um asteroide de ataque, removemos ele na colisão:
+                if (asteroid.value === 'Attack') { 
+                    asteroid.element.remove();
+                    return false;
+                }
+                // Se for asteroide de pergunta, handlePlayerHit lida com a remoção
+            }
+
+            // Asteróide passou da tela (PERDEU UMA VIDA se for alvo atual)
+            if (asteroid.y > GAME_HEIGHT + 50) {
+                playHitasteroidfail();
+                if (asteroid.isCurrentTarget) {
+                    // Apenas asteroides de PERGUNTA que passaram descontam vida
+                    handleMiss(asteroid.isCorrectAnswer);
+                }
+                asteroid.element.remove();
+                return false;
+            }
+
+            return true;
+        });
         
-        // 2. CRÍTICO: Remove o elemento visual (fragmento)
-        bullet.element.remove(); 
-        
-        // 3. CRÍTICO: Remove o objeto do array 'bullets'
-        return false; // Retorna false, indicando que o tiro deve ser removido do array
-        
-    }
-}
+  // ... (dentro da função gameLoop, após a movimentação de Asteroides) ...
 
-    // Remove tiros que saíram da tela
-    if (bullet.y < -20) {
-        bullet.element.remove();
-        return false;
-    }
-    return true;
-
- // Colisão com Asteroides
-if (!isBossFight || asteroids.length > 0) {
-    
-    const collidedIndex = asteroids.findIndex(asteroid => !asteroid.isDestroyed && checkCollision(bullet, asteroid));
-    if (collidedIndex !== -1) {
-        
-        // 1. Executa a lógica do jogo (vidas, pontuação)
-        handleAsteroidHit(collidedIndex, bullet);
-        
-        // 2. CRÍTICO: Remove o elemento visual (fragmento)
-        bullet.element.remove(); 
-        
-        // 3. CRÍTICO: Remove o objeto do array 'bullets'
-        return false; // Destrói o tiro
-        
-    }
-}
-
-            // Remove tiros que saíram da tela
-            if (bullet.y < -20) {
-                bullet.element.remove();
-                return false;
-            }
-            return true;
-        });
-
-        // 2. Movimentação de Asteroides e Tamanho
-        const deltaTime = 16.666666 / 1700; // Aproximação de 60 FPS
-        asteroids = asteroids.filter(asteroid => {
-            if (asteroid.isDestroyed) {
-                // Os asteroides destruídos são removidos daqui
-                return false; 
-            }
-
-            // Oscilação Horizontal e movimento para baixo
-            asteroid.x = asteroid.baseX + Math.sin(timestamp / 700 + asteroid.oscillationOffset) * 15;
-            asteroid.y += asteroid.speed * deltaTime;
-            
-            asteroid.element.style.left = `${asteroid.x}px`;
-            asteroid.element.style.top = `${asteroid.y}px`;
-
-            // Aumenta a escala e opacidade ao se aproximar (efeito 3D)
-            const ratio = (GAME_HEIGHT - asteroid.y) / GAME_HEIGHT;
-            asteroid.scale = Math.min(1, 0.5 + (1 - ratio) * 0.3);
-            asteroid.element.style.transform = `translate(-50%, -50%) scale(${asteroid.scale})`;
-            asteroid.element.style.opacity = Math.min(1, 2.0 + (1 - ratio) * 0.5);
-
-            // Colisão com o Jogador
-            if (checkPlayerCollision(asteroid)) {
-                 playHitasteroidfail();
-                handlePlayerHit(asteroid);
-               
-                return false;
-                
-            }
-
-            // Asteróide passou da tela (PERDEU UMA VIDA se for alvo atual)
-            if (asteroid.y > GAME_HEIGHT + 50) {
-                playHitasteroidfail();
-                if (asteroid.isCurrentTarget) {
-                    handleMiss(asteroid.isCorrectAnswer);
-                }
-                asteroid.element.remove();
-                return false;
-            }
-
-            return true;
-        });
-        
-       // 3. Movimentação do Boss (Novo e Aprimorado com Paradas)
+// ----------------------------------------------------------------------
+// 3. Movimentação do Boss (Novo e Aprimorado com Paradas)
+// ----------------------------------------------------------------------
 if (isBossFight && boss) {
-    // DeltaTime é crucial para movimento baseado em tempo
-    // Assumindo que 'deltaTime' é o tempo (em segundos) que passou desde o último frame (ex: 0.02)
-    const deltaTime = 0.02; // Use a sua taxa de atualização real ou calcule o delta
-
-    bossMoveTimer += deltaTime; // Incrementa o tempo gasto no estado atual
+    // Usa o DeltaTime em SEGUNDOS
+    bossMoveTimer += deltaSeconds; // Incrementa o tempo gasto no estado atual
 
     if (bossMovementState === 'moving') {
         // === Lógica de Movimento ===
-
-        // Calcula a nova posição baseada no tempo, partindo de bossStartX em direção a bossTargetX
         let progress = bossMoveTimer / bossMoveDuration; // Progresso de 0 a 1
 
         if (progress < 1) {
-            // Movimento suave (pode usar uma função de easing, mas 'linear' é bom por enquanto)
+            // Movimento do Boss (Baseado no progresso temporal)
             const currentX = bossStartX + (bossTargetX - bossStartX) * progress;
             boss.element.style.left = `calc(50% + ${currentX}px)`;
         } else {
             // === Fim do Movimento: Transição para Parada ===
-            
-            // Garante que a posição final seja exata
             boss.element.style.left = `calc(50% + ${bossTargetX}px)`;
-
-            // Transiciona o estado
             bossMovementState = 'resting';
             bossMoveTimer = 0; // Zera o timer para a parada
         }
 
     } else if (bossMovementState === 'resting') {
         // === Lógica de Parada ===
-
         if (bossMoveTimer >= bossRestDuration) {
             // === Fim da Parada: Transição para Novo Movimento ===
-
-            // 1. Define o ponto de partida do novo movimento
             bossStartX = bossTargetX;
+            const maxSwing = 450; 
             
-            // 2. Define um novo ponto alvo (entre -maxSwing e +maxSwing)
-            const maxSwing = 450; // Amplitude máxima do movimento pela direta/esquerda
-            
-            // Gera um novo alvo aleatório que não seja muito perto do atual
             let newTargetX;
             do {
-                newTargetX = Math.floor(Math.random() * maxSwing * 2) - maxSwing; // Valor entre -maxSwing e +maxSwing
-            } while (Math.abs(newTargetX - bossStartX) < 50); // Garante um movimento mínimo de 50px
+                newTargetX = Math.floor(Math.random() * maxSwing * 2) - maxSwing; 
+            } while (Math.abs(newTargetX - bossStartX) < 50); // Garante movimento mínimo
 
             bossTargetX = newTargetX;
 
-            // 3. Calcula a duração do novo movimento
             const distance = Math.abs(bossTargetX - bossStartX);
-            // Duração = Distância / Velocidade. Isso garante que a velocidade seja constante
+            // Isso garante que a velocidade (pixels/segundo) seja constante.
             bossMoveDuration = distance / bossMoveSpeed; 
             
-            // 4. Transiciona o estado
             bossMovementState = 'moving';
-            bossMoveTimer = 0; // Zera o timer para o movimento
+            bossMoveTimer = 0; 
         }
     }
 }
-        if (!isBossFight && asteroids.length === 0 && question.answer !== undefined) {
-            
 
-             handleMiss(false); 
-        }
-        
-        requestAnimationFrame(gameLoop);
-    }
+// ----------------------------------------------------------------------
+// ⭐ NOVO: 4. Movimentação de Projéteis do Boss (Diferentes de Asteroides)
+// ----------------------------------------------------------------------
+bossProjectiles = bossProjectiles.filter(proj => {
+    // MOVIMENTO SINCRONIZADO: 
+    // proj.vx/vy deve ser a VELOCIDADE em pixels/SEGUNDO (ex: 300 pixels/s)
+    proj.x += proj.vx * deltaSeconds;
+    proj.y += proj.vy * deltaSeconds;
+    
+    proj.element.style.left = `${proj.x}px`;
+    proj.element.style.top = `${proj.y}px`;
 
-    function checkCollision(bullet, asteroid) {
-        const bulletRect = bullet.element.getBoundingClientRect();
-        const asteroidRect = asteroid.element.getBoundingClientRect();
+    // Colisão com o Jogador 
+    if (checkPlayerCollision(proj)) { 
+        handlePlayerHitByBossProjectile(proj); 
+        proj.element.remove();
+        return false; 
+    }
 
-        return (
-            bulletRect.left < asteroidRect.right &&
-            bulletRect.right > asteroidRect.left &&
-            bulletRect.top < asteroidRect.bottom &&
-            bulletRect.bottom > asteroidRect.top
-        );
-    }
-    
-    function checkPlayerCollision(asteroid) {
-         if (asteroid.isDestroyed || asteroid.isCurrentTarget === false) return false;
-        
-        const playerRect = player.getBoundingClientRect();
-        const asteroidRect = asteroid.element.getBoundingClientRect();
-        return (
-            playerRect.left < asteroidRect.right &&
-            playerRect.right > asteroidRect.left &&
-            playerRect.top < asteroidRect.bottom &&
-            playerRect.bottom > asteroidRect.top
-        );
-    }
+    // Remove projéteis que saíram da tela
+    if (proj.y > GAME_HEIGHT + 50 || proj.y < -50 || proj.x < -50 || proj.x > GAME_WIDTH + 50) {
+        proj.element.remove();
+        return false;
+    }
 
- function handleAsteroidHit(index, bullet) {
+    return true;
+}); // Fim do loop de Projéteis do Boss
+
+
+// 5. Lógica de "miss" (quando não há asteroides e a pergunta sumiu)
+if (!isBossFight && asteroids.length === 0 && question.answer !== undefined) {
+    // Apenas chame handleMiss(false) se o sistema de perguntas requer que o jogo
+    // avance após um tempo sem resposta/colisão, o que geralmente é feito 
+    // por um temporizador (timeout) externo e não neste loop de filtro.
+    // Deixo comentado para evitar lógica duplicada de pontuação/vida.
+    // handleMiss(false); 
+}
+
+requestAnimationFrame(gameLoop);
+// ... (fim da função gameLoop) ...
+    }
+ function checkCollision(bullet, asteroid) {
+const bulletRect = bullet.element.getBoundingClientRect();
+ const asteroidRect = asteroid.element.getBoundingClientRect();
+
+return (
+ bulletRect.left < asteroidRect.right &&
+ bulletRect.right > asteroidRect.left &&
+bulletRect.top < asteroidRect.bottom &&
+bulletRect.bottom > asteroidRect.top
+ );
+}
+
+// ⭐ CORREÇÃO: Permite colisão com qualquer objeto que tenha 'element'
+function checkPlayerCollision(gameObject) {
+    if (!gameObject.element || gameObject.isDestroyed) return false;
+
+    // Se for um asteroide, mas não for o TARGET da pergunta, 
+    // ou se for um projétil do boss, ele deve colidir
+    const isPlayerCollisionObject = 
+        (gameObject.element.classList.contains('asteroid') && (gameObject.isCurrentTarget || gameObject.value === 'Attack')) ||
+        gameObject.element.classList.contains('boss-projectile');
+
+    if (!isPlayerCollisionObject) return false;
+        
+    const playerRect = player.getBoundingClientRect();
+    const objectRect = gameObject.element.getBoundingClientRect();
+    
+    // Simplificando o cálculo de colisão
+    return (
+        playerRect.left < objectRect.right &&
+        playerRect.right > objectRect.left &&
+        playerRect.top < objectRect.bottom &&
+        playerRect.bottom > objectRect.top
+    );
+}
+
+function handleAsteroidHit(index, bullet) {
     const asteroid = asteroids[index];
     
     // 1. APLICA DANO E REMOVE A BALA
@@ -1627,84 +1770,84 @@ if (isBossFight && boss) {
         setTimeout(() => generateNewQuestion(), 50); 
     }
 }
-   function handlePlayerHit(asteroid) {
-    // 1. Penalidade de Colisão
-    lives--;
-    combo = 0;
-    score = Math.max(0, score - 10);
-    createExplosion(playerX + 25, playerY + 25, 'var(--cor-erro)');
-    player.style.opacity = '0.5';
-    setTimeout(() => player.style.opacity = '1', 500); // Pisca
-    showTemporaryMessage("COLISÃO! -1 Vida! Pergunta Reiniciada!", 1500);
+function handlePlayerHit(asteroid) {
 
-    asteroids.forEach(a => {
-        if (a.element && a.element.parentElement && !a.isDestroyed) {
-            a.isDestroyed = true;
-            a.element.remove();
-        }
-    });
+lives--;
+combo = 0;
+score = Math.max(0, score - 10);
+createExplosion(playerX + 25, playerY + 25, 'var(--cor-erro)');
+player.style.opacity = '0.5';
+setTimeout(() => player.style.opacity = '1', 500); // Pisca
+ showTemporaryMessage("COLISÃO! -1 Vida! Pergunta Reiniciada!", 1500);
+
+asteroids.forEach(a => {
+ if (a.element && a.element.parentElement && !a.isDestroyed) {
+a.isDestroyed = true;
+ a.element.remove();
+}
+ });
 
     touchTargetX = null;
     touchTargetY = null;
     const movementKeys = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Mouse0', MOBILE_MOVE_LEFT, MOBILE_MOVE_RIGHT, MOBILE_SHOOT];
     movementKeys.forEach(k => { if (keysPressed[k]) keysPressed[k] = false; });
 
-    updateHUD();
-    if (lives <= 0) {
-        endGame();
-        return;
-    }
+updateHUD();
+ if (lives <= 0) {
+ endGame();
+return;
+ }
 
-    setTimeout(() => {
-        if (isBossFight) {
-            showTemporaryMessage("Ciclo do Boss Resetado!", 1000);
-            if (bossInterval) clearInterval(bossInterval);
-            bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
-        } else {
-            generateNewQuestion(); 
-        }
-    }, 50); 
+setTimeout(() => {
+ if (isBossFight) {
+showTemporaryMessage("Ciclo do Boss Resetado!", 1000);
+if (bossInterval) clearInterval(bossInterval);
+bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+ } else {
+generateNewQuestion(); 
+}
+ }, 50); 
 }
 
 function handleMiss(isCorrectAnswer) {
-    let shouldResetBoss = false;
+let shouldResetBoss = false;
 
-    if (isBossFight) {
-        shouldResetBoss = true;
-        combo = 0;
-        showTemporaryMessage("ALVO PERDIDO! Ciclo do Boss Resetado!", 2000);
+ if (isBossFight) {
+ shouldResetBoss = true;
+ combo = 0;
+showTemporaryMessage("ALVO PERDIDO! Ciclo do Boss Resetado!", 2000);
 
-    } else if (isCorrectAnswer) {
- 
-         lives--;
-         combo = 0;
-         score = Math.max(0, score - 10);
-         showTemporaryMessage("ALVO CORRETO PERDIDO! -1 Vida", 2000);
-    } else {
-         combo = 0;
-         showTemporaryMessage("ALVO PERDIDO...", 2000);
-    }
-    
-    updateHUD();
-    if (lives <= 0) endGame();
-    asteroids.forEach(a => {
-        if (a.element && a.element.parentElement && !a.isDestroyed) {
-            a.isDestroyed = true;
-            a.element.remove();
-        }
-    });
+ } else if (isCorrectAnswer) {
 
-  
-    setTimeout(() => {
-        if (shouldResetBoss) {
-         
-            if (bossInterval) clearInterval(bossInterval);
-            bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
-        } else {
-         
-            generateNewQuestion(); 
-        }
-    }, 50);
+lives--;
+combo = 0;
+score = Math.max(0, score - 10);
+showTemporaryMessage("ALVO CORRETO PERDIDO! -1 Vida", 2000);
+} else {
+combo = 0;
+showTemporaryMessage("ALVO PERDIDO...", 2000);
+ }
+
+updateHUD();
+if (lives <= 0) endGame();
+asteroids.forEach(a => {
+ if (a.element && a.element.parentElement && !a.isDestroyed) {
+ a.isDestroyed = true;
+a.element.remove();
+}
+ });
+
+
+setTimeout(() => {
+ if (shouldResetBoss) {
+
+if (bossInterval) clearInterval(bossInterval);
+bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+} else {
+
+ generateNewQuestion(); 
+ }
+}, 50);
 }
 
     const _startBtn = document.getElementById('startButton');
@@ -1718,29 +1861,29 @@ function handleMiss(isCorrectAnswer) {
         _restartBtn.addEventListener('click', (e) => { e.preventDefault && e.preventDefault(); try { startGame(); } catch(err) { console.error(err); showTemporaryMessage('Erro iniciando jogo',2000,'error-msg'); } });
     }
 
-    window.addEventListener('keydown', (e) => {
-        if (!isGameRunning) return;
-        keysPressed[e.code] = true;
-        e.preventDefault(); 
-    });
+window.addEventListener('keydown', (e) => {
+ if (!isGameRunning) return;
+ keysPressed[e.code] = true;
+ e.preventDefault(); 
+});
 
-    window.addEventListener('keyup', (e) => {
-        if (!isGameRunning) return;
-        keysPressed[e.code] = false;
-        e.preventDefault(); 
-    });
+ window.addEventListener('keyup', (e) => {
+ if (!isGameRunning) return;
+keysPressed[e.code] = false;
+ e.preventDefault(); 
+});
 
-    gameArea.addEventListener('mousedown', (e) => {
-        if (!isGameRunning) return;
-        keysPressed['Mouse0'] = true;
-        e.preventDefault();
-    });
+gameArea.addEventListener('mousedown', (e) => {
+if (!isGameRunning) return;
+ keysPressed['Mouse0'] = true;
+ e.preventDefault();
+});
 
-    gameArea.addEventListener('mouseup', (e) => {
-        if (!isGameRunning) return;
-        keysPressed['Mouse0'] = false;
-        e.preventDefault();
-    });
+ gameArea.addEventListener('mouseup', (e) => {
+ if (!isGameRunning) return;
+keysPressed['Mouse0'] = false;
+e.preventDefault();
+});
 
 
 function confirmExit() {
