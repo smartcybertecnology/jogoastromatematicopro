@@ -123,7 +123,7 @@
             .asteroid { width: 18vw; height: 18vw; max-width: calc(var(--asteroid-max) - 8px); max-height: calc(var(--asteroid-max) - 8px); }
             #hud { padding: calc(var(--hud-padding) - 2px); }
             .question-box { font-size: clamp(1.0em, 4vw, 1.4em); padding: 6px 12px; }
-            #shootButton { padding: 10px 14px; font-size: 0.95rem; bottom: calc(var(--ad-height) + env(safe-area-inset-bottom, 0) + 8px); z-index: 1200; }
+            #shootButton { padding: 20px 25px; font-size: 0.95rem; bottom: calc(var(--ad-height) + env(safe-area-inset-bottom, 0) + 8px); z-index: 1200; }
         }
     #hud { z-index: 2000; }
     .temp-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1800; pointer-events: none; }
@@ -567,7 +567,7 @@
             position: absolute;
             bottom: 20px;
             right: 20px;
-            padding: 15px 25px;
+            padding: 20px 25px;
             font-size: 1.2rem;
             background-color: var(--cor-acerto);
             color: white;
@@ -590,42 +590,100 @@
                 box-shadow: 0 6px 10px rgba(0,0,0,0.5);
             }
         }
-        /* Efeito visual do Buraco Negro (pode ser um GIF se preferir) */
+/* 🌌 Buraco Negro Realista */
+/* 🌌 Buraco Negro — aumento e diminuição suaves, sem delay */
 .black-hole-visual {
     position: absolute;
-    width: 80px;
-    height: 80px;
-    background-color: #000;
-    border: 3px solid #ff00ff;
+    width: 90px;
+    height: 90px;
+    background: radial-gradient(circle at center, #000 40%, #050505 70%, rgba(0,0,0,0) 100%);
     border-radius: 50%;
-    transform: translate(-50%, -50%) scale(0.1);
-    opacity: 0.5;
-    animation: blackHoleAnim 1.5s ease-out forwards;
-    z-index: 10;
-    box-shadow: 0 0 20px #ff00ff;
+    transform: translate(-50%, -50%) scale(0.05);
+    opacity: 0;
+    animation: blackHoleLife 1.9s cubic-bezier(0.4, 0, 0.2, 1) forwards; /* curva suave */
+    z-index: 20;
+    overflow: visible;
+    box-shadow:
+        0 0 60px rgba(10, 60, 180, 0.3),
+        inset 0 0 50px rgba(0, 0, 0, 0.9);
 }
 
-@keyframes blackHoleAnim {
+/* Disco de acreção — luz azul-dourada girando */
+.black-hole-visual::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 160px;
+    height: 160px;
+    border: 3px solid transparent;
+    border-top-color: rgba(255, 220, 150, 0.8);
+    border-right-color: rgba(120, 180, 255, 0.8);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) rotate(0deg);
+    animation: accretionRotate 1s linear infinite;
+    box-shadow:
+        0 0 40px rgba(255, 220, 150, 0.4),
+        0 0 60px rgba(100, 160, 255, 0.2);
+    filter: blur(0.5px);
+}
+
+/* Efeito de distorção gravitacional ao redor */
+.black-hole-visual::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 230px;
+    height: 230px;
+    background: radial-gradient(circle, rgba(10,10,30,0.25) 30%, rgba(0,0,0,0) 80%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    animation: gravityWave 2.1s ease-in-out infinite;
+    z-index: -1;
+}
+
+/* Animação suave e contínua — surge e some sem delay */
+@keyframes blackHoleLife {
     0% {
-        transform: translate(-50%, -50%) scale(0.1) rotate(0deg);
-        opacity: 0.5;
+        transform: translate(-50%, -50%) scale(0.05);
+        opacity: 0;
     }
     50% {
-        transform: translate(-50%, -50%) scale(1) rotate(180deg);
+        transform: translate(-50%, -50%) scale(1);
         opacity: 1;
     }
     100% {
-        transform: translate(-50%, -50%) scale(0.1) rotate(360deg);
+        transform: translate(-50%, -50%) scale(0.01);
         opacity: 0;
+        filter: blur(8px);
     }
 }
 
-/* Define os projéteis do boss como menores que os asteroides normais */
+/* Rotação contínua do disco */
+@keyframes accretionRotate {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Ondas gravitacionais pulsantes */
+@keyframes gravityWave {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.45;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.08);
+        opacity: 0.8;
+    }
+}
+
+/* Projéteis do boss (mantido) */
 .asteroid.boss-projectile {
     width: 30px;
     height: 30px;
-    /* Herda o background-image do .asteroid */
 }
+
     </style>
 </head>
 <body>
