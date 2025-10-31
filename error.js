@@ -282,55 +282,6 @@ function handleKeyUp(e) {
 window.addEventListener('keydown', handleKeyDown);
 window.addEventListener('keyup', handleKeyUp);
 
-// --- Função de Movimento do Player (Adicionada/Verificada) ---
-
-function movePlayer() {
-    if (!isGameRunning) return;
-
-    let moved = false;
-    let rotation = 0;
-
-    if (keysPressed['ArrowLeft'] || keysPressed['KeyA'] || keysPressed[MOBILE_MOVE_LEFT]) {
-        playerX -= PLAYER_SPEED;
-        rotation = -10;
-        moved = true;
-    }
-    if (keysPressed['ArrowRight'] || keysPressed['KeyD'] || keysPressed[MOBILE_MOVE_RIGHT]) {
-        playerX += PLAYER_SPEED;
-        rotation = 10;
-        moved = true;
-    }
-
-    if (touchTargetX !== null) {
-        const dx = touchTargetX - (playerX + player.offsetWidth / 2);
-
-        if (Math.abs(dx) > 1) { 
-            let moveAmount = dx * TOUCH_MOVE_SPEED_FACTOR;
-
-            if (Math.abs(moveAmount) > PLAYER_SPEED) {
-                moveAmount = moveAmount > 0 ? PLAYER_SPEED : -PLAYER_SPEED;
-            }
-
-            playerX += moveAmount;
-            rotation = moveAmount * 2; 
-            moved = true;
-
-            if (Math.abs(dx) < 5) {
-                touchTargetX = null;
-            }
-        }
-    }
-
-    playerX = Math.max(0, Math.min(playerX, GAME_WIDTH - player.offsetWidth));
-
-    player.style.left = `${playerX}px`;
-    player.style.transform = `rotate(${rotation}deg)`;
-
-    if (player.style.bottom === '') { 
-         player.style.top = `${playerY}px`;
-    }
-}
-
 
 function generateNewQuestion() {
     // Lógica para criar a pergunta e os asteroides
