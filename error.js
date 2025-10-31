@@ -550,48 +550,48 @@ window.addEventListener('touchcancel', handleTouchEnd);
 });
 /**
  * Lida com o início do toque (touchstart).
- * Verifica se o toque foi na nave (drag) ou na tela (follow).
- */
-/**
- * Lida com o início do toque (touchstart).
- * Diferencia entre Modo 1 (Drag) e Modo 2 (Delta).
+ * Diferencia entre Modo 1 (Drag) e Modo 2 (Delta), APENAS para movimento.
  */
 function handleTouchStart(event) {
     if (!isGameRunning) return;
-    const touch = event.touches[0];
-    if (!touch) return;
-    const target = touch.target;
 
-    // 1. Ignora se tocar no botão de disparo
-    if (target.id === 'shootButton' || target.closest('#shootButton')) {
+    // 1. Ignora se o toque for no botão de disparo (ele é tratado separadamente)
+    const target = event.touches[0]?.target;
+    if (target && (target.id === 'shootButton' || target.closest('#shootButton'))) {
         return; 
     }
     
-    // 2. Previne o scroll
-    event.preventDefault();
+    // 2. Previne o scroll e marca o toque de movimento como ativo
+    event.preventDefault(); 
     isTouchActive = true;
+
+    const touch = event.touches[0];
+    if (!touch) return;
     
     const gameAreaRect = gameArea.getBoundingClientRect();
     const relativeX = touch.clientX - gameAreaRect.left;
     const relativeY = touch.clientY - gameAreaRect.top;
 
-    if (target.id === 'player') {
+    if (target && target.id === 'player') {
         // MODO 1: Drag 1:1 (Tocou na nave)
         isDraggingPlayer = true;
-        // Calcula o offset do "agarre"
+        
         touchOffsetX = relativeX - playerX;
         touchOffsetY = relativeY - playerY;
-        // Define o alvo inicial
         dragTargetX = playerX;
         dragTargetY = playerY;
+        
     } else {
-        // MODO 2: Delta Move (Tocou na tela)
+        // MODO 2: Delta Move (Tocou na tela vazia)
         isDraggingPlayer = false;
-        // Define a posição inicial do toque para calcular o delta no futuro
+        
+        // APENAS LÓGICA DE MOVIMENTO: Define a posição inicial do toque para calcular o delta
         lastTouchX = touch.clientX;
         lastTouchY = touch.clientY;
         touchDeltaX = 0;
         touchDeltaY = 0;
+        
+        // ⭐ IMPORTANTE: Não ativamos keysPressed[MOBILE_SHOOT] aqui. ⭐
     }
 }
 
@@ -629,11 +629,11 @@ function handleTouchMove(event) {
     }
 }
 
-/**
- * Lida com o fim do toque (touchend / touchcancel).
- * Reseta todos os estados de toque.
- */
 function handleTouchEnd(event) {
+    
+    // ⭐ GARANTIA: NÃO desativa keysPressed[MOBILE_SHOOT]. 
+    // O botão de disparo dedicado controla seu próprio estado de toque/fim. ⭐
+    
     isTouchActive = false;
     isDraggingPlayer = false;
     
@@ -1406,7 +1406,7 @@ function movePlayer() {
     // LÓGICA DE DISPARO (AGORA INCLUI TECLADO, MOUSE E TOQUE)
     // ==========================================================
     const now = Date.now();
-    // ✅ VERIFICA TECLADO/MOUSE (Space/Mouse0) OU BOTÃO MÓVEL (MOBILE_SHOOT)
+    // Verifica Teclado (Space), Mouse (Mouse0), OU O BOTÃO DE TOQUE
     if ((keysPressed['Space'] || keysPressed['Mouse0'] || keysPressed[MOBILE_SHOOT]) && (now - lastShootTime > SHOOT_DELAY)) {
         shoot();
         lastShootTime = now;
