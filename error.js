@@ -39,10 +39,20 @@ let touchTargetY = null; // Posição Y para onde a nave deve ir
 // Fator que determina a velocidade e suavidade do movimento de toque
 const TOUCH_MOVE_SPEED_FACTOR = 0.05; 
 // VARIÁVEIS PARA CONTROLE DE ARRASTE (DRAG)
-let isDraggingPlayer = false; // true se o toque começou na nave
 let isTouchActive = false;    // true se um toque de movimento está ativo
-let touchOffsetX = 0;       // Para manter o "ponto de agarre" X na nave
-let touchOffsetY = 0;       // Para manter o "ponto de agarre" Y na nave
+let isDraggingPlayer = false; // true se o toque começou na nave (Modo 1: Drag)
+
+// Modo 1: Drag 1:1
+let touchOffsetX = 0;       // Offset X do "agarre" na nave
+let touchOffsetY = 0;       // Offset Y do "agarre" na nave
+let dragTargetX = null;     // Posição X para onde a nave (em drag) deve ir
+let dragTargetY = null;     // Posição Y para onde a nave (em drag) deve ir
+
+// Modo 2: Delta Move (Arrastar tela)
+let touchDeltaX = 0;        // O quanto o dedo moveu no eixo X desde o último frame
+let touchDeltaY = 0;        // O quanto o dedo moveu no eixo Y desde o último frame
+let lastTouchX = null;      // Posição X anterior do toque (para calcular o delta)
+let lastTouchY = null;      // Posição Y anterior do toque (para calcular o delta)
 
 let movementInterval = null;
 
@@ -582,20 +592,22 @@ window.addEventListener('touchcancel', handleTouchEnd);
  * Lida com o início do toque (touchstart).
  * Verifica se o toque foi na nave (drag) ou na tela (follow).
  */
+/**
+ * Lida com o início do toque (touchstart).
+ * Diferencia entre Modo 1 (Drag) e Modo 2 (Delta).
+ */
 function handleTouchStart(event) {
     if (!isGameRunning) return;
-
     const touch = event.touches[0];
     if (!touch) return;
-
     const target = touch.target;
 
     // 1. Ignora se tocar no botão de disparo
     if (target.id === 'shootButton' || target.closest('#shootButton')) {
-        return; // O handler do botão de tiro cuida disso
+        return; 
     }
     
-    // 2. Se o toque é para movimento, previne o scroll
+    // 2. Previne o scroll
     event.preventDefault();
     isTouchActive = true;
     
@@ -604,53 +616,56 @@ function handleTouchStart(event) {
     const relativeY = touch.clientY - gameAreaRect.top;
 
     if (target.id === 'player') {
-        // REQUISITO 1: Tocou na nave (Modo Drag 1:1)
+        // MODO 1: Drag 1:1 (Tocou na nave)
         isDraggingPlayer = true;
-        
-        // Calcula o offset do toque relativo ao canto (playerX, playerY)
+        // Calcula o offset do "agarre"
         touchOffsetX = relativeX - playerX;
         touchOffsetY = relativeY - playerY;
-        
-        // Define o alvo inicial (o próprio playerX/Y)
-        touchTargetX = playerX;
-        touchTargetY = playerY;
-
+        // Define o alvo inicial
+        dragTargetX = playerX;
+        dragTargetY = playerY;
     } else {
-        // REQUISITO 2: Tocou na GameArea (Modo Follow)
+        // MODO 2: Delta Move (Tocou na tela)
         isDraggingPlayer = false;
-        touchOffsetX = 0;
-        touchOffsetY = 0;
-
-        // Define o alvo para onde o dedo tocou (para o centro da nave)
-        touchTargetX = relativeX;
-        touchTargetY = relativeY;
+        // Define a posição inicial do toque para calcular o delta no futuro
+        lastTouchX = touch.clientX;
+        lastTouchY = touch.clientY;
+        touchDeltaX = 0;
+        touchDeltaY = 0;
     }
 }
 
 /**
  * Lida com o movimento do toque (touchmove).
- * Atualiza o alvo (touchTargetX/Y) baseado no modo (Drag ou Follow).
+ * Atualiza o 'dragTarget' (Modo 1) ou o 'touchDelta' (Modo 2).
  */
 function handleTouchMove(event) {
-    // Só move se o toque estiver ativo (iniciado na gameArea/player)
     if (!isGameRunning || !isTouchActive) return; 
     
     event.preventDefault();
     const touch = event.touches[0];
     if (!touch) return;
 
-    const gameAreaRect = gameArea.getBoundingClientRect();
-    const relativeX = touch.clientX - gameAreaRect.left;
-    const relativeY = touch.clientY - gameAreaRect.top;
-
     if (isDraggingPlayer) {
-        // MODO DRAG: O alvo (canto) é a posição do dedo MENOS o offset de "agarre"
-        touchTargetX = relativeX - touchOffsetX;
-        touchTargetY = relativeY - touchOffsetY;
+        // MODO 1: Atualiza o *alvo* (onde a nave deve ir)
+        const gameAreaRect = gameArea.getBoundingClientRect();
+        const relativeX = touch.clientX - gameAreaRect.left;
+        const relativeY = touch.clientY - gameAreaRect.top;
+        
+        dragTargetX = relativeX - touchOffsetX;
+        dragTargetY = relativeY - touchOffsetY;
     } else {
-        // MODO FOLLOW: O alvo (centro) é a posição do dedo
-        touchTargetX = relativeX;
-        touchTargetY = relativeY;
+        // MODO 2: Calcula o *delta* (o quanto mover)
+        const deltaX = touch.clientX - lastTouchX;
+        const deltaY = touch.clientY - lastTouchY;
+        
+        // Armazena o delta para ser usado no movePlayer
+        touchDeltaX = deltaX;
+        touchDeltaY = deltaY;
+
+        // Atualiza a posição "anterior" para o próximo frame
+        lastTouchX = touch.clientX;
+        lastTouchY = touch.clientY;
     }
 }
 
@@ -661,10 +676,18 @@ function handleTouchMove(event) {
 function handleTouchEnd(event) {
     isTouchActive = false;
     isDraggingPlayer = false;
-    touchTargetX = null;
-    touchTargetY = null;
+    
+    // Reseta Modo 1
+    dragTargetX = null;
+    dragTargetY = null;
     touchOffsetX = 0;
     touchOffsetY = 0;
+
+    // Reseta Modo 2
+    touchDeltaX = 0;
+    touchDeltaY = 0;
+    lastTouchX = null;
+    lastTouchY = null;
 }
 function updateHUD() {
     scoreDisplay.innerText = score;
@@ -1319,118 +1342,96 @@ function exitBossFight(success) {
 
 
 function movePlayer() {
-    if (!isGameRunning) return;
+ if (!isGameRunning) return;
 
-    // Defensive guards
-    if (!isFinite(playerX) || playerX === null) playerX = (GAME_WIDTH || 320) / 2;
-    if (!isFinite(playerY) || playerY === null) playerY = (GAME_HEIGHT || 240) - 70;
 
-    let dx = 0;
-    let dy = 0;
-    let rotation = 0;
-    
-    const playerWidth = player.offsetWidth || 63; 
-    const playerHeight = player.offsetHeight || 63; 
-    const marginBottom = 20; // Correspondente ao bottom: 20px no CSS
+if (!isFinite(playerX) || playerX === null) playerX = (GAME_WIDTH || 320) / 2;
+if (!isFinite(playerY) || playerY === null) playerY = (GAME_HEIGHT || 240) - 70;
 
-    // ==========================================================
-    // LÓGICA DE MOVIMENTO
-    // ==========================================================
-    if (touchTargetX === null) {
-        // ---------------------------------
-        // Lógica de Movimento PC (Teclado)
-        // ---------------------------------
-        if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) {
-            dx = -PLAYER_SPEED;
-            rotation = -10;
-        }
-        if (keysPressed['ArrowRight'] || keysPressed['KeyD']) {
-            if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) { 
-                dx = 0;
-                rotation = 0;
-            } else {
-                dx = PLAYER_SPEED;
-                rotation = 10;
-            }
-        }
-        if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
-        if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
-        
-        if (dx !== 0 && dy !== 0) {
-            const diagFactor = Math.sqrt(2);
-            dx /= diagFactor;
-            dy /= diagFactor;
-        }
+ let dx = 0;
+ let dy = 0;
+ let rotation = 0;
 
-    } else {
-        // ---------------------------------
-        // Lógica de Movimento Mobile (Toque)
-        // ---------------------------------
-        
-        let targetCenterX, targetCenterY;
+const playerWidth = player.offsetWidth || 63; 
+ const playerHeight = player.offsetHeight || 63; 
+ const marginBottom = 20; // Correspondente ao bottom: 20px no CSS
+
+    if (isTouchActive) {
+
 
         if (isDraggingPlayer) {
-            // MODO DRAG (Requisito 1)
-            // O alvo é o canto (touchTargetX/Y) + metade da nave
-            targetCenterX = touchTargetX + (playerWidth / 2);
-            targetCenterY = touchTargetY + (playerHeight / 2);
-        } else {
-            // MODO FOLLOW (Requisito 2)
-            // O alvo é o ponto do toque (que é o centro desejado)
-            targetCenterX = touchTargetX;
-            targetCenterY = touchTargetY;
-        }
-
-        const playerCenterX = playerX + (playerWidth / 2);
-        const playerCenterY = playerY + (playerHeight / 2);
-        
-        const diffX = targetCenterX - playerCenterX;
-        const diffY = targetCenterY - playerCenterY;
-        const distance = Math.sqrt(diffX * diffX + diffY * diffY);
-        
-        // Distância de parada (menor para drag, maior para follow)
-        const STOPPING_DISTANCE = isDraggingPlayer ? 1 : 5;
-
-        if (distance > STOPPING_DISTANCE) {
+            // MODO 1: Drag 1:1 (move para dragTargetX/Y)
+            // A nave "gruda" no dedo
             
-            if (isDraggingPlayer) {
-                // MODO DRAG: Move 1:1 (sem suavização, sem limite de vel.)
-                // O 'clamping' no final da função garante os limites.
-                dx = diffX;
-                dy = diffY;
-            } else {
-                // MODO FOLLOW: Move com suavização (lógica original)
-                dx = diffX * TOUCH_MOVE_SPEED_FACTOR; 
-                dy = diffY * TOUCH_MOVE_SPEED_FACTOR;
-                const speedMagnitude = Math.sqrt(dx * dx + dy * dy);
-                if (speedMagnitude > PLAYER_SPEED) {
-                    dx = (dx / speedMagnitude) * PLAYER_SPEED;
-                    dy = (dy / speedMagnitude) * PLAYER_SPEED;
-                }
-            }
-            rotation = (dx / PLAYER_SPEED) * 15;
-        
+            const playerCenterX = playerX + (playerWidth / 2);
+            const playerCenterY = playerY + (playerHeight / 2);
+            
+            // O alvo é o canto (dragTargetX/Y) + metade da nave
+            const targetCenterX = dragTargetX + (playerWidth / 2);
+            const targetCenterY = dragTargetY + (playerHeight / 2);
+
+            const diffX = targetCenterX - playerCenterX;
+            const diffY = targetCenterY - playerCenterY;
+            
+            // Move 1:1 (sem suavização, sem limite de vel.)
+            // O 'clamping' (limites) no final da função vai segurar a nave.
+            dx = diffX;
+            dy = diffY;
+            
+            rotation = (dx / (PLAYER_SPEED * 2)) * 15; // Rotação baseada no delta
+
         } else {
-            // Perto o suficiente, para
-            dx = 0;
-            dy = 0;
-            // Se estiver no modo Drag, trava no local exato
-            if (isDraggingPlayer) {
-                 playerX = targetCenterX - (playerWidth / 2);
-                 playerY = targetCenterY - (playerHeight / 2);
-            }
+            // MODO 2: Delta Move (move *por* touchDeltaX/Y)
+            // A nave "acompanha" o arrasto do dedo
+            
+            dx = touchDeltaX;
+            dy = touchDeltaY;
+            
+            // Opcional: Limitar a velocidade do "arraste"
+            // const speedMagnitude = Math.sqrt(dx * dx + dy * dy);
+            // const MAX_DELTA_SPEED = PLAYER_SPEED * 2; // Ex: 2x a velocidade do teclado
+            // if (speedMagnitude > MAX_DELTA_SPEED) {
+            //     dx = (dx / speedMagnitude) * MAX_DELTA_SPEED;
+            //     dy = (dy / speedMagnitude) * MAX_DELTA_SPEED;
+            // }
+            
+            rotation = (dx / PLAYER_SPEED) * 15;
+
+            // IMPORTANTE: Reseta os deltas após aplicá-los.
+            // Isso faz a nave parar se o dedo parar de mover.
+            touchDeltaX = 0;
+            touchDeltaY = 0;
         }
+
+    } else {
+
+ if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) {
+            dx = -PLAYER_SPEED;
+            rotation = -10;
+        }
+if (keysPressed['ArrowRight'] || keysPressed['KeyD']) {
+ if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) { 
+ dx = 0; rotation = 0;
+} else {
+ dx = PLAYER_SPEED; rotation = 10;
+ }
+ }
+if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
+if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
+
+ if (dx !== 0 && dy !== 0) {
+ const diagFactor = Math.sqrt(2);
+ dx /= diagFactor; dy /= diagFactor;
 }
+    }
 
     playerX += dx;
     playerY += dy;
-
 
 playerX = Math.max(0, Math.min(GAME_WIDTH - playerWidth, playerX));
 
 
 playerY = Math.max(0, Math.min(GAME_HEIGHT - playerHeight - marginBottom, playerY)); 
-
 
 player.style.left = `${playerX}px`;
 player.style.top = `${playerY}px`;
@@ -1438,12 +1439,12 @@ player.style.transform = `rotate(${rotation}deg)`;
 
 
 const now = Date.now();
- if ((keysPressed['Space'] || keysPressed['Mouse0']) && (now - lastShootTime > SHOOT_DELAY)) {
+if ((keysPressed['Space'] || keysPressed['Mouse0']) && (now - lastShootTime > SHOOT_DELAY)) {
  shoot();
 lastShootTime = now;
 player.classList.add('shooting');
-setTimeout(() => player.classList.remove('shooting'), 100);
- }
+ setTimeout(() => player.classList.remove('shooting'), 100);
+}
 }
 function shoot() {
     const currentTime = Date.now();
