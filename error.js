@@ -287,7 +287,25 @@ function movePlayer() {
         moved = true;
     }
 
- 
+    if (touchTargetX !== null) {
+        const dx = touchTargetX - (playerX + player.offsetWidth / 2);
+
+        if (Math.abs(dx) > 1) { 
+            let moveAmount = dx * TOUCH_MOVE_SPEED_FACTOR;
+
+            if (Math.abs(moveAmount) > PLAYER_SPEED) {
+                moveAmount = moveAmount > 0 ? PLAYER_SPEED : -PLAYER_SPEED;
+            }
+
+            playerX += moveAmount;
+            rotation = moveAmount * 2; 
+            moved = true;
+
+            if (Math.abs(dx) < 5) {
+                touchTargetX = null;
+            }
+        }
+    }
 
     playerX = Math.max(0, Math.min(playerX, GAME_WIDTH - player.offsetWidth));
 
@@ -529,73 +547,67 @@ function handleShootButtonTouch(event) {
 document.addEventListener('DOMContentLoaded', () => {
     const startButton = document.getElementById('startButton');
     const gameAreaElement = document.getElementById('gameArea'); 
-    // ⭐ NOVO: Referência ao botão de disparo exclusivo
     const shootButton = document.getElementById('shootButton'); 
 
     if (shootButton) {
-        // Disparo ao clicar (desktop se o botão for visível)
+        // ... Lógica do botão de disparo (inalterada) ...
         shootButton.addEventListener('click', handleShootButtonTouch);
-        // Disparo ao tocar (mobile) — non-passive so preventDefault works
         shootButton.addEventListener('touchstart', handleShootButtonTouch, { passive: false });
-        // Pointerdown fallback
         shootButton.addEventListener('pointerdown', (ev) => { ev.preventDefault && ev.preventDefault(); handleShootButtonTouch(ev); }, { passive: false });
-        // Opcional: Remove o 'pressionado' ao soltar (se estiver usando keysPressed)
         shootButton.addEventListener('touchend', () => { delete keysPressed[MOBILE_SHOOT]; });
     }
     
     // 3. Adiciona suporte a toque na área do jogo
     if (gameAreaElement) {
         
-        // ⭐ Movimento Touch (Inalterado) ⭐
-        gameAreaElement.addEventListener('touchstart', handleMoveTouch);
-        gameAreaElement.addEventListener('touchmove', handleMoveTouch); 
+        // ⭐ Movimento Touch: Adicionado { passive: false } para permitir preventDefault
+        gameAreaElement.addEventListener('touchstart', handleMoveTouch, { passive: false });
+        gameAreaElement.addEventListener('touchmove', handleMoveTouch, { passive: false }); 
         gameAreaElement.addEventListener('touchend', handleMoveEnd); 
         gameAreaElement.addEventListener('touchcancel', handleMoveEnd); 
     }
 });
-function handleMoveEnd(event) {
-    // 1. CHECAGEM DE CONTROLE MÓVEL (Se o toque for em botões, ignora)
-    const touchTarget = event.changedTouches[0].target;
-    if (touchTarget.id === 'shootButton' || touchTarget.closest('[data-mobile-control]')) {
-        return; 
-    }
-    
-    // PARA o movimento
-    keysPressed[MOBILE_MOVE_LEFT] = false;
-    keysPressed[MOBILE_MOVE_RIGHT] = false;
-}
+
 function handleMoveTouch(event) {
-    // 1. CHECAGEM DE CONTROLE MÓVEL (Se o toque for em botões, ignora)
-    const touchTarget = event.touches[0].target;
-    if (touchTarget.id === 'shootButton' || touchTarget.closest('[data-mobile-control]')) {
-        return; 
-    }
+    // É crucial para prevenir o scroll no celular e garantir que o toque seja processado.
+    event.preventDefault(); 
     
-    event.preventDefault();
     if (!isGameRunning) return;
     const gameAreaElement = document.getElementById('gameArea'); 
     if (!gameAreaElement) return;
-    
-    // ZERA os alvos analógicos, pois vamos usar o movimento direcional
-    touchTargetX = null;
-    touchTargetY = null;
+
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    // 1. CHECAGEM DE CONTROLE MÓVEL (Se o toque começou no botão de disparo, ignorar movimento.)
+    const touchTarget = touch.target;
+    // O .closest('[data-mobile-control]') é uma boa prática para futuros botões.
+    if (touchTarget.id === 'shootButton' || touchTarget.closest('[data-mobile-control]')) {
+        // Se tocou no botão de tiro, não defina um alvo de movimento.
+        // É importante que o 'touchstart' do botão de tiro use event.stopPropagation() no DOMContentLoaded.
+        return; 
+    }
 
     const gameAreaRect = gameAreaElement.getBoundingClientRect();
-    const touchX = event.touches[0].clientX - gameAreaRect.left;
-    
-    // 2. LÓGICA DE MOVIMENTO DIRECIONAL:
-    // Determina se o toque foi no lado esquerdo ou direito da Área de Jogo
-    const middleX = GAME_WIDTH / 2;
 
-    if (touchX < middleX) {
-        // Tocou na metade esquerda: Move para a ESQUERDA
-        keysPressed[MOBILE_MOVE_LEFT] = true;
-        keysPressed[MOBILE_MOVE_RIGHT] = false;
-    } else {
-        // Tocou na metade direita: Move para a DIREITA
-        keysPressed[MOBILE_MOVE_RIGHT] = true;
-        keysPressed[MOBILE_MOVE_LEFT] = false;
-    }
+    // 2. LÓGICA DE MOVIMENTO ANALÓGICO (Define o alvo de destino)
+    touchTargetX = touch.clientX - gameAreaRect.left;
+    touchTargetY = touch.clientY - gameAreaRect.top;
+    
+    // Opcional: Garantir que o alvo Y seja fixo se a nave for apenas horizontal
+    // touchTargetY = playerY + (player.offsetHeight / 2); // Deixe a nave na altura atual
+}
+function handleMoveEnd(event) {
+    // Limpa os alvos analógicos para que o loop movePlayer pare a nave.
+    touchTargetX = null;
+    touchTargetY = null;
+    
+    // Limpa os controles direcionais mobile, caso a lógica anterior os tenha setado.
+    keysPressed[MOBILE_MOVE_LEFT] = false;
+    keysPressed[MOBILE_MOVE_RIGHT] = false;
+    
+    // Opcional: Previne o comportamento padrão ao levantar o dedo.
+    event.preventDefault(); 
 }
 function updateHUD() {
     scoreDisplay.innerText = score;
