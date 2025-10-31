@@ -571,8 +571,15 @@ document.addEventListener('DOMContentLoaded', () => {
         gameAreaElement.addEventListener('touchcancel', handleMoveEnd); 
     }
 });
-
 function handleMoveTouch(event) {
+    // 1. CHECAGEM DE CONTROLE MÓVEL (A CORREÇÃO PRINCIPAL)
+    const touchTarget = event.touches[0].target;
+    // Se o toque começou sobre o botão de disparo, ignore o movimento.
+    if (touchTarget.id === 'shootButton') {
+        return; 
+    }
+    // Adicione IDs de outros botões de controle móvel aqui se existirem
+    
     event.preventDefault();
     if (!isGameRunning) return;
     const gameAreaElement = document.getElementById('gameArea'); 
@@ -580,27 +587,14 @@ function handleMoveTouch(event) {
     
     const gameAreaRect = gameAreaElement.getBoundingClientRect();
 
-
     const touch = event.touches[0];
     if (touch) {
     
+        // 2. LÓGICA DE MOVIMENTO (Inalterada)
         touchTargetX = touch.clientX - gameAreaRect.left;
         touchTargetY = touch.clientY - gameAreaRect.top;
     }
 }
-
-function handleMoveEnd(event) {
-    if (!isGameRunning) return;
-
-    if (event.touches.length === 0) {
-        touchTargetX = null;
-        touchTargetY = null;
-    } 
-    else if (event.touches.length > 0) {
-        handleMoveTouch(event); 
-    }
-}
-
 
 function updateHUD() {
     scoreDisplay.innerText = score;
