@@ -492,19 +492,16 @@ function endGame(isVictory = false) {
     questionDisplay.style.display = 'none'; 
 }
 function handleShootButtonTouch(event) {
-event.preventDefault();
- event.stopPropagation(); 
+    event.preventDefault();
+    event.stopPropagation(); // ⭐ IMPEDE que o evento se propague para os listeners de movimento
+    
+    if (!isGameRunning) return;
+    keysPressed[MOBILE_SHOOT] = true;
 
- if (!isGameRunning) return;
-
- keysPressed[MOBILE_SHOOT] = true;
-
-
-const button = event.currentTarget;
- if (button) {
+    const button = event.currentTarget;
+    if (button) {
         button.classList.add('active');
     }
-
 }
 function handleTouchEnd(event) {
     // ⭐ CORREÇÃO: Não desativa o movimento se o toque terminar no botão de disparo
