@@ -540,22 +540,20 @@ function endGame(isVictory = false) {
     gameOverScreen.style.display = 'flex';
     questionDisplay.style.display = 'none'; 
 }
-
 function handleShootButtonTouch(event) {
-    event.preventDefault();
-    event.stopPropagation(); 
-    
-    if (!isGameRunning) return;
-    
-    keysPressed[MOBILE_SHOOT] = true;
+event.preventDefault();
+ event.stopPropagation(); 
 
-    shoot();
+ if (!isGameRunning) return;
 
-    const button = event.currentTarget;
-    button.classList.add('active');
-    setTimeout(() => {
-        button.classList.remove('active');
-    }, SHOOT_DELAY / 2);
+ keysPressed[MOBILE_SHOOT] = true;
+
+
+const button = event.currentTarget;
+ if (button) {
+        button.classList.add('active');
+    }
+
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -571,8 +569,19 @@ document.addEventListener('DOMContentLoaded', () => {
         shootButton.addEventListener('touchstart', handleShootButtonTouch, { passive: false });
         // Pointerdown fallback
         shootButton.addEventListener('pointerdown', (ev) => { ev.preventDefault && ev.preventDefault(); handleShootButtonTouch(ev); }, { passive: false });
-        // Opcional: Remove o 'pressionado' ao soltar (se estiver usando keysPressed)
-        shootButton.addEventListener('touchend', () => { delete keysPressed[MOBILE_SHOOT]; });
+    
+const handleShootEnd = (event) => {
+delete keysPressed[MOBILE_SHOOT];
+if (event.currentTarget) {
+ event.currentTarget.classList.remove('active');
+ }
+};
+
+ shootButton.addEventListener('touchend', handleShootEnd);
+shootButton.addEventListener('touchcancel', handleShootEnd);
+        // Também é bom adicionar para mouse/pointer
+        shootButton.addEventListener('mouseup', handleShootEnd);
+        shootButton.addEventListener('mouseleave', handleShootEnd);
     }
     
     // 3. Adiciona suporte a toque na área do jogo (MODIFICADO)
@@ -1437,14 +1446,14 @@ player.style.left = `${playerX}px`;
 player.style.top = `${playerY}px`;
 player.style.transform = `rotate(${rotation}deg)`;
 
-
 const now = Date.now();
-if ((keysPressed['Space'] || keysPressed['Mouse0']) && (now - lastShootTime > SHOOT_DELAY)) {
+
+if ((keysPressed['Space'] || keysPressed['Mouse0'] || keysPressed[MOBILE_SHOOT]) && (now - lastShootTime > SHOOT_DELAY)) {
  shoot();
 lastShootTime = now;
 player.classList.add('shooting');
- setTimeout(() => player.classList.remove('shooting'), 100);
-}
+setTimeout(() => player.classList.remove('shooting'), 100);
+ }
 }
 function shoot() {
     const currentTime = Date.now();
