@@ -36,6 +36,7 @@ const MOBILE_MOVE_RIGHT = 'MobileRight';
 let touchActive = false; // NOVA: Indica se o toque está ativo
 let touchCurrentX = null; // NOVA: Posição X do toque atual
 let movementInterval = null;
+let lastTouchX = null
 
 let infoTimer = null; // Novo timer para gerenciar mensagens temporárias
 
@@ -567,9 +568,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 function handleMoveTouch(event) {
-    // 1. CHECAGEM DE CONTROLE MÓVEL
+    // ... (Checagem de shootButton e preventDefault - mantém a primeira parte igual)
     const touchTarget = event.touches[0].target;
-    // Se o toque começou sobre o botão de disparo ou outro controle móvel, ignore o movimento.
     if (touchTarget.id === 'shootButton' || touchTarget.classList.contains('mobile-control-button')) {
         return; 
     }
@@ -583,42 +583,49 @@ function handleMoveTouch(event) {
 
     const touch = event.touches[0];
     if (touch) {
-        // ⭐ NOVA LÓGICA DE MOVIMENTO (Joystick Virtual) ⭐
+        const currentTouchX = touch.clientX - gameAreaRect.left;
         
-        // Posição X do toque dentro da área do jogo
-        const touchCurrentX = touch.clientX - gameAreaRect.left;
-        
-        // Posição X central da nave
-        const playerWidth = player.offsetWidth || 63;
-        const playerCenterX = playerX + (playerWidth / 2);
-        
-        // 2. DECIDINDO A DIREÇÃO
-        // Se o toque está à esquerda do centro da nave
-        if (touchCurrentX < playerCenterX) {
-            keysPressed['TouchLeft'] = true;
-            keysPressed['TouchRight'] = false;
-        } 
-        // Se o toque está à direita do centro da nave
-        else {
-            keysPressed['TouchLeft'] = false;
-            keysPressed['TouchRight'] = true;
-        }
+        // ⭐ NOVA LÓGICA DE ARRASTE ⭐
 
-        // ⭐ IMPORTANTE: Como não estamos mais usando a lógica de 'destino', 
-        // touchTargetX e touchTargetY não precisam ser definidos aqui,
-        // mas se o seu código em outras partes dependia deles, você pode 
-        // deixá-los como 'null' na inicialização e removê-los do seu escopo global.
-        touchTargetX = null; 
-        touchTargetY = null;
+        if (lastTouchX !== null) {
+            // Calcula o quanto o dedo se moveu desde o último frame (delta X)
+            const deltaX = currentTouchX - lastTouchX;
+            const threshold = 1; // Mínima distância para considerar um movimento
+            
+            // Se moveu para a direita e o movimento foi significativo
+            if (deltaX > threshold) {
+                keysPressed['TouchRight'] = true;
+                keysPressed['TouchLeft'] = false;
+            } 
+            // Se moveu para a esquerda e o movimento foi significativo
+            else if (deltaX < -threshold) {
+                keysPressed['TouchLeft'] = true;
+                keysPressed['TouchRight'] = false;
+            } 
+            // Se o dedo não moveu o suficiente, o movimento cessa
+            else {
+                keysPressed['TouchLeft'] = false;
+                keysPressed['TouchRight'] = false;
+            }
+        }
+        
+        // Atualiza a última posição do toque
+        lastTouchX = currentTouchX;
     }
+    
+    // As variáveis de destino (touchTargetX/Y) devem ser sempre nulas, pois não as usamos mais.
+    touchTargetX = null; 
+    touchTargetY = null;
 }
 function handleMoveEnd(event) {
     // Ao levantar o dedo, desativa ambas as chaves de movimento por toque.
     keysPressed['TouchLeft'] = false;
     keysPressed['TouchRight'] = false;
 
-    // Reseta as variáveis de destino, caso ainda existam no escopo global
-    // Isso garante que a nave pare de se mover em direção ao toque anterior.
+    // Reseta o rastreamento do toque
+    lastTouchX = null; 
+    
+    // Reseta as variáveis de destino
     touchTargetX = null;
     touchTargetY = null;
 }
