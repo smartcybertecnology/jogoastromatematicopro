@@ -492,29 +492,46 @@ function endGame(isVictory = false) {
     questionDisplay.style.display = 'none'; 
 }
 function handleShootButtonTouch(event) {
-    event.preventDefault();
-    event.stopPropagation(); 
+event.preventDefault();
+ event.stopPropagation(); 
 
-    if (!isGameRunning) return;
+ if (!isGameRunning) return;
 
-    keysPressed[MOBILE_SHOOT] = true;
+ keysPressed[MOBILE_SHOOT] = true;
 
-    const button = event.currentTarget;
-    if (button) {
+
+const button = event.currentTarget;
+ if (button) {
         button.classList.add('active');
     }
-}
-function handleShootButtonEnd(event) {
-    event.preventDefault();
-    event.stopPropagation(); // ⭐ CRÍTICO: Impede propagação para o touchEnd do movimento
-    
-    delete keysPressed[MOBILE_SHOOT];
-    
-    if (event.currentTarget) {
-        event.currentTarget.classList.remove('active');
-    }
-}
 
+}
+function handleTouchEnd(event) {
+    // ⭐ CORREÇÃO: Não desativa o movimento se o toque terminar no botão de disparo
+    const target = event.changedTouches[0]?.target;
+    
+    // Verifica se o toque que terminou foi no botão de disparo
+    if (target && (target.id === 'shootButton' || target.closest('#shootButton'))) {
+        // ⭐ MANTÉM o movimento ativo - não reseta as variáveis de movimento
+        return;
+    }
+    
+    // ⭐ Se NÃO foi no botão de disparo, então reseta normalmente
+    isTouchActive = false;
+    isDraggingPlayer = false;
+    
+    // Reseta Modo 1
+    dragTargetX = null;
+    dragTargetY = null;
+    touchOffsetX = 0;
+    touchOffsetY = 0;
+
+    // Reseta Modo 2
+    touchDeltaX = 0;
+    touchDeltaY = 0;
+    lastTouchX = null;
+    lastTouchY = null;
+}
 document.addEventListener('DOMContentLoaded', () => {
     const startButton = document.getElementById('startButton');
     const gameAreaElement = document.getElementById('gameArea'); 
