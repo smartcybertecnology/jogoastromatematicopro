@@ -36,6 +36,8 @@ const MOBILE_MOVE_RIGHT = 'MobileRight';
 // VARIÁVEIS PARA CONTROLE ANALÓGICO (LIVRE) VIA TOQUE
 let touchTargetX = null; // Posição X para onde a nave deve ir
 let touchTargetY = null; // Posição Y para onde a nave deve ir
+let touchDirectionX = 0; // -1 para Esquerda, 0 para Parado, 1 para Direita
+let touchDirectionY = 0; // -1 para Cima, 0 para Parado, 1 para Baixo
 // Fator que determina a velocidade e suavidade do movimento de toque
 const TOUCH_MOVE_SPEED_FACTOR = 0.05; 
 // O PLAYER_SPEED (ex: 5) ainda será o limite de velocidade.
@@ -593,6 +595,27 @@ function handleMoveTouch(event) {
         // 2. LÓGICA DE MOVIMENTO (Inalterada)
         touchTargetX = touch.clientX - gameAreaRect.left;
         touchTargetY = touch.clientY - gameAreaRect.top;
+    const gameCenterX = GAME_WIDTH / 2; // Você precisa garantir que GAME_WIDTH esteja atualizado
+        
+        // Se tocou à esquerda da metade
+        if (touchX < gameCenterX - 50) { // -50 para ter uma 'zona morta'
+            touchDirectionX = -1; 
+        // Se tocou à direita da metade
+        } else if (touchX > gameCenterX + 50) {
+            touchDirectionX = 1;
+        } else {
+            touchDirectionX = 0; // Toque perto do centro ou toque 'neutro'
+        }
+
+        // 2. Determinar Direção Vertical (Opcional, se a nave pode subir/descer)
+        const gameCenterY = GAME_HEIGHT / 2;
+        if (touchY < gameCenterY - 50) { 
+            touchDirectionY = -1; 
+        } else if (touchY > gameCenterY + 50) {
+            touchDirectionY = 1;
+        } else {
+            touchDirectionY = 0;
+        }
     }
 }
 
@@ -1266,81 +1289,83 @@ function movePlayer() {
 
     // ==========================================================
     // LÓGICA DE MOVIMENTO (Digital e Analógico)
-    // ==========================================================
-    if (touchTargetX === null) {
-        // Lógica de Movimento PC (Digital)
-        if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) {
-            dx = -PLAYER_SPEED;
-            rotation = -10;
-        }
-        if (keysPressed['ArrowRight'] || keysPressed['KeyD']) {
-            // Verifica se ambas as teclas de direção horizontal estão pressionadas
-            if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) { 
-                dx = 0; // Anula o movimento horizontal
-                rotation = 0;
-            } else {
-                 dx = PLAYER_SPEED;
-                 rotation = 10;
-            }
-        }
-        if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
-        if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
-        
-        // Aplica o fator diagonal
-        if (dx !== 0 && dy !== 0) {
-            const diagFactor = Math.sqrt(2);
-            dx /= diagFactor;
-            dy /= diagFactor;
-        }
-
-    } else {
-        // Lógica de Movimento Mobile (Analógico/Touch)
-        const playerCenterX = playerX + (playerWidth / 2);
-        const playerCenterY = playerY + (playerHeight / 2);
-        const diffX = touchTargetX - playerCenterX;
-        const diffY = touchTargetY - playerCenterY;
-        const distance = Math.sqrt(diffX * diffX + diffY * diffY);
-        const STOPPING_DISTANCE = 5;
-
-        if (distance > STOPPING_DISTANCE) {
-            dx = diffX * TOUCH_MOVE_SPEED_FACTOR; 
-            dy = diffY * TOUCH_MOVE_SPEED_FACTOR;
-            const speedMagnitude = Math.sqrt(dx * dx + dy * dy);
-            if (speedMagnitude > PLAYER_SPEED) {
-                dx = (dx / speedMagnitude) * PLAYER_SPEED;
-                dy = (dy / speedMagnitude) * PLAYER_SPEED;
-            }
-            rotation = (dx / PLAYER_SPEED) * 15;
+// ==========================================================
+// LÓGICA DE MOVIMENTO (Digital e Direcional Touch)
+// ==========================================================
+if (touchTargetX === null) {
+    // Lógica de Movimento PC (Digital)
+    if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) {
+        dx = -PLAYER_SPEED;
+        rotation = -10;
+    }
+    if (keysPressed['ArrowRight'] || keysPressed['KeyD']) {
+        // Verifica se ambas as teclas de direção horizontal estão pressionadas
+        if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) { 
+            dx = 0; // Anula o movimento horizontal
+            rotation = 0;
         } else {
-            dx = 0;
-            dy = 0;
+            dx = PLAYER_SPEED;
+            rotation = 10;
         }
     }
-
-    // ==========================================================
-    // APLICAÇÃO DO MOVIMENTO E CLAMPING CORRIGIDO
-    // ==========================================================
+    if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
+    if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
     
-    // ⭐ LIMITE HORIZONTAL CORRIGIDO: Usa playerWidth para parar a nave na borda
-    playerX = Math.max(0, Math.min(GAME_WIDTH - playerWidth, playerX + dx));
+    // Aplica o fator diagonal
+    if (dx !== 0 && dy !== 0) {
+        const diagFactor = Math.sqrt(2);
+        dx /= diagFactor;
+        dy /= diagFactor;
+    }
+
+} else {
+    // ⭐ NOVA LÓGICA DE MOVIMENTO MOBILE (DIRECIONAL) ⭐
+    // A nave se move na direção indicada por touchDirectionX/Y na velocidade máxima.
     
-    // LIMITE VERTICAL CORRIGIDO: Usa playerHeight e a margem inferior de 20px
-    playerY = Math.max(0, Math.min(GAME_HEIGHT - playerHeight - marginBottom, playerY + dy)); 
+    // Define o deslocamento usando a direção (-1, 0, 1) e a velocidade máxima
+    dx = touchDirectionX * PLAYER_SPEED;
+    dy = touchDirectionY * PLAYER_SPEED;
 
-    // Atualiza Posição e Rotação
-    player.style.left = `${playerX}px`; // Define a borda esquerda
-    player.style.top = `${playerY}px`;
-    player.style.transform = `rotate(${rotation}deg)`;
-
-    // Lógica de Disparo
-    const now = Date.now();
-    if ((keysPressed['Space'] || keysPressed['Mouse0']) && (now - lastShootTime > SHOOT_DELAY)) {
-        shoot();
-        lastShootTime = now;
-        player.classList.add('shooting');
-        setTimeout(() => player.classList.remove('shooting'), 100);
+    // Aplica o fator diagonal para manter a velocidade constante
+    if (dx !== 0 && dy !== 0) {
+        const diagFactor = Math.sqrt(2);
+        dx /= diagFactor;
+        dy /= diagFactor;
+    }
+    
+    // Calcula a rotação com base na direção horizontal (se houver movimento)
+    if (dx !== 0) {
+        // Usa touchDirectionX (1 ou -1) para definir a rotação
+        rotation = touchDirectionX * 10; 
+    } else {
+        rotation = 0;
     }
 }
+
+// ==========================================================
+// APLICAÇÃO DO MOVIMENTO E CLAMPING CORRIGIDO
+// ==========================================================
+
+// ⭐ LIMITE HORIZONTAL CORRIGIDO: Usa playerWidth para parar a nave na borda
+playerX = Math.max(0, Math.min(GAME_WIDTH - playerWidth, playerX + dx));
+
+// LIMITE VERTICAL CORRIGIDO: Usa playerHeight e a margem inferior de 20px
+playerY = Math.max(0, Math.min(GAME_HEIGHT - playerHeight - marginBottom, playerY + dy)); 
+
+// Atualiza Posição e Rotação
+player.style.left = `${playerX}px`; // Define a borda esquerda
+player.style.top = `${playerY}px`;
+player.style.transform = `rotate(${rotation}deg)`;
+
+// Lógica de Disparo
+const now = Date.now();
+if ((keysPressed['Space'] || keysPressed['Mouse0']) && (now - lastShootTime > SHOOT_DELAY)) {
+    shoot();
+    lastShootTime = now;
+    player.classList.add('shooting');
+    setTimeout(() => player.classList.remove('shooting'), 100);
+}}
+// --------------------------------------------------------------------------------
 function shoot() {
     const currentTime = Date.now();
     
@@ -1723,6 +1748,8 @@ a.isDestroyed = true;
 
     touchTargetX = null;
     touchTargetY = null;
+    touchDirectionX = 0;
+    touchDirectionY = 0;
     const movementKeys = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Mouse0', MOBILE_MOVE_LEFT, MOBILE_MOVE_RIGHT, MOBILE_SHOOT];
     movementKeys.forEach(k => { if (keysPressed[k]) keysPressed[k] = false; });
 
