@@ -560,16 +560,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Adiciona suporte a toque na área do jogo
     if (gameAreaElement) {
         
-        // ⭐ Movimento Touch (Inalterado) ⭐
+        // ⭐ Movimento Touch (Joystick por Arraste) ⭐
+        // O touchstart inicializa a posição, o touchmove faz o movimento
         gameAreaElement.addEventListener('touchstart', handleMoveTouch);
         gameAreaElement.addEventListener('touchmove', handleMoveTouch); 
         gameAreaElement.addEventListener('touchend', handleMoveEnd); 
         gameAreaElement.addEventListener('touchcancel', handleMoveEnd); 
     }
 });
+
+// --- Funções de Controle de Toque ---
+
 function handleMoveTouch(event) {
-    // Checagem de toque sobre botões
+    // 1. CHECAGEM DE CONTROLE MÓVEL
     const touchTarget = event.touches[0].target;
+    // Se o toque começou sobre o botão de disparo ou outro controle móvel, ignore o movimento.
     if (touchTarget.id === 'shootButton' || touchTarget.classList.contains('mobile-control-button')) {
         return; 
     }
@@ -585,44 +590,52 @@ function handleMoveTouch(event) {
     if (touch) {
         const currentTouchX = touch.clientX - gameAreaRect.left;
         
-        // Se este é o primeiro toque, apenas inicializa e não move.
-        if (lastTouchX === null) {
+        // ⭐ Lógica de Arraste ⭐
+
+        // 1. O touchstart (e a primeira execução) deve APENAS inicializar o lastTouchX
+        if (event.type === 'touchstart' || lastTouchX === null) {
             lastTouchX = currentTouchX;
-            return;
+            // Zera o movimento na hora do toque inicial
+            keysPressed['TouchLeft'] = false;
+            keysPressed['TouchRight'] = false;
+            return; 
         }
 
-        // ⭐ LÓGICA DE ARRASTE: Move-se pela diferença de posição, não pelo destino ⭐
-        const deltaX = currentTouchX - lastTouchX;
-        const threshold = 2; // Mínima distância para considerar um movimento (para evitar tremedeira)
-        
-        // Define a direção do movimento na keysPressed
-        if (deltaX > threshold) {
-            // Arraste para a Direita
-            keysPressed['TouchRight'] = true;
-            keysPressed['TouchLeft'] = false;
-        } else if (deltaX < -threshold) {
-            // Arraste para a Esquerda
-            keysPressed['TouchLeft'] = true;
-            keysPressed['TouchRight'] = false;
-        } else {
-            // Parou de arrastar (segurando o dedo no mesmo lugar)
-            keysPressed['TouchLeft'] = false;
-            keysPressed['TouchRight'] = false;
+        // 2. O touchmove (eventos subsequentes) calcula o movimento
+        if (event.type === 'touchmove') {
+            const deltaX = currentTouchX - lastTouchX;
+            const threshold = 5; // Mínima distância para considerar um movimento (ajuste este valor se a nave estiver muito sensível ou insensível)
+            
+            if (deltaX > threshold) {
+                // Arraste para a Direita
+                keysPressed['TouchRight'] = true;
+                keysPressed['TouchLeft'] = false;
+            } else if (deltaX < -threshold) {
+                // Arraste para a Esquerda
+                keysPressed['TouchLeft'] = true;
+                keysPressed['TouchRight'] = false;
+            } else {
+                // Segurando o dedo no lugar (dentro do threshold)
+                keysPressed['TouchLeft'] = false;
+                keysPressed['TouchRight'] = false;
+            }
+            
+            // Atualiza a última posição do toque para o próximo cálculo
+            lastTouchX = currentTouchX;
         }
-        
-        // Atualiza a última posição do toque para o próximo cálculo
-        lastTouchX = currentTouchX;
     }
     
-    // Anula o movimento "ir para o destino"
+    // Anula o movimento "ir para o destino" (garante que a lógica antiga não funcione)
     touchTargetX = null; 
     touchTargetY = null;
 }
+
 function handleMoveEnd(event) {
     // Ao levantar o dedo, zera todo o rastreamento e movimento
     keysPressed['TouchLeft'] = false;
     keysPressed['TouchRight'] = false;
     lastTouchX = null; 
+    // Zera as variáveis de destino caso ainda existam no escopo global
     touchTargetX = null;
     touchTargetY = null;
 }
