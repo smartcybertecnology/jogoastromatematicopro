@@ -276,7 +276,6 @@ function movePlayer() {
     let moved = false;
     let rotation = 0;
 
-    // 1. Movimento pelo teclado (PC) e Botões Móveis
     if (keysPressed['ArrowLeft'] || keysPressed['KeyA'] || keysPressed[MOBILE_MOVE_LEFT]) {
         playerX -= PLAYER_SPEED;
         rotation = -10;
@@ -288,7 +287,6 @@ function movePlayer() {
         moved = true;
     }
 
-    // 2. Movimento por Toque (Analógico, se estiver ativo)
     if (touchTargetX !== null) {
         const dx = touchTargetX - (playerX + player.offsetWidth / 2);
 
@@ -309,53 +307,22 @@ function movePlayer() {
         }
     }
 
-
-    // 3. Limites de Borda 
     playerX = Math.max(0, Math.min(playerX, GAME_WIDTH - player.offsetWidth));
 
-    // 4. Aplica a posição e rotação
     player.style.left = `${playerX}px`;
     player.style.transform = `rotate(${rotation}deg)`;
-    
-    // IMPORTANTE: Manter o playerY fixo (ou definido pelo CSS no PC)
-    // No modo PC, o CSS define 'bottom', então não precisamos setar 'top'
-    // Se o estilo 'top' foi definido, precisamos mantê-lo ou redefini-lo:
+
     if (player.style.bottom === '') { 
          player.style.top = `${playerY}px`;
     }
 }
 
-// --- Funções de Jogo VAZIAS (Apenas para evitar erros de referência) ---
-// Você deve preencher estas funções com a sua lógica real.
-function updateHUD() {
-    scoreDisplay.innerText = score;
-    livesDisplay.innerText = lives;
-    comboDisplay.innerText = combo;
-    // ... lógica para bossHealthDisplay
-}
 
 function generateNewQuestion() {
     // Lógica para criar a pergunta e os asteroides
     console.log("Gerando nova questão...");
 }
 
-
-function gameLoop(timestamp) {
-    if (!isGameRunning) return;
-    
-    const deltaTime = timestamp - lastFrameTime; // Usado para física baseada no tempo
-    lastFrameTime = timestamp;
-
-    // movePlayer já é chamado pelo setInterval, mas algumas lógicas podem ser feitas aqui
-    // Ex: Mover balas e asteroides
-    
-    // ... Lógica para mover asteroides e balas
-    
-    requestAnimationFrame(gameLoop);
-}
-
-
-// --- Funções de Inicialização e Jogo (COM A CORREÇÃO DE POSICIONAMENTO) ---
 
 function updateGameDimensions() {
     GAME_WIDTH = gameArea.clientWidth;
@@ -377,11 +344,11 @@ function startGame() {
     
     // 1. ZERA AS VARIÁVEIS DO JOGO
     score = 0;
-    lives = 3;
+    lives = 5;
     combo = 0;
     acertosDesdeUltimoBoss = 0;
     currentLevel = 1;
-    BASE_ASTEROID_SPEED = 35; 
+    BASE_ASTEROID_SPEED = 15; // Velocidade base inicial dos asteroides
     isGameRunning = true;
     
     // Zera o estado do Boss
@@ -418,12 +385,8 @@ function startGame() {
     // --------------------------------------------------------------------------------
     
     const shootButton = document.getElementById('shootButton'); 
-
-    // LÓGICA CONDICIONAL: CELULAR OU DESKTOP
-    // Se o botão 'shootButton' existir E estiver visível (modo móvel)
     if (shootButton && shootButton.offsetWidth > 0) {
         
-        // 🚀 MODO CELULAR: Calcula a posição Y e X acima/longe do botão de tiro
         const playerHeight = player.offsetHeight;
         const gameAreaRect = gameArea.getBoundingClientRect(); 
         const buttonRect = shootButton.getBoundingClientRect();
@@ -440,27 +403,20 @@ function startGame() {
         playerX = buttonPositionInsideGameArea - marginBetween - (playerWidth / 2);
         
         if (playerX < 10) { playerX = 10; }
-
-        // Aplica estilos MÓVEIS (usa 'top' e zera 'bottom')
         player.style.left = `${playerX}px`;
         player.style.top = `${playerY}px`;
         player.style.bottom = 'auto'; 
         
     } else {
         
-        // 💻 MODO DESKTOP: Usa a posição X central e depende do CSS para o Y (bottom: 20px)
         playerX = GAME_WIDTH / 2 - 25; 
-        
-        // Aplica estilos DESKTOP (zera 'top' e usa 'bottom' do CSS)
         player.style.left = `${playerX}px`;
         player.style.top = ''; 
         player.style.bottom = ''; 
-        
-        // Define a variável playerY para a lógica do jogo (aproximadamente a posição do CSS)
+
         playerY = GAME_HEIGHT - 70; 
     }
 
-    // Estilo de inicialização (comum a ambos)
     player.style.transform = 'rotate(0deg)';
 
 
@@ -476,7 +432,6 @@ function startGame() {
     requestAnimationFrame(gameLoop);
 }
 
-// --- Áudios e Função de Carregamento ---
 const audios = {
     shoot: 'shoot.mp3',
     hit: 'hit.mp3',
@@ -507,7 +462,6 @@ function playSound(key) {
     }
 }
 
-// --- Exemplos de uso ---
 function playShootSound() { playSound('shoot'); }
 function playHitSound() { playSound('hit'); }
 function playDamageSound() { playSound('damage'); }
@@ -716,7 +670,7 @@ function updateHUD() {
         }
         
         // Lógica para chamar o Boss (Se 10 acertos ou mais)
-        if (acertosDesdeUltimoBoss >= 10 && !isBossFight) {
+        if (acertosDesdeUltimoBoss >= 1 && !isBossFight) {
             enterBossFight();
         }
     }
@@ -836,7 +790,7 @@ function generateNewQuestion(clearOld = true) {
     oscillationOffset: Math.random() * 10,
     // ⭐ NOVO: Propriedades de vida do asteroide
     hits: 0,
-    maxHits: 5 // 1/2 função outra logo a baixo na handleAsteroidHit
+    maxHits: 3 // 1/2 função outra logo a baixo na handleAsteroidHit
 });
     }
 }
@@ -940,7 +894,7 @@ do {
 fakeAnswer = question.answer + getRandomInt(-answerRange, answerRange);
  } while (fakeAnswer <= 0 || fakeAnswer === question.answer || Math.abs(fakeAnswer - question.answer) < 3);
 
-boss.currentAnswer = fakeAnswer; // O Boss exibe o erro
+boss.currentAnswer = fakeAnswer; 
  answerDisplay.innerText = fakeAnswer; 
 
 
@@ -954,15 +908,12 @@ answerDisplay.innerText = '...';
  }
 
 function generatePunishmentAsteroids() {
-    // Limpa os asteroides atuais primeiro
     asteroids.forEach(a => { a.element.remove(); });
     asteroids = [];
     
     // Usa a nova função
     const repelMsg = getRandomMessage(NEGATIVE_FEEDBACK);
     showTemporaryMessage(repelMsg, 3000, 'error-msg');
-
-    // ... (lógica de geração de asteroides de punição)
     const answers = new Set();
     answers.add(question.answer);
     const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
@@ -979,26 +930,18 @@ function generatePunishmentAsteroids() {
 
     let answerArray = Array.from(answers);
     shuffleArray(answerArray); 
-
-    // --- BLOCO CORRIGIDO (INÍCIO) ---
-    // Posições X (Lógica segura contra loop infinito)
     const posicoesX = [];
-    
-    // Define uma margem segura nas laterais (ex: 40px de cada lado)
     const safeMargin = 40;
     const availableWidth = GAME_WIDTH - (safeMargin * 2);
 
     if (availableWidth <= 0) {
-        // Caso extremo: tela minúscula, joga tudo no meio
         for (let i = 0; i < MAX_ASTEROIDS; i++) {
             posicoesX.push(GAME_WIDTH / 2);
         }
     } else {
-        // Divide a largura disponível em "slots" para cada asteroide
         const slotWidth = availableWidth / MAX_ASTEROIDS;
 
         for (let i = 0; i < MAX_ASTEROIDS; i++) {
-            // Calcula o centro do slot
             let slotCenter = safeMargin + (slotWidth / 2) + (i * slotWidth);
             
             // Adiciona uma pequena variação aleatória (para não parecerem alinhados)
@@ -1007,8 +950,6 @@ function generatePunishmentAsteroids() {
             posicoesX.push(slotCenter + randomOffset);
         }
     }
-    // --- BLOCO CORRIGIDO (FIM) ---
-
     // Cria os asteroides
     for(let i = 0; i < MAX_ASTEROIDS; i++) {
         const value = answerArray[i]; 
@@ -1149,7 +1090,7 @@ function spawnBossAttack() {
         if (blackHoleEl.parentElement) {
             blackHoleEl.remove();
         }
-    }, 1500); // Duração da animação CSS
+    }, 2100); // Duração da animação CSS
 
     // 2. Cria os projéteis (asteroides) após um pequeno atraso
     setTimeout(() => {
@@ -1187,14 +1128,13 @@ function spawnBossAttack() {
                 vx: vx * 100, // Ajuste: Multiplicar por um fator para compensar o delta time do gameLoop
                 vy: vy * 100, // Ajuste: (Seu gameLoop usa deltaSeconds, 3 é muito lento)
                 hits: 0,
-                maxHits: 1 
+                maxHits: 3 
             });
         }
     }, 500); 
 }
 
-// ⭐ NOVO: O que acontece quando um TIRO acerta um projétil do boss
-// ⭐ NOVA FUNÇÃO: O Jogador acerta um Projétil/Asteroide de Ataque do Boss
+
 function handleBossProjectileHit(index, bullet) {
     // Para projéteis que não estão no array 'asteroids'
     const projectile = bossProjectiles[index];
