@@ -33,13 +33,8 @@ const SHOOT_DELAY = 150;
 const MOBILE_SHOOT = 'MobileShoot'; // Constante para identificar o disparo via botão móvel
 const MOBILE_MOVE_LEFT = 'MobileLeft';
 const MOBILE_MOVE_RIGHT = 'MobileRight';
-// VARIÁVEIS PARA CONTROLE ANALÓGICO (LIVRE) VIA TOQUE
-let touchTargetX = null; // Posição X para onde a nave deve ir
-let touchTargetY = null; // Posição Y para onde a nave deve ir
-// Fator que determina a velocidade e suavidade do movimento de toque
-const TOUCH_MOVE_SPEED_FACTOR = 0.05; 
-// O PLAYER_SPEED (ex: 5) ainda será o limite de velocidade.
-
+let touchActive = false; // NOVA: Indica se o toque está ativo
+let touchCurrentX = null; // NOVA: Posição X do toque atual
 let movementInterval = null;
 
 let infoTimer = null; // Novo timer para gerenciar mensagens temporárias
@@ -547,67 +542,85 @@ function handleShootButtonTouch(event) {
 document.addEventListener('DOMContentLoaded', () => {
     const startButton = document.getElementById('startButton');
     const gameAreaElement = document.getElementById('gameArea'); 
+    // ⭐ NOVO: Referência ao botão de disparo exclusivo
     const shootButton = document.getElementById('shootButton'); 
 
     if (shootButton) {
-        // ... Lógica do botão de disparo (inalterada) ...
+        // Disparo ao clicar (desktop se o botão for visível)
         shootButton.addEventListener('click', handleShootButtonTouch);
+        // Disparo ao tocar (mobile) — non-passive so preventDefault works
         shootButton.addEventListener('touchstart', handleShootButtonTouch, { passive: false });
+        // Pointerdown fallback
         shootButton.addEventListener('pointerdown', (ev) => { ev.preventDefault && ev.preventDefault(); handleShootButtonTouch(ev); }, { passive: false });
+        // Opcional: Remove o 'pressionado' ao soltar (se estiver usando keysPressed)
         shootButton.addEventListener('touchend', () => { delete keysPressed[MOBILE_SHOOT]; });
     }
     
     // 3. Adiciona suporte a toque na área do jogo
     if (gameAreaElement) {
         
-        // ⭐ Movimento Touch: Adicionado { passive: false } para permitir preventDefault
-        gameAreaElement.addEventListener('touchstart', handleMoveTouch, { passive: false });
-        gameAreaElement.addEventListener('touchmove', handleMoveTouch, { passive: false }); 
+        // ⭐ Movimento Touch (Inalterado) ⭐
+        gameAreaElement.addEventListener('touchstart', handleMoveTouch);
+        gameAreaElement.addEventListener('touchmove', handleMoveTouch); 
         gameAreaElement.addEventListener('touchend', handleMoveEnd); 
         gameAreaElement.addEventListener('touchcancel', handleMoveEnd); 
     }
 });
-
 function handleMoveTouch(event) {
-    // É crucial para prevenir o scroll no celular e garantir que o toque seja processado.
-    event.preventDefault(); 
+    // 1. CHECAGEM DE CONTROLE MÓVEL
+    const touchTarget = event.touches[0].target;
+    // Se o toque começou sobre o botão de disparo ou outro controle móvel, ignore o movimento.
+    if (touchTarget.id === 'shootButton' || touchTarget.classList.contains('mobile-control-button')) {
+        return; 
+    }
     
+    event.preventDefault();
     if (!isGameRunning) return;
     const gameAreaElement = document.getElementById('gameArea'); 
     if (!gameAreaElement) return;
-
-    const touch = event.touches[0];
-    if (!touch) return;
-
-    // 1. CHECAGEM DE CONTROLE MÓVEL (Se o toque começou no botão de disparo, ignorar movimento.)
-    const touchTarget = touch.target;
-    // O .closest('[data-mobile-control]') é uma boa prática para futuros botões.
-    if (touchTarget.id === 'shootButton' || touchTarget.closest('[data-mobile-control]')) {
-        // Se tocou no botão de tiro, não defina um alvo de movimento.
-        // É importante que o 'touchstart' do botão de tiro use event.stopPropagation() no DOMContentLoaded.
-        return; 
-    }
-
+    
     const gameAreaRect = gameAreaElement.getBoundingClientRect();
 
-    // 2. LÓGICA DE MOVIMENTO ANALÓGICO (Define o alvo de destino)
-    touchTargetX = touch.clientX - gameAreaRect.left;
-    touchTargetY = touch.clientY - gameAreaRect.top;
-    
-    // Opcional: Garantir que o alvo Y seja fixo se a nave for apenas horizontal
-    // touchTargetY = playerY + (player.offsetHeight / 2); // Deixe a nave na altura atual
+    const touch = event.touches[0];
+    if (touch) {
+        // ⭐ NOVA LÓGICA DE MOVIMENTO (Joystick Virtual) ⭐
+        
+        // Posição X do toque dentro da área do jogo
+        const touchCurrentX = touch.clientX - gameAreaRect.left;
+        
+        // Posição X central da nave
+        const playerWidth = player.offsetWidth || 63;
+        const playerCenterX = playerX + (playerWidth / 2);
+        
+        // 2. DECIDINDO A DIREÇÃO
+        // Se o toque está à esquerda do centro da nave
+        if (touchCurrentX < playerCenterX) {
+            keysPressed['TouchLeft'] = true;
+            keysPressed['TouchRight'] = false;
+        } 
+        // Se o toque está à direita do centro da nave
+        else {
+            keysPressed['TouchLeft'] = false;
+            keysPressed['TouchRight'] = true;
+        }
+
+        // ⭐ IMPORTANTE: Como não estamos mais usando a lógica de 'destino', 
+        // touchTargetX e touchTargetY não precisam ser definidos aqui,
+        // mas se o seu código em outras partes dependia deles, você pode 
+        // deixá-los como 'null' na inicialização e removê-los do seu escopo global.
+        touchTargetX = null; 
+        touchTargetY = null;
+    }
 }
 function handleMoveEnd(event) {
-    // Limpa os alvos analógicos para que o loop movePlayer pare a nave.
+    // Ao levantar o dedo, desativa ambas as chaves de movimento por toque.
+    keysPressed['TouchLeft'] = false;
+    keysPressed['TouchRight'] = false;
+
+    // Reseta as variáveis de destino, caso ainda existam no escopo global
+    // Isso garante que a nave pare de se mover em direção ao toque anterior.
     touchTargetX = null;
     touchTargetY = null;
-    
-    // Limpa os controles direcionais mobile, caso a lógica anterior os tenha setado.
-    keysPressed[MOBILE_MOVE_LEFT] = false;
-    keysPressed[MOBILE_MOVE_RIGHT] = false;
-    
-    // Opcional: Previne o comportamento padrão ao levantar o dedo.
-    event.preventDefault(); 
 }
 function updateHUD() {
     scoreDisplay.innerText = score;
@@ -1278,76 +1291,55 @@ function movePlayer() {
     const marginBottom = 20; // Correspondente ao bottom: 20px no CSS
 
     // ==========================================================
-    // LÓGICA DE MOVIMENTO (Digital e Analógico)
+    // LÓGICA DE MOVIMENTO (Digital/Teclado e Toque/Joystick)
     // ==========================================================
-    if (touchTargetX === null) {
-        // Lógica de Movimento PC (Digital)
-        if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) {
-            dx = -PLAYER_SPEED;
-            rotation = -10;
-        }
-        if (keysPressed['ArrowRight'] || keysPressed['KeyD']) {
-            // Verifica se ambas as teclas de direção horizontal estão pressionadas
-            if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) { 
-                dx = 0; // Anula o movimento horizontal
-                rotation = 0;
-            } else {
-                 dx = PLAYER_SPEED;
-                 rotation = 10;
-            }
-        }
-        if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
-        if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
-        
-        // Aplica o fator diagonal
-        if (dx !== 0 && dy !== 0) {
-            const diagFactor = Math.sqrt(2);
-            dx /= diagFactor;
-            dy /= diagFactor;
-        }
 
+    // Movimento Horizontal (Combina PC e Toque)
+    // O movimento é definido por teclas pressionadas, e não por touchTargetX
+    const isMovingLeft = keysPressed['ArrowLeft'] || keysPressed['KeyA'] || keysPressed['TouchLeft'] || keysPressed[MOBILE_MOVE_LEFT];
+    const isMovingRight = keysPressed['ArrowRight'] || keysPressed['KeyD'] || keysPressed['TouchRight'] || keysPressed[MOBILE_MOVE_RIGHT];
+
+    if (isMovingLeft && !isMovingRight) {
+        dx = -PLAYER_SPEED;
+        rotation = -10;
+    } else if (isMovingRight && !isMovingLeft) {
+        dx = PLAYER_SPEED;
+        rotation = 10;
     } else {
-        // Lógica de Movimento Mobile (Analógico/Touch)
-        const playerCenterX = playerX + (playerWidth / 2);
-        const playerCenterY = playerY + (playerHeight / 2);
-        const diffX = touchTargetX - playerCenterX;
-        const diffY = touchTargetY - playerCenterY;
-        const distance = Math.sqrt(diffX * diffX + diffY * diffY);
-        const STOPPING_DISTANCE = 5;
-
-        if (distance > STOPPING_DISTANCE) {
-            dx = diffX * TOUCH_MOVE_SPEED_FACTOR; 
-            dy = diffY * TOUCH_MOVE_SPEED_FACTOR;
-            const speedMagnitude = Math.sqrt(dx * dx + dy * dy);
-            if (speedMagnitude > PLAYER_SPEED) {
-                dx = (dx / speedMagnitude) * PLAYER_SPEED;
-                dy = (dy / speedMagnitude) * PLAYER_SPEED;
-            }
-            rotation = (dx / PLAYER_SPEED) * 15;
-        } else {
-            dx = 0;
-            dy = 0;
-        }
+        // Se ambas as direções estão ativas ou nenhuma, dx e rotation permanecem 0
+        dx = 0;
+        rotation = 0;
+    }
+    
+    // Movimento Vertical (Normalmente apenas para PC, pode ser removido se for 1D)
+    if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
+    if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
+    
+    // Aplica o fator diagonal
+    if (dx !== 0 && dy !== 0) {
+        const diagFactor = Math.sqrt(2);
+        dx /= diagFactor;
+        dy /= diagFactor;
     }
 
     // ==========================================================
-    // APLICAÇÃO DO MOVIMENTO E CLAMPING CORRIGIDO
+    // APLICAÇÃO DO MOVIMENTO E CLAMPING
     // ==========================================================
     
-    // ⭐ LIMITE HORIZONTAL CORRIGIDO: Usa playerWidth para parar a nave na borda
+    // Atualiza a posição X, respeitando os limites da área de jogo
     playerX = Math.max(0, Math.min(GAME_WIDTH - playerWidth, playerX + dx));
     
-    // LIMITE VERTICAL CORRIGIDO: Usa playerHeight e a margem inferior de 20px
+    // Atualiza a posição Y, respeitando os limites verticais (se houver movimento vertical)
     playerY = Math.max(0, Math.min(GAME_HEIGHT - playerHeight - marginBottom, playerY + dy)); 
 
-    // Atualiza Posição e Rotação
+    // Atualiza Posição e Rotação no DOM
     player.style.left = `${playerX}px`; // Define a borda esquerda
     player.style.top = `${playerY}px`;
     player.style.transform = `rotate(${rotation}deg)`;
 
-    // Lógica de Disparo
+    // Lógica de Disparo (Inclui disparo via botão móvel 'MOBILE_SHOOT')
     const now = Date.now();
-    if ((keysPressed['Space'] || keysPressed['Mouse0']) && (now - lastShootTime > SHOOT_DELAY)) {
+    if ((keysPressed['Space'] || keysPressed['Mouse0'] || keysPressed[MOBILE_SHOOT]) && (now - lastShootTime > SHOOT_DELAY)) {
         shoot();
         lastShootTime = now;
         player.classList.add('shooting');
