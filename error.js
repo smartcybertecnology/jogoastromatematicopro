@@ -1350,59 +1350,53 @@ function exitBossFight(success) {
 }
 
 
+// --- Função de Movimento do Player (Atualizada) ---
 function movePlayer() {
- if (!isGameRunning) return;
+    if (!isGameRunning) return;
 
+    // Guarda defensivos para garantir que as variáveis têm um valor válido
+    if (!isFinite(playerX) || playerX === null) playerX = (GAME_WIDTH || 320) / 2;
+    if (!isFinite(playerY) || playerY === null) playerY = (GAME_HEIGHT || 240) - 70;
 
-if (!isFinite(playerX) || playerX === null) playerX = (GAME_WIDTH || 320) / 2;
-if (!isFinite(playerY) || playerY === null) playerY = (GAME_HEIGHT || 240) - 70;
+    let dx = 0;
+    let dy = 0;
+    let rotation = 0;
+    
+    // Calcula as dimensões dinamicamente
+    const playerWidth = player.offsetWidth || 63; 
+    const playerHeight = player.offsetHeight || 63; 
+    // Corresponde ao bottom (ou margem de segurança)
+    const marginBottom = 20; 
 
- let dx = 0;
- let dy = 0;
- let rotation = 0;
-
-const playerWidth = player.offsetWidth || 63; 
- const playerHeight = player.offsetHeight || 63; 
- const marginBottom = 20; // Correspondente ao bottom: 20px no CSS
+    // ==========================================================
+    // LÓGICA DE MOVIMENTO DE TOQUE (Delta Move / Drag)
+    // ==========================================================
 
     if (isTouchActive) {
-
-
+        
         if (isDraggingPlayer) {
-            // MODO 1: Drag 1:1 (move para dragTargetX/Y)
-            // A nave "gruda" no dedo
+            // MODO 1: Drag 1:1 (Tocou na nave: a nave "gruda" no dedo)
             
             const playerCenterX = playerX + (playerWidth / 2);
             const playerCenterY = playerY + (playerHeight / 2);
             
-            // O alvo é o canto (dragTargetX/Y) + metade da nave
+            // Calcula o alvo e a diferença
             const targetCenterX = dragTargetX + (playerWidth / 2);
             const targetCenterY = dragTargetY + (playerHeight / 2);
 
             const diffX = targetCenterX - playerCenterX;
             const diffY = targetCenterY - playerCenterY;
             
-            // Move 1:1 (sem suavização, sem limite de vel.)
-            // O 'clamping' (limites) no final da função vai segurar a nave.
             dx = diffX;
             dy = diffY;
             
-            rotation = (dx / (PLAYER_SPEED * 2)) * 15; // Rotação baseada no delta
+            rotation = (dx / (PLAYER_SPEED * 2)) * 15;
 
         } else {
-            // MODO 2: Delta Move (move *por* touchDeltaX/Y)
-            // A nave "acompanha" o arrasto do dedo
+            // MODO 2: Delta Move (Tocou na tela: a nave "acompanha" o arrasto)
             
             dx = touchDeltaX;
             dy = touchDeltaY;
-            
-            // Opcional: Limitar a velocidade do "arraste"
-            // const speedMagnitude = Math.sqrt(dx * dx + dy * dy);
-            // const MAX_DELTA_SPEED = PLAYER_SPEED * 2; // Ex: 2x a velocidade do teclado
-            // if (speedMagnitude > MAX_DELTA_SPEED) {
-            //     dx = (dx / speedMagnitude) * MAX_DELTA_SPEED;
-            //     dy = (dy / speedMagnitude) * MAX_DELTA_SPEED;
-            // }
             
             rotation = (dx / PLAYER_SPEED) * 15;
 
@@ -1413,47 +1407,61 @@ const playerWidth = player.offsetWidth || 63;
         }
 
     } else {
-
- if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) {
+        // ==========================================================
+        // LÓGICA DE MOVIMENTO PC (Teclado)
+        // ==========================================================
+        if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) {
             dx = -PLAYER_SPEED;
             rotation = -10;
         }
-if (keysPressed['ArrowRight'] || keysPressed['KeyD']) {
- if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) { 
- dx = 0; rotation = 0;
-} else {
- dx = PLAYER_SPEED; rotation = 10;
- }
- }
-if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
-if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
-
- if (dx !== 0 && dy !== 0) {
- const diagFactor = Math.sqrt(2);
- dx /= diagFactor; dy /= diagFactor;
-}
+        if (keysPressed['ArrowRight'] || keysPressed['KeyD']) {
+            if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) { 
+                dx = 0; rotation = 0;
+            } else {
+                dx = PLAYER_SPEED; rotation = 10;
+            }
+        }
+        // Adiciona suporte vertical, se necessário (do seu código antigo)
+        if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
+        if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
+        
+        if (dx !== 0 && dy !== 0) {
+            const diagFactor = Math.sqrt(2);
+            dx /= diagFactor; dy /= diagFactor;
+        }
     }
 
+    // ==========================================================
+    // APLICAÇÃO DO MOVIMENTO E CLAMPING (LIMITES)
+    // ==========================================================
+    
+    // Aplica o movimento (seja do toque ou do teclado)
     playerX += dx;
     playerY += dy;
 
-playerX = Math.max(0, Math.min(GAME_WIDTH - playerWidth, playerX));
+    // Limite horizontal
+    playerX = Math.max(0, Math.min(GAME_WIDTH - playerWidth, playerX));
+    
+    // Limite vertical (O `playerY` precisa ser recalculado com base no `player.style.top` no `startGame` se estiver usando CSS `bottom`)
+    // Visto que você usa `player.style.top` no `startGame`, mantemos o `playerY`.
+    playerY = Math.max(0, Math.min(GAME_HEIGHT - playerHeight - marginBottom, playerY)); 
 
+    // Atualiza Posição e Rotação
+    player.style.left = `${playerX}px`;
+    player.style.top = `${playerY}px`;
+    player.style.transform = `rotate(${rotation}deg)`;
 
-playerY = Math.max(0, Math.min(GAME_HEIGHT - playerHeight - marginBottom, playerY)); 
-
-player.style.left = `${playerX}px`;
-player.style.top = `${playerY}px`;
-player.style.transform = `rotate(${rotation}deg)`;
-
-const now = Date.now();
-
-if ((keysPressed['Space'] || keysPressed['Mouse0'] || keysPressed[MOBILE_SHOOT]) && (now - lastShootTime > SHOOT_DELAY)) {
- shoot();
-lastShootTime = now;
-player.classList.add('shooting');
-setTimeout(() => player.classList.remove('shooting'), 100);
- }
+    // ==========================================================
+    // LÓGICA DE DISPARO (AGORA INCLUI TECLADO, MOUSE E TOQUE)
+    // ==========================================================
+    const now = Date.now();
+    // ✅ VERIFICA TECLADO/MOUSE (Space/Mouse0) OU BOTÃO MÓVEL (MOBILE_SHOOT)
+    if ((keysPressed['Space'] || keysPressed['Mouse0'] || keysPressed[MOBILE_SHOOT]) && (now - lastShootTime > SHOOT_DELAY)) {
+        shoot();
+        lastShootTime = now;
+        player.classList.add('shooting');
+        setTimeout(() => player.classList.remove('shooting'), 100);
+    }
 }
 function shoot() {
     const currentTime = Date.now();
