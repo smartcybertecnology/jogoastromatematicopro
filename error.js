@@ -568,7 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 function handleMoveTouch(event) {
-    // ... (Checagem de shootButton e preventDefault - mantém a primeira parte igual)
+    // Checagem de toque sobre botões
     const touchTarget = event.touches[0].target;
     if (touchTarget.id === 'shootButton' || touchTarget.classList.contains('mobile-control-button')) {
         return; 
@@ -585,47 +585,44 @@ function handleMoveTouch(event) {
     if (touch) {
         const currentTouchX = touch.clientX - gameAreaRect.left;
         
-        // ⭐ NOVA LÓGICA DE ARRASTE ⭐
+        // Se este é o primeiro toque, apenas inicializa e não move.
+        if (lastTouchX === null) {
+            lastTouchX = currentTouchX;
+            return;
+        }
 
-        if (lastTouchX !== null) {
-            // Calcula o quanto o dedo se moveu desde o último frame (delta X)
-            const deltaX = currentTouchX - lastTouchX;
-            const threshold = 1; // Mínima distância para considerar um movimento
-            
-            // Se moveu para a direita e o movimento foi significativo
-            if (deltaX > threshold) {
-                keysPressed['TouchRight'] = true;
-                keysPressed['TouchLeft'] = false;
-            } 
-            // Se moveu para a esquerda e o movimento foi significativo
-            else if (deltaX < -threshold) {
-                keysPressed['TouchLeft'] = true;
-                keysPressed['TouchRight'] = false;
-            } 
-            // Se o dedo não moveu o suficiente, o movimento cessa
-            else {
-                keysPressed['TouchLeft'] = false;
-                keysPressed['TouchRight'] = false;
-            }
+        // ⭐ LÓGICA DE ARRASTE: Move-se pela diferença de posição, não pelo destino ⭐
+        const deltaX = currentTouchX - lastTouchX;
+        const threshold = 2; // Mínima distância para considerar um movimento (para evitar tremedeira)
+        
+        // Define a direção do movimento na keysPressed
+        if (deltaX > threshold) {
+            // Arraste para a Direita
+            keysPressed['TouchRight'] = true;
+            keysPressed['TouchLeft'] = false;
+        } else if (deltaX < -threshold) {
+            // Arraste para a Esquerda
+            keysPressed['TouchLeft'] = true;
+            keysPressed['TouchRight'] = false;
+        } else {
+            // Parou de arrastar (segurando o dedo no mesmo lugar)
+            keysPressed['TouchLeft'] = false;
+            keysPressed['TouchRight'] = false;
         }
         
-        // Atualiza a última posição do toque
+        // Atualiza a última posição do toque para o próximo cálculo
         lastTouchX = currentTouchX;
     }
     
-    // As variáveis de destino (touchTargetX/Y) devem ser sempre nulas, pois não as usamos mais.
+    // Anula o movimento "ir para o destino"
     touchTargetX = null; 
     touchTargetY = null;
 }
 function handleMoveEnd(event) {
-    // Ao levantar o dedo, desativa ambas as chaves de movimento por toque.
+    // Ao levantar o dedo, zera todo o rastreamento e movimento
     keysPressed['TouchLeft'] = false;
     keysPressed['TouchRight'] = false;
-
-    // Reseta o rastreamento do toque
     lastTouchX = null; 
-    
-    // Reseta as variáveis de destino
     touchTargetX = null;
     touchTargetY = null;
 }
