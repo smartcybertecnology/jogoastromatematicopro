@@ -492,19 +492,27 @@ function endGame(isVictory = false) {
     questionDisplay.style.display = 'none'; 
 }
 function handleShootButtonTouch(event) {
-event.preventDefault();
- event.stopPropagation(); 
+    event.preventDefault();
+    event.stopPropagation(); 
 
- if (!isGameRunning) return;
+    if (!isGameRunning) return;
 
- keysPressed[MOBILE_SHOOT] = true;
+    keysPressed[MOBILE_SHOOT] = true;
 
-
-const button = event.currentTarget;
- if (button) {
+    const button = event.currentTarget;
+    if (button) {
         button.classList.add('active');
     }
-
+}
+function handleShootButtonEnd(event) {
+    event.preventDefault();
+    event.stopPropagation(); // ⭐ CRÍTICO: Impede propagação para o touchEnd do movimento
+    
+    delete keysPressed[MOBILE_SHOOT];
+    
+    if (event.currentTarget) {
+        event.currentTarget.classList.remove('active');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
