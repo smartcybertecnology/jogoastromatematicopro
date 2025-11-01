@@ -103,7 +103,7 @@ const DIFFICULTY = [
     { name: 'NÍVEL 5: MISTURA (1-30)', maxNum: 30, op: '+-*' }
 ];
 const MAX_ASTEROIDS = 4;
-let BASE_ASTEROID_SPEED = 50;
+let BASE_ASTEROID_SPEED = 5;
 const ASTEROID_TYPES = ['type-a', 'type-b', 'type-c'];
 
 // --- Arrays para Mensagens Aleatórias ---
@@ -864,7 +864,7 @@ function generateNewQuestion(clearOld = true) {
     isDestroyed: false,
     isCurrentTarget: true,
     isCorrectAnswer: (value === question.answer),
-    speed: BASE_ASTEROID_SPEED + getRandomInt(0, 15),
+    speed: BASE_ASTEROID_SPEED + getRandomInt(0, 10), //Velocidade dos 
     scale: 0.5,
     vx: (Math.random() - 0.5) * 20,
     oscillationOffset: Math.random() * 10,
@@ -949,7 +949,7 @@ function generatePunishmentAsteroids() {
             isDestroyed: false,
             isCurrentTarget: true,
             isCorrectAnswer: (value === question.answer),
-            speed: BASE_ASTEROID_SPEED * 2 + getRandomInt(0, 30),
+            speed: BASE_ASTEROID_SPEED * 2 + getRandomInt(0, 1), // Velocidade asteroid Punish
             scale: 0.5,
             vx: (Math.random() - 0.5) * 30,
             oscillationOffset: Math.random() * 10
@@ -1153,7 +1153,7 @@ function spawnBossAttack() {
         const numProjectiles = 5;
         const spreadAngle = Math.PI / 2;
         const startAngle = Math.PI / 4;
-        const projectileSpeed = 1;
+        const projectileSpeed = 0.5; // Velocidade do asteroid buraco negro
 
         for (let i = 0; i < numProjectiles; i++) {
             const angle = startAngle + (i / (numProjectiles-1)) * spreadAngle;
@@ -1320,24 +1320,9 @@ const playerWidth = player.offsetWidth || 63;
             rotation = (dx / (PLAYER_SPEED * 2)) * 15; // Rotação baseada no delta
 
         } else {
-            // MODO 2: Delta Move (move *por* touchDeltaX/Y)
-            // A nave "acompanha" o arrasto do dedo
-            
             dx = touchDeltaX;
             dy = touchDeltaY;
-            
-            // Opcional: Limitar a velocidade do "arraste"
-            // const speedMagnitude = Math.sqrt(dx * dx + dy * dy);
-            // const MAX_DELTA_SPEED = PLAYER_SPEED * 2; // Ex: 2x a velocidade do teclado
-            // if (speedMagnitude > MAX_DELTA_SPEED) {
-            //     dx = (dx / speedMagnitude) * MAX_DELTA_SPEED;
-            //     dy = (dy / speedMagnitude) * MAX_DELTA_SPEED;
-            // }
-            
             rotation = (dx / PLAYER_SPEED) * 15;
-
-            // IMPORTANTE: Reseta os deltas após aplicá-los.
-            // Isso faz a nave parar se o dedo parar de mover.
             touchDeltaX = 0;
             touchDeltaY = 0;
         }
