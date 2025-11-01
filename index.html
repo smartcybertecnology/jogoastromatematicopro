@@ -123,8 +123,61 @@
             .asteroid { width: 18vw; height: 18vw; max-width: calc(var(--asteroid-max) - 8px); max-height: calc(var(--asteroid-max) - 8px); }
             #hud { padding: calc(var(--hud-padding) - 2px); }
             .question-box { font-size: clamp(1.0em, 4vw, 1.4em); padding: 6px 12px; }
-            #shootButton { padding: 20px 25px; font-size: 0.95rem; bottom: calc(var(--ad-height) + env(safe-area-inset-bottom, 0) + 8px); z-index: 1200; }
-        }
+/* ... (Seções anteriores do CSS) ... */
+
+/* Estilos para o Botão de Tiro */
+#shootButton {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    
+    /* ⭐ AJUSTE DE ALTURA 1/2: Reduzindo o padding */
+    padding: 15px 25px; /* Reduzido de 20px para 15px */
+    
+    /* ⭐ AJUSTE DE ALTURA 2/2: Reduzindo a altura explícita */
+    height: 120px; /* Reduzido de 170px para 120px */
+    
+    font-size: 1.2rem;
+    background-color: var(--cor-acerto);
+    color: white;
+    border: 3px solid white;
+    border-radius: 10px;
+    cursor: pointer;
+    z-index: 1000; 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+    
+    display: none; 
+}
+
+@media (max-width: 768px) {
+    #shootButton {
+        display: block; 
+        position: fixed;
+        z-index: 1100;
+        
+        /* ⭐ AJUSTE MOBILE: Reduzindo a altura mobile */
+        height: 100px; /* Reduzido de 160px para 100px */
+        
+        right: 12px;
+        bottom: calc(var(--ad-height) + 8px);
+        box-shadow: 0 6px 10px rgba(0,0,0,0.5);
+    }
+}
+
+@media (max-width: 420px) {
+    /* ... (outros estilos de media query) ... */
+    
+    /* ⭐ AJUSTE MOBILE PEQUENO: Garante que o botão fique na posição correta */
+    #shootButton { 
+        padding: 15px 25px; 
+        font-size: 0.95rem; 
+        
+        /* Recalcula o bottom com a nova altura e padding do @media 420px */
+        bottom: calc(var(--ad-height) + env(safe-area-inset-bottom, 0) + 8px); 
+        z-index: 1200; 
+        height: 100px; /* Mantido como 100px ou ajuste se necessário */
+    }
+}        }
     #hud { z-index: 2000; }
     .temp-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1800; pointer-events: none; }
 
@@ -563,37 +616,45 @@
             transform: scale(1.05);
         }
 
-        #shootButton {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            padding: 20px 25px;
-            height: 170px; 
-            font-size: 1.2rem;
-            background-color: var(--cor-acerto);
-            color: white;
-            border: 3px solid white;
-            border-radius: 10px;
-            cursor: pointer;
-            z-index: 1000; 
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
-            
-            display: none; 
-        }
+       #shootButton {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    
+    /* ⭐ AJUSTE DE ALTURA 1/2: Reduzindo o padding */
+    padding: 15px 25px; /* Reduzido de 20px para 15px */
+    
+    /* ⭐ AJUSTE DE ALTURA 2/2: Reduzindo a altura explícita */
+    height: 120px; /* Reduzido de 170px para 120px */
+    
+    font-size: 1.2rem;
+    background-color: var(--cor-acerto);
+    color: white;
+    border: 3px solid white;
+    border-radius: 10px;
+    cursor: pointer;
+    z-index: 1000; 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+    
+    display: none; 
+}
 
-        @media (max-width: 768px) {
-            #shootButton {
-                display: block; 
-                position: fixed;
-                z-index: 1100;
-                height: 160px;  
-                right: 12px;
-                bottom: calc(var(--ad-height) + 8px);
-                box-shadow: 0 6px 10px rgba(0,0,0,0.5);
-            }
-        }
+@media (max-width: 768px) {
+    #shootButton {
+        display: block; 
+        position: fixed;
+        z-index: 1100;
+        
+        /* ⭐ AJUSTE MOBILE: Reduzindo a altura mobile */
+        height: 100px; /* Reduzido de 160px para 100px */
+        
+        right: 12px;
+        bottom: calc(var(--ad-height) + 8px);
+        box-shadow: 0 6px 10px rgba(0,0,0,0.5);
+    }
+}
 /* 🌌 Buraco Negro Realista */
-/* 🌌 Buraco Negro — aumento e diminuição suaves, sem delay */
+
 .black-hole-visual {
     position: absolute;
     width: 90px;
