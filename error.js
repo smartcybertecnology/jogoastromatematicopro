@@ -519,50 +519,66 @@ function handleShootButtonTouch(event) {
 document.addEventListener('DOMContentLoaded', () => {
     const startButton = document.getElementById('startButton');
     const gameAreaElement = document.getElementById('gameArea'); 
-    // ⭐ NOVO: Referência ao botão de disparo exclusivo
     const shootButton = document.getElementById('shootButton'); 
 
-  // No DOMContentLoaded, atualize os event listeners:
-if (shootButton) {
-    // Remove listeners antigos para evitar duplicação
-    shootButton.removeEventListener('click', handleShootButtonTouch);
-    shootButton.removeEventListener('touchstart', handleShootButtonTouch);
-    shootButton.removeEventListener('pointerdown', handleShootButtonTouch);
-    shootButton.removeEventListener('touchend', handleShootButtonTouch);
-    
-    // Adiciona listeners novos
-    shootButton.addEventListener('click', handleShootButtonTouch);
-    shootButton.addEventListener('touchstart', handleShootButtonTouch, { passive: false });
-    shootButton.addEventListener('pointerdown', (ev) => { 
-        ev.preventDefault(); 
-        handleShootButtonTouch(ev); 
-    }, { passive: false });
-    
-    // ⭐ MELHORIA: Listener separado para touchend
-    shootButton.addEventListener('touchend', (ev) => {
-        ev.stopPropagation();
-        delete keysPressed[MOBILE_SHOOT];
-    });
-    
-    shootButton.addEventListener('touchcancel', (ev) => {
-        ev.stopPropagation();
-        delete keysPressed[MOBILE_SHOOT];
-    });
-}
-    
-    // 3. Adiciona suporte a toque na área do jogo (MODIFICADO)
-if (gameAreaElement) {
- 
-        // 'touchstart' verifica o alvo (player ou gameArea)
-gameAreaElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+    // ==========================
+    // 🎯 CONFIGURAÇÃO DO BOTÃO DE DISPARO
+    // ==========================
+    if (shootButton) {
+        // Remove listeners antigos para evitar duplicações
+        shootButton.removeEventListener('click', handleShootButtonTouch);
+        shootButton.removeEventListener('touchstart', handleShootButtonTouch);
+        shootButton.removeEventListener('pointerdown', handleShootButtonTouch);
+        shootButton.removeEventListener('touchend', handleShootButtonTouch);
 
-// 'touchmove' e 'touchend' são globais (na window) para
-        // capturar o arrasto mesmo se o dedo sair da 'gameArea'.
- window.addEventListener('touchmove', handleTouchMove, { passive: false });
-window.addEventListener('touchend', handleTouchEnd); 
-window.addEventListener('touchcancel', handleTouchEnd); 
-}
+        // 🖱️ Clique (Desktop)
+        shootButton.addEventListener('click', handleShootButtonTouch);
+
+        // 📱 Toque (Mobile)
+        shootButton.addEventListener('touchstart', (ev) => {
+            ev.preventDefault();
+            shootButton.classList.add('touch-active'); // adiciona efeito visual de toque
+            handleShootButtonTouch(ev);
+
+            // 💫 Vibração leve (se suportado)
+            if (navigator.vibrate) navigator.vibrate(20);
+        }, { passive: false });
+
+        // 🧠 PointerDown (Surface, híbridos etc.)
+        shootButton.addEventListener('pointerdown', (ev) => {
+            ev.preventDefault();
+            shootButton.classList.add('touch-active');
+            handleShootButtonTouch(ev);
+
+            if (navigator.vibrate) navigator.vibrate(20);
+        }, { passive: false });
+
+        // 🔹 Remove o efeito visual ao soltar o botão
+        const removeTouchEffect = (ev) => {
+            ev.stopPropagation();
+            shootButton.classList.remove('touch-active');
+            delete keysPressed[MOBILE_SHOOT];
+        };
+
+        shootButton.addEventListener('touchend', removeTouchEffect);
+        shootButton.addEventListener('touchcancel', removeTouchEffect);
+        shootButton.addEventListener('pointerup', removeTouchEffect);
+    }
+
+    // ==========================
+    // 🕹️ SUPORTE A TOQUE NA ÁREA DE JOGO
+    // ==========================
+    if (gameAreaElement) {
+        // Quando o jogador toca no jogo (movimento inicial)
+        gameAreaElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+
+        // Captura arrasto e fim do toque mesmo fora da área principal
+        window.addEventListener('touchmove', handleTouchMove, { passive: false });
+        window.addEventListener('touchend', handleTouchEnd);
+        window.addEventListener('touchcancel', handleTouchEnd);
+    }
 });
+
 function handleTouchStart(event) {
     if (!isGameRunning) return;
     
