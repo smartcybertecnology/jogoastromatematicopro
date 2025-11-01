@@ -1220,7 +1220,9 @@ function handlePlayerHitByBossProjectile(projectile) {
     combo = 0;
     score = Math.max(0, score - 5);
     playDamageSound();
-    
+     if (navigator.vibrate) {
+        navigator.vibrate([40, 60, 40]); // vibração mais intensa
+    }
     createExplosion(playerX + 25, playerY + 25, 'red');
     player.style.opacity = '0.5';
     setTimeout(() => player.style.opacity = '1', 500); // Pisca
@@ -1543,6 +1545,9 @@ let lastFrameTime = 0;
             // Colisão com o Jogador (Agora usa a função CORRIGIDA)
             if (checkPlayerCollision(asteroid)) {
                 playHitasteroidfail();
+                 if (navigator.vibrate) {
+        navigator.vibrate([40, 60, 40]); // vibração mais intensa
+    }
                 // A colisão com asteroides de pergunta/ataque é a mesma:
                 handlePlayerHit(asteroid); 
                 // Se for um asteroide de ataque, removemos ele na colisão:
@@ -1556,6 +1561,9 @@ let lastFrameTime = 0;
             // Asteróide passou da tela (PERDEU UMA VIDA se for alvo atual)
             if (asteroid.y > GAME_HEIGHT + 50) {
                 playHitasteroidfail();
+                 if (navigator.vibrate) {
+        navigator.vibrate([40, 60, 40]); // vibração mais intensa
+    }
                 if (asteroid.isCurrentTarget) {
                     // Apenas asteroides de PERGUNTA que passaram descontam vida
                     handleMiss(asteroid.isCorrectAnswer);
@@ -1791,7 +1799,9 @@ createExplosion(playerX + 25, playerY + 25, 'var(--cor-erro)');
 player.style.opacity = '0.5';
 setTimeout(() => player.style.opacity = '1', 500); // Pisca
  showTemporaryMessage("COLISÃO! -1 Vida! Pergunta Reiniciada!", 1500);
-
+ if (navigator.vibrate) {
+        navigator.vibrate([40, 60, 40]); // vibração mais intensa
+    }
 asteroids.forEach(a => {
  if (a.element && a.element.parentElement && !a.isDestroyed) {
 a.isDestroyed = true;
