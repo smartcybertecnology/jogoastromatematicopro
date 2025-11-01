@@ -839,24 +839,6 @@
         };
         </script>
         <script type="text/javascript" src="https://www.highperformanceformat.com/bbf348585df7afae438e1754d1003d92/invoke.js"></script>
-        <script>// 🔹 Garante o efeito de "click" também no celular
-const shootButton = document.getElementById('shootButton');
-
-if (shootButton) {
-    shootButton.addEventListener('touchstart', () => {
-        shootButton.classList.add('touch-active');
-    });
-
-    shootButton.addEventListener('touchend', () => {
-        shootButton.classList.remove('touch-active');
-    });
-
-    // Segurança extra: remove caso o toque cancele
-    shootButton.addEventListener('touchcancel', () => {
-        shootButton.classList.remove('touch-active');
-    });
-}
-</script>
     </div>
 </div>
 
