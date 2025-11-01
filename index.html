@@ -200,16 +200,6 @@
     cursor: none; 
 }
 
-#player::after {
-    content: '🔥';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.5em;
-    opacity: 0;
-    transition: opacity 0.1s;
-}
 
         .shooting #player::after {
             opacity: 1;
@@ -230,28 +220,29 @@
             transform-origin: center center; 
             animation: none; 
             text-shadow: 0 0 5px black;
-            
+            opacity: 1; 
             position: absolute; 
-            width: 14vw; 
-            height: 14vw; 
-            max-width: 65px;
-            max-height: 65px;
+            width: 100vw; 
+            height: 100vw; 
+            max-width: 100px;
+            max-height: 100px;
             background-size: contain; 
             background-repeat: no-repeat;
             background-position: center;
         }
 
         .asteroid span {
-            background: rgba(0, 0, 0, 0.5); 
+              opacity: 1; 
+            background: none; 
             padding: 2px 5px;
             border-radius: 5px;
             position: absolute; 
-            top: 50%;
+            top: 120%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 2; 
             color: var(--cor-principal); 
-            font-size: 1.2rem;
+            font-size: 2.1rem;
         }
         .destroyed { opacity: 0 !important; transform: scale(0.1) !important; transition: all 0.5s ease-out; }
         .old-asteroid { 
