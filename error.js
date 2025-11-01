@@ -1691,40 +1691,46 @@ function checkPlayerCollision(gameObject) {
 
 function handleAsteroidHit(index, bullet) {
     const asteroid = asteroids[index];
-    
+
     // 1. APLICA DANO E REMOVE A BALA
     asteroid.hits = (asteroid.hits || 0) + 1; // Incrementa o contador de acertos
-    
-    // Esta explosão é apenas o feedback de que o tiro acertou
+
+    // Vibração curta ao acertar
+    if (navigator.vibrate) {
+        navigator.vibrate([15, 30, 15]); // vibração suave e rápida
+    }
+
+    // Feedback visual de acerto
     createExplosion(bullet.x, bullet.y, 'white'); 
-    playHitSound(); // Toca um som de acerto/dano (não destruição)
-    
-    const MAX_HITS = asteroid.maxHits || 5; // Define o número máximo de acertos para destruir
+    playHitSound(); // Som de acerto/dano
+
+    const MAX_HITS = asteroid.maxHits || 5; // Máximo de acertos para destruir
     const shouldBeDestroyed = asteroid.hits >= MAX_HITS;
 
     if (!shouldBeDestroyed) {
         // --- ASTEROIDE LEVOU DANO, MAS NÃO FOI DESTRUÍDO ---
         
-        // Feedback Visual de Dano: Aumenta escala e opacidade para parecer mais próximo/danificado
+        // Feedback Visual de Dano: aumenta escala e opacidade
         const currentScale = parseFloat(asteroid.element.style.transform.match(/scale\(([^)]+)\)/)[1] || 0.5);
         asteroid.element.style.transform = `translate(-50%, -50%) scale(${currentScale + 0.1})`;
         
-        // Faz o asteroide "brilhar" mais forte a cada acerto (0.5 -> 1.0)
         const opacityChange = 0.5 + (asteroid.hits / MAX_HITS) * 0.5;
         asteroid.element.style.opacity = opacityChange.toString();
         
-        // Pára a execução aqui, pois o asteroide ainda está vivo.
         return; 
     }
-    
+
     // -----------------------------------------------------------
-    // LÓGICA DE DESTRUIÇÃO FINAL (Só continua se shouldBeDestroyed for true)
+    // LÓGICA DE DESTRUIÇÃO FINAL
     // -----------------------------------------------------------
 
-    // Remove o elemento visual (o asteroide)
+    // Vibração maior na destruição do asteroide
+    if (navigator.vibrate) {
+        navigator.vibrate([40, 60, 40]); // vibração mais intensa
+    }
+
     asteroid.isDestroyed = true; 
     if (asteroid.element && asteroid.element.parentElement) {
-        // Garante a explosão final e remoção
         createExplosion(asteroid.x, asteroid.y, asteroid.isCorrectAnswer ? 'yellow' : 'gray'); 
         asteroid.element.remove(); 
     }
@@ -1732,7 +1738,7 @@ function handleAsteroidHit(index, bullet) {
     let shouldResumeGame = false;
 
     if (asteroid.isCorrectAnswer) {
-        // Lógica de acerto correto
+        // Acerto correto
         score += 10 + (combo > 1 ? combo * 5 : 0);
         playSucesso();
 
@@ -1744,7 +1750,6 @@ function handleAsteroidHit(index, bullet) {
             });
             if (bossInterval) clearInterval(bossInterval);
             bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
-            
         } else {
             combo++;
             acertosDesdeUltimoBoss++;
@@ -1752,20 +1757,18 @@ function handleAsteroidHit(index, bullet) {
         }
         
     } else {
-        // Lógica de acerto INCORRETO
+        // Acerto incorreto
         playHitasteroidfail();
         combo = 0;
         lives--;
         showTemporaryMessage("RESPOSTA INCORRETA! -1 Vida!", 1000);
         
         if (isBossFight) {
-            // ... (Sua lógica para o Boss)
             asteroids.forEach(a => { 
                 if (!a.isDestroyed && a.element) { a.isDestroyed = true; a.element.remove(); }
             });
             if (bossInterval) clearInterval(bossInterval);
             bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
-            
         } else {
             shouldResumeGame = true;
         }
@@ -1778,10 +1781,10 @@ function handleAsteroidHit(index, bullet) {
     
     updateHUD();
     if (shouldResumeGame) {
-        // Se a resposta estiver correta/incorreta, o jogo avança
         setTimeout(() => generateNewQuestion(), 50); 
     }
 }
+
 function handlePlayerHit(asteroid) {
 
 lives--;
