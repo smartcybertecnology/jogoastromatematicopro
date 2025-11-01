@@ -25,8 +25,7 @@ let asteroids = [];
 let bullets = [];
 let question = {};
 const keysPressed = {};
-let bossProjectiles = [];
-let bossAttackInterval = null;
+
 let lastShootTime = 0;
 const SHOOT_DELAY = 150;
 
@@ -65,15 +64,8 @@ let bossCurrentHealth = 0;
 let isBossVulnerable = false;
 let bossInterval = null;
 let bossMovementTime = 0; // Variável para a oscilação do boss
-let audioShoot;
-let audioHit;
-let audioDamage;
-let audioHitasteroid;
-let audioHitasteroidfail;
-let audioGameOver;
-let audioSucesso;
-let audioBosswin;
 
+let bossIsInPunishment = false; // Controla se o boss está punindo
 let bossMovementState = 'moving'; // Pode ser 'moving' ou 'resting'
 let bossMoveTimer = 0; // Tempo gasto no estado atual
 let bossMoveDuration = 2; // Duração da movimentação (em segundos)
@@ -81,6 +73,8 @@ let bossRestDuration = 1.5; // Duração da parada (em segundos)
 let bossTargetX = 0; // O deslocamento X para onde ele está se movendo (para onde parar)
 let bossStartX = 0; // O deslocamento X de onde ele começou o movimento
 let bossMoveSpeed = 80; // Velocidade de movimento (em pixels por segundo, ajustável)
+let bossProjectiles = [];
+let bossAttackInterval = null;
 
 const ASTEROID_GIFS = [
     'asteroid2.gif', // Asteroid 1º GIF
@@ -91,7 +85,7 @@ const ASTEROID_GIFS = [
 ];
 
 const bossNames = ['Dr. nervoso', 'Cloud Mad', 'UFO', 'ghost', 'Buraco negro'];
-const bossHealth = [6, 8, 12, 18, 20];
+const bossHealth = [1, 1, 1, 1, 1];
 
 const BOSS_CHARACTERS = bossNames.map((name, i) => ({
   name,
@@ -283,11 +277,6 @@ window.addEventListener('keydown', handleKeyDown);
 window.addEventListener('keyup', handleKeyUp);
 
 
-function generateNewQuestion() {
-    // Lógica para criar a pergunta e os asteroides
-    console.log("Gerando nova questão...");
-}
-
 
 function updateGameDimensions() {
     GAME_WIDTH = gameArea.clientWidth;
@@ -440,57 +429,77 @@ function playBosswin() { playSound('bosswin'); }
 function endGame(isVictory = false) { 
     const gameArea = document.getElementById('gameArea'); 
 
+    // 🔹 Para de rodar o game loop e timers
     isGameRunning = false;
     clearInterval(movementInterval);
     if (bossInterval) clearInterval(bossInterval); 
     if (infoTimer) clearTimeout(infoTimer);
     window.removeEventListener('resize', updateGameDimensions); 
     
+    // 🔹 Sons de vitória ou derrota
     if (isVictory) {
         playBosswin(); 
     } else {
         playgameover(); 
     }
 
-
-    if (boss && boss.element.parentElement) {
-    
+    // 🔹 Remove o boss se existir
+    if (boss && boss.element && boss.element.parentElement) {
         createExplosion(GAME_WIDTH / 2, 125, 'var(--cor-erro)'); 
         boss.element.remove();
     }
- 
+
+    // 🔹 Limpa fundo do game
     if (gameArea) {
         gameArea.style.backgroundImage = 'none';
         gameArea.style.backgroundColor = '#000000'; 
     }
-    
+
+    // 🔹 Reset de status do boss
     isBossFight = false;
     boss = null;
-    
-    // Limpa asteroides e bullets
+    bossIsInPunishment = false; // garante que a punição encerre
+    if (bossInterval) clearInterval(bossInterval);
+
+    // 🔹 Limpa asteroides e bullets
     asteroids.forEach(a => {
-        // Adicionada explosão rápida para feedback antes de remover
         createExplosion(a.x, a.y, '#999'); 
-        if (a.element) a.element.remove();
+        if (a.element && a.element.parentElement) a.element.remove();
     });
-    bullets.forEach(b => b.element.remove());
+    bullets.forEach(b => {
+        if (b.element && b.element.parentElement) b.element.remove();
+    });
     asteroids = [];
     bullets = [];
 
-    // 4. EXIBE TELA DE FIM DE JOGO
+    // 🔹 Limpa projéteis do boss
+    bossProjectiles.forEach(p => {
+        if (p.element && p.element.parentElement) p.element.remove();
+    });
+    bossProjectiles = [];
+
+    // 🔹 Exibe tela de Game Over
     const gameOverScreen = document.getElementById('gameOverScreen');
-    
-    const titleElement = gameOverScreen.querySelector('h2');
-    if (titleElement) {
-        titleElement.innerText = isVictory ? "MISSÃO CUMPRIDA!" : "MISSÃO FRACASSADA";
+    if (gameOverScreen) {
+        const titleElement = gameOverScreen.querySelector('h2');
+        if (titleElement) {
+            titleElement.innerText = isVictory ? "MISSÃO CUMPRIDA!" : "MISSÃO FRACASSADA";
+        } else {
+            console.error("Elemento H2 não encontrado na tela de Game Over. Verifique seu HTML.");
+        }
+
+        const finalScoreElement = document.getElementById('finalScore');
+        if (finalScoreElement) finalScoreElement.innerText = score;
+
+        gameOverScreen.style.display = 'flex';
     } else {
-        console.error("Elemento H2 não encontrado na tela de Game Over. Verifique seu HTML.");
+        console.error("Tela de Game Over não encontrada. Verifique seu HTML.");
     }
-    
-    document.getElementById('finalScore').innerText = score;
-    gameOverScreen.style.display = 'flex';
-    questionDisplay.style.display = 'none'; 
+
+    // 🔹 Oculta display de pergunta
+    if (questionDisplay) questionDisplay.style.display = 'none';
 }
+
 
 function handleShootButtonTouch(event) {
     event.preventDefault();
@@ -694,7 +703,6 @@ function updateHUD() {
         const healthPercentage = (bossCurrentHealth / bossMaxHealth) * 100;
         
         // Define a cor da barra: VERDE se Vulnerável, LARANJA/VERMELHO caso contrário
-        // Você pode ajustar 'var(--cor-acerto)' se tiver uma variável para verde
         const barColor = boss.isVulnerable ? 'var(--cor-acerto, green)' : 'red'; 
         
         let healthBarContent = `BOSS HP: `; 
@@ -719,22 +727,34 @@ function updateHUD() {
         bossHealthDisplay.style.display = 'none';
     }
 
-        // --- LÓGICA DE VIDA BÔNUS A CADA 10 ACERTOS ---
-        // Verifica se é um múltiplo de 10, está no modo normal, e se já passou do primeiro acerto
-        if (!isBossFight && acertosDesdeUltimoBoss > 0 && acertosDesdeUltimoBoss % 10 === 0) {
-            if (lives < MAX_LIVES_DISPLAY) { 
-                lives++;
-                playSucesso(); // Toca o som de sucesso/ganho
-                showTemporaryMessage("VIDA EXTRA CONCEDIDA! (+1 vida)", 1500);
-            }
-        }
-        
-        // Lógica para chamar o Boss (Se 10 acertos ou mais)
-        if (acertosDesdeUltimoBoss >= 1 && !isBossFight) {
-            enterBossFight();
+    // --- LÓGICA DE VIDA BÔNUS A CADA 10 ACERTOS ---
+    // Verifica se é um múltiplo de 10, está no modo normal, e se já passou do primeiro acerto
+    if (!isBossFight && acertosDesdeUltimoBoss > 0 && acertosDesdeUltimoBoss % 10 === 0) {
+        if (lives < MAX_LIVES_DISPLAY) { 
+            lives++;
+            playSucesso(); // Toca o som de sucesso/ganho
+            showTemporaryMessage("VIDA EXTRA CONCEDIDA! (+1 vida)", 1500);
         }
     }
-    
+        
+  // Lógica para chamar o Boss (Se 1 acerto ou mais)
+    if (acertosDesdeUltimoBoss >= 1 && !isBossFight) {
+        
+        // NOTA: A verificação de VITÓRIA FINAL foi movida para exitBossFight.
+        // Se o currentLevel for o do último boss, ele será derrotado
+        // e o exitBossFight(true) vai chamar endGame(true).
+        // Se não for o último, chamamos o próximo boss.
+        
+        // Apenas verifica se o nível atual é menor ou igual ao total de bosses
+        if (currentLevel <= BOSS_CHARACTERS.length) {
+            enterBossFight(); 
+        }
+        
+        // Se currentLevel for maior (estado de vitória), o endGame já foi chamado, 
+        // ou o game loop vai parar logo. Se o endGame falhar, este `if` evita 
+        // chamar enterBossFight com currentLevel em um estado inválido.
+    }
+}
 
 function generateQuestionData(diff) {
 let num1, num2, answer, operator, questionText;
@@ -854,126 +874,19 @@ function generateNewQuestion(clearOld = true) {
 });
     }
 }
-
-
-function enterBossFight() {
-    isBossFight = true;
-
-    asteroids.forEach(a => { a.element.remove(); });
+function generatePunishmentAsteroids() { 
+    // Remove asteroides anteriores
+    asteroids.forEach(a => { if (a.element) a.element.remove(); });
     asteroids = [];
 
-   
-    if (infoTimer) clearTimeout(infoTimer);
-    questionDisplay.innerText = ""; 
-    questionDisplay.style.display = 'none';
-    const bossIndex = (currentLevel - 1) % BOSS_CHARACTERS.length;
-    const bossInfo = BOSS_CHARACTERS[bossIndex];
-    showBossTitle(`${bossInfo.name.toUpperCase()} APARECEU!`);
-    
-    const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
-    question = generateQuestionData(currentDiff);
+    bossIsInPunishment = true; // Entra no modo punição
+    if (bossInterval) clearInterval(bossInterval); // Pausa o ciclo normal do boss
 
-    bossCurrentHealth = bossInfo.maxHealth; 
-    bossMovementTime = 0;
-    boss = {
-        element: document.createElement('div'),
-        info: bossInfo,
-        currentAnswer: null,
-        isVulnerable: false
-    };
-    boss.element.id = 'boss';
-    
-    // LINHAS INALTERADAS: Elementos visuais do boss
-    boss.element.innerHTML = `
-        <img class="boss-gif" src="${bossInfo.gifUrl}" alt="${bossInfo.name}">
-        <span class="boss-question">${question.text} = ?</span>
-        <div class="boss-answer-display">...</div>
-    `;
-    
-    gameArea.appendChild(boss.element);
-    boss.element.classList.add('invulnerable'); // Inicia invulnerável
-
-    updateHUD();
-
-    // Inicia a mecânica de resposta aleatória
-    if (bossInterval) clearInterval(bossInterval);
-    bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
-    // (Ataque a cada 7 segundos, por exemplo)
-    if (bossAttackInterval) clearInterval(bossAttackInterval);
-    bossAttackInterval = setInterval(spawnBossAttack, 7000);
-}
- function toggleBossVulnerability() {
- const answerDisplay = boss.element.querySelector('.boss-answer-display');
- const questionDisplayBoss = boss.element.querySelector('.boss-question');
-
- const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
- const answerRange = Math.max(5, Math.floor(currentDiff.maxNum * 0.3));
-
- if (boss.isVulnerable) {
-
-boss.isVulnerable = false;
- boss.element.classList.remove('vulnerable');
- boss.element.classList.add('invulnerable');
- answerDisplay.innerText = '...';
-
- } else {
-
-question = generateQuestionData(currentDiff);
- questionDisplayBoss.innerText = `${question.text} = ?`; 
-
-
-const isVulnerableWindow = Math.random() < 0.5; // 50% de chance de ser o correto
-
-
-if (isVulnerableWindow) {
-
-boss.isVulnerable = true;
- boss.currentAnswer = question.answer;
-boss.element.classList.remove('invulnerable');
-boss.element.classList.add('vulnerable');
-answerDisplay.innerText = question.answer;
-
-
-setTimeout(() => {
- if(boss && boss.isVulnerable) { 
- boss.isVulnerable = false;
- boss.element.classList.remove('vulnerable');
-boss.element.classList.add('invulnerable');
-answerDisplay.innerText = '...';
- }
-}, 3000 + getRandomInt(500, 1500)); 
-
-} else {
-
-boss.isVulnerable = false; // Garante que é falso
- boss.element.classList.remove('vulnerable');
-boss.element.classList.add('invulnerable');
-
-let fakeAnswer;
-do {
-fakeAnswer = question.answer + getRandomInt(-answerRange, answerRange);
- } while (fakeAnswer <= 0 || fakeAnswer === question.answer || Math.abs(fakeAnswer - question.answer) < 3);
-
-boss.currentAnswer = fakeAnswer; 
- answerDisplay.innerText = fakeAnswer; 
-
-
-setTimeout(() => {
-if(boss && !boss.isVulnerable) { 
-answerDisplay.innerText = '...';
- }
-}, 1000 + getRandomInt(500, 1500)); 
- }
-}
- }
-
-function generatePunishmentAsteroids() {
-    asteroids.forEach(a => { a.element.remove(); });
-    asteroids = [];
-    
-    // Usa a nova função
+    // Mensagem aleatória de punição
     const repelMsg = getRandomMessage(NEGATIVE_FEEDBACK);
     showTemporaryMessage(repelMsg, 3000, 'error-msg');
+
+    // Geração de respostas
     const answers = new Set();
     answers.add(question.answer);
     const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
@@ -984,339 +897,387 @@ function generatePunishmentAsteroids() {
         do {
             fakeAnswer = question.answer + getRandomInt(-answerRange, answerRange);
         } while (fakeAnswer <= 0 || answers.has(fakeAnswer) || Math.abs(fakeAnswer - question.answer) < 3);
-
         answers.add(fakeAnswer);
     }
 
-    let answerArray = Array.from(answers);
-    shuffleArray(answerArray); 
+    const answerArray = Array.from(answers);
+    shuffleArray(answerArray);
+
+    // Calcula posições X
     const posicoesX = [];
     const safeMargin = 40;
     const availableWidth = GAME_WIDTH - (safeMargin * 2);
+    const slotWidth = availableWidth / MAX_ASTEROIDS;
 
-    if (availableWidth <= 0) {
-        for (let i = 0; i < MAX_ASTEROIDS; i++) {
-            posicoesX.push(GAME_WIDTH / 2);
-        }
-    } else {
-        const slotWidth = availableWidth / MAX_ASTEROIDS;
-
-        for (let i = 0; i < MAX_ASTEROIDS; i++) {
-            let slotCenter = safeMargin + (slotWidth / 2) + (i * slotWidth);
-            
-            // Adiciona uma pequena variação aleatória (para não parecerem alinhados)
-            let randomOffset = (Math.random() - 0.5) * (slotWidth * 0.2);
-            
-            posicoesX.push(slotCenter + randomOffset);
-        }
+    for (let i = 0; i < MAX_ASTEROIDS; i++) {
+        const slotCenter = safeMargin + (slotWidth / 2) + (i * slotWidth);
+        const randomOffset = (Math.random() - 0.5) * (slotWidth * 0.2);
+        posicoesX.push(slotCenter + randomOffset);
     }
+
     // Cria os asteroides
-    for(let i = 0; i < MAX_ASTEROIDS; i++) {
-        const value = answerArray[i]; 
+    for (let i = 0; i < MAX_ASTEROIDS; i++) {
+        const value = answerArray[i];
         const asteroidElement = document.createElement('div');
         asteroidElement.className = 'asteroid';
         
-        // 🚀 CORREÇÃO PARA GIF: Define o GIF como a imagem de fundo
         const gifUrl = ASTEROID_GIFS[getRandomInt(0, ASTEROID_GIFS.length - 1)];
-        asteroidElement.style.backgroundImage = `url('${gifUrl}')`; 
-        
-        // 🚀 CORREÇÃO PARA GIF: Cria o SPAN para o número e o anexa
+        asteroidElement.style.backgroundImage = `url('${gifUrl}')`;
+
         const answerSpan = document.createElement('span');
         answerSpan.innerText = value;
         asteroidElement.appendChild(answerSpan);
 
         const randomType = ASTEROID_TYPES[getRandomInt(0, ASTEROID_TYPES.length - 1)];
         asteroidElement.classList.add(randomType);
-        
-        const baseX = posicoesX[i] + 40; 
-        const y = -100 - (i * 100); 
-        
-        // CORREÇÃO: Usa posicoesX[i] como o left (para seguir a lógica do translate no CSS)
-        asteroidElement.style.left = `${posicoesX[i]}px`; 
+
+        const baseX = posicoesX[i] + 40;
+        const y = -100 - (i * 100);
+
+        asteroidElement.style.left = `${posicoesX[i]}px`;
         asteroidElement.style.top = `${y}px`;
-        asteroidElement.style.transform = 'translate(-50%, -50%) scale(0.5)'; 
-        asteroidElement.style.opacity = '0.5'; 
-        
+        asteroidElement.style.transform = 'translate(-50%, -50%) scale(0.5)';
+        asteroidElement.style.opacity = '0.5';
+
         gameArea.appendChild(asteroidElement);
         asteroids.push({
             element: asteroidElement,
             x: baseX,
             y: y,
-            baseX: posicoesX[i], // A posição 'left' inicial
+            baseX: posicoesX[i],
             value: value,
-            isDestroyed: false, 
+            isDestroyed: false,
             isCurrentTarget: true,
-            isCorrectAnswer: (value === question.answer), 
-            speed: BASE_ASTEROID_SPEED * 2 + getRandomInt(0, 30), 
+            isCorrectAnswer: (value === question.answer),
+            speed: BASE_ASTEROID_SPEED * 2 + getRandomInt(0, 30),
             scale: 0.5,
-            vx: (Math.random() - 0.5) * 30, 
-            oscillationOffset: Math.random() * 10 
+            vx: (Math.random() - 0.5) * 30,
+            oscillationOffset: Math.random() * 10
         });
     }
 }
+// ==========================
+// ENTRADA DE BOSS
+// ==========================
+function enterBossFight() {
+    isBossFight = true;
+    bossIsInPunishment = false;
 
+    // Limpa asteroides antigos e projéteis
+    asteroids.forEach(a => { if(a.element) a.element.remove(); });
+    bullets.forEach(b => b.element.remove());
+    bossProjectiles.forEach(p => { if(p.element) p.element.remove(); });
+    asteroids = [];
+    bullets = [];
+    bossProjectiles = [];
+
+    // Limpa intervalos antigos
+    if (bossInterval) clearInterval(bossInterval);
+    if (bossAttackInterval) clearInterval(bossAttackInterval);
+    bossInterval = null;
+    bossAttackInterval = null;
+
+    // Limpa tela de pergunta
+    if (infoTimer) clearTimeout(infoTimer);
+    questionDisplay.innerText = "";
+    questionDisplay.style.display = 'none';
+
+    // Cria novo boss
+    const bossIndex = (currentLevel - 1) % BOSS_CHARACTERS.length;
+    const bossInfo = BOSS_CHARACTERS[bossIndex];
+    showBossTitle(`${bossInfo.name.toUpperCase()} APARECEU!`);
+
+    const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
+    question = generateQuestionData(currentDiff);
+    bossCurrentHealth = bossInfo.maxHealth;
+
+    boss = {
+        element: document.createElement('div'),
+        info: bossInfo,
+        currentAnswer: null,
+        isVulnerable: false
+    };
+
+    boss.element.id = 'boss';
+    boss.element.innerHTML = `
+        <img class="boss-gif" src="${bossInfo.gifUrl}" alt="${bossInfo.name}">
+        <span class="boss-question">${question.text} = ?</span>
+        <div class="boss-answer-display">...</div>
+    `;
+    boss.element.classList.add('invulnerable');
+    gameArea.appendChild(boss.element);
+
+    updateHUD();
+
+    // Intervalos do boss
+    bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+    bossAttackInterval = setInterval(spawnBossAttack, 7000);
+}
+
+// ==========================
+// CICLO DE VULNERABILIDADE
+// ==========================
+function toggleBossVulnerability() {
+    if (!boss || !boss.element.parentElement) return;
+
+    const answerDisplay = boss.element.querySelector('.boss-answer-display');
+    const questionDisplayBoss = boss.element.querySelector('.boss-question');
+    const currentDiff = DIFFICULTY[currentLevel - 1] || DIFFICULTY[DIFFICULTY.length - 1];
+    const answerRange = Math.max(5, Math.floor(currentDiff.maxNum * 0.3));
+
+    if (bossIsInPunishment) return; // pausa vulnerabilidade durante punição
+
+    // Gera nova pergunta do boss
+    question = generateQuestionData(currentDiff);
+    questionDisplayBoss.innerText = `${question.text} = ?`;
+
+    const isVulnerableWindow = Math.random() < 0.5;
+
+    if (isVulnerableWindow) {
+        boss.isVulnerable = true;
+        boss.currentAnswer = question.answer;
+        boss.element.classList.remove('invulnerable');
+        boss.element.classList.add('vulnerable');
+        answerDisplay.innerText = question.answer;
+
+        setTimeout(() => {
+            if (boss && boss.isVulnerable) {
+                boss.isVulnerable = false;
+                boss.element.classList.remove('vulnerable');
+                boss.element.classList.add('invulnerable');
+                answerDisplay.innerText = '...';
+            }
+        }, 3000 + getRandomInt(500, 1500));
+
+    } else {
+        boss.isVulnerable = false;
+        boss.element.classList.remove('vulnerable');
+        boss.element.classList.add('invulnerable');
+
+        let fakeAnswer;
+        do {
+            fakeAnswer = question.answer + getRandomInt(-answerRange, answerRange);
+        } while (fakeAnswer <= 0 || fakeAnswer === question.answer || Math.abs(fakeAnswer - question.answer) < 3);
+
+        boss.currentAnswer = fakeAnswer;
+        answerDisplay.innerText = fakeAnswer;
+
+        setTimeout(() => {
+            if (boss && !boss.isVulnerable) answerDisplay.innerText = '...';
+        }, 1000 + getRandomInt(500, 1500));
+    }
+}
+
+// ==========================
+// ACERTO OU ERRO NO BOSS
+// ==========================
 function handleBossHit(bullet) {
     if (!boss || !boss.element.parentElement) return false;
 
     const bossRect = boss.element.getBoundingClientRect();
     const bulletRect = bullet.element.getBoundingClientRect();
 
-    // 1. Verifica Colisão Física
     const collided = (
         bulletRect.left < bossRect.right &&
         bulletRect.right > bossRect.left &&
         bulletRect.top < bossRect.bottom &&
         bulletRect.bottom > bossRect.top
     );
-    
-    if (!collided) return false;
 
-    createExplosion(bullet.x, bullet.y, 'white'); 
+    if (!collided || bossIsInPunishment) return false;
 
-    // 2. Lógica do Jogo (Dano vs. Punição)
-    const isCorrectHit = boss.isVulnerable && bullet.value === question.answer; 
-    
-    if (isCorrectHit) { 
-        // --- ACERTO VÁLIDO (DANO) ---
+    createExplosion(bullet.x, bullet.y, 'white');
+
+    const isCorrectHit = boss.isVulnerable && bullet.value === question.answer;
+
+    if (isCorrectHit) {
         bossCurrentHealth--;
-        score += 50; 
+        score += 50;
         combo++;
-        playDamageSound(); 
+        playDamageSound();
         createExplosion(bullet.x, bullet.y, 'var(--cor-acerto)');
         boss.element.classList.add('hit');
         setTimeout(() => boss.element.classList.remove('hit'), 400);
- if (navigator.vibrate) {
-        navigator.vibrate([40, 60, 40]); // vibração mais intensa
-    }
 
-       
-        // ⭐ CRÍTICO: Limpa o intervalo imediatamente.
-        if (bossInterval) clearInterval(bossInterval); 
-        
+        if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+
         if (bossCurrentHealth <= 0) {
-            // O intervalo já está limpo.
-            bossInterval = null;
-            exitBossFight(true); // Chama a saída, que agora é imediata
+            if (bossInterval) clearInterval(bossInterval);
+            exitBossFight(true);
         } else {
-            // Se não morreu, define um NOVO intervalo para o próximo ciclo
+            // Reinicia intervalo do boss
+            if (bossInterval) clearInterval(bossInterval);
             bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
         }
-        
-    } else {
-        // --- ACERTO INVÁLIDO (TIRO REPELIDO / PUNIÇÃO) ---
-        playHitSound(); 
-        combo = 0;
-        
-        createExplosion(bullet.x, bullet.y, 'var(--cor-erro)');
-        boss.element.style.boxShadow = '0 0 50px var(--cor-erro)';
-        setTimeout(() => {
-            boss.element.style.boxShadow = '0 0 25px #ff00ff, 0 0 50px rgba(255, 0, 255, 0.5)';
-        }, 200);
-        
-        const repelMsg = getRandomMessage(NEGATIVE_FEEDBACK);
-        showTemporaryMessage(repelMsg + " Enxame de Asteroides!", 1500, 'error-msg');
 
-        // Gera o enxame de asteroides de punição 
+    } else {
+        // Acerto inválido → punição
+        playHitSound();
+        combo = 0;
+        createExplosion(bullet.x, bullet.y, 'var(--cor-erro)');
+        bossIsInPunishment = true;
+
         if (bossInterval) clearInterval(bossInterval);
         boss.isVulnerable = false;
         boss.element.classList.remove('vulnerable');
         boss.element.classList.add('invulnerable');
+
         generatePunishmentAsteroids();
     }
-    
-    updateHUD();
-    return true; 
 
+    updateHUD();
+    return true;
 }
 
-// ⭐ Função que gera um único pulso do Buraco Negro e os projéteis
+// ==========================
+// PROJÉTEIS DO BOSS
+// ==========================
 function spawnBossAttack() {
     if (!isBossFight || !boss || !boss.element) return;
 
-    // Pega a posição ATUAL do boss
     const bossRect = boss.element.getBoundingClientRect();
     const gameRect = gameArea.getBoundingClientRect();
+    const spawnX = (bossRect.left - gameRect.left) + bossRect.width/2;
+    const spawnY = bossRect.bottom - gameRect.top;
 
-    // Ponto de spawn: abaixo e no centro do boss
-    const spawnX = (bossRect.left - gameRect.left) + (bossRect.width / 2);
-    const spawnY = (bossRect.bottom - gameRect.top);
-
-    // 1. Cria o efeito visual do "Buraco Negro"
     const blackHoleEl = document.createElement('div');
     blackHoleEl.className = 'black-hole-visual';
     blackHoleEl.style.left = `${spawnX}px`;
     blackHoleEl.style.top = `${spawnY}px`;
     gameArea.appendChild(blackHoleEl);
 
-    // Remove o efeito visual após a animação
-    setTimeout(() => {
-        if (blackHoleEl.parentElement) {
-            blackHoleEl.remove();
-        }
-    }, 2100); // Duração da animação CSS
+    setTimeout(() => { if (blackHoleEl.parentElement) blackHoleEl.remove(); }, 2100);
 
-    // 2. Cria os projéteis (asteroides) após um pequeno atraso
     setTimeout(() => {
-        if (!isBossFight) return; 
-
-        const numProjectiles = 5; 
-        const spreadAngle = Math.PI / 2; 
-        const startAngle = Math.PI / 4; 
+        if (!isBossFight) return;
+        const numProjectiles = 5;
+        const spreadAngle = Math.PI / 2;
+        const startAngle = Math.PI / 4;
         const projectileSpeed = 1;
 
         for (let i = 0; i < numProjectiles; i++) {
-            // Calcula o ângulo para espalhar os projéteis
-            const angle = startAngle + (i / (numProjectiles - 1)) * spreadAngle;
-
-            // Calcula vetores de velocidade (vx, vy)
+            const angle = startAngle + (i / (numProjectiles-1)) * spreadAngle;
             const vx = Math.cos(angle) * projectileSpeed;
             const vy = Math.sin(angle) * projectileSpeed;
 
             const projEl = document.createElement('div');
-            projEl.className = 'asteroid boss-projectile'; 
-            
-            const gifUrl = ASTEROID_GIFS[getRandomInt(0, ASTEROID_GIFS.length - 1)];
-            projEl.style.backgroundImage = `url('${gifUrl}')`;
-            
+            projEl.className = 'asteroid boss-projectile';
+            projEl.style.backgroundImage = `url('${ASTEROID_GIFS[getRandomInt(0, ASTEROID_GIFS.length-1)]}')`;
             projEl.style.left = `${spawnX}px`;
             projEl.style.top = `${spawnY}px`;
-            
             gameArea.appendChild(projEl);
 
-            bossProjectiles.push({
-                element: projEl,
-                x: spawnX,
-                y: spawnY,
-                // Usando a velocidade VX/VY para movimento em leque
-                vx: vx * 100, // Ajuste: Multiplicar por um fator para compensar o delta time do gameLoop
-                vy: vy * 100, // Ajuste: (Seu gameLoop usa deltaSeconds, 3 é muito lento)
-                hits: 0,
-                maxHits: 3 
-            });
+            bossProjectiles.push({ element: projEl, x: spawnX, y: spawnY, vx: vx*100, vy: vy*100, hits: 0, maxHits: 3 });
         }
-    }, 500); 
+    }, 500);
 }
-
 
 function handleBossProjectileHit(index, bullet) {
-    // Para projéteis que não estão no array 'asteroids'
     const projectile = bossProjectiles[index];
+    if (!projectile) return;
 
     createExplosion(bullet.x, bullet.y, 'gray');
-    playHitSound(); // Toca um som de acerto/repelir
-
-    // Lógica: Projéteis do Boss (que não são asteroides) são destruídos com 1 hit
-    if (projectile) {
-        projectile.element.remove();
-        bossProjectiles.splice(index, 1); // Remove do array
-        
-        // Dá um pequeno bônus por repelir o ataque
-        score = Math.min(score + 1, 99999); 
-    }
+    playHitSound();
+    projectile.element.remove();
+    bossProjectiles.splice(index, 1);
+    score = Math.min(score + 1, 99999);
 }
-// ⭐ NOVA FUNÇÃO: O Jogador é atingido por um Projétil/Asteroide de Ataque do Boss
+
 function handlePlayerHitByBossProjectile(projectile) {
     lives--;
     combo = 0;
-    score = Math.max(0, score - 5);
+    score = Math.max(0, score-5);
     playDamageSound();
-     if (navigator.vibrate) {
-        navigator.vibrate([40, 60, 40]); // vibração mais intensa
-    }
-    createExplosion(playerX + 25, playerY + 25, 'red');
-    player.style.opacity = '0.5';
-    setTimeout(() => player.style.opacity = '1', 500); // Pisca
-
-    showTemporaryMessage("ATINGIDO! -1 Vida!", 1500, 'error-msg');
-
-    // Remove o projétil que colidiu
+    if (navigator.vibrate) navigator.vibrate([40,60,40]);
+    createExplosion(playerX+25, playerY+25, 'red');
+    player.style.opacity='0.5';
+    setTimeout(()=>player.style.opacity='1',500);
+    showTemporaryMessage("ATINGIDO! -1 Vida!",1500,'error-msg');
     projectile.element.remove();
-    
-    // Atualiza o estado
     updateHUD();
-    if (lives <= 0) {
-        endGame();
-    }
+    if (lives <=0) endGame();
 }
-// Logica após derrotar o ultimo
+
+// ==========================
+// SAÍDA DO BOSS
 function exitBossFight(success) {
-    // Certifique-se de que 'gameArea' esteja definida (Ex: const gameArea = document.getElementById('gameArea');)
-    const gameArea = document.getElementById('gameArea'); 
+    // Se o jogo não está rodando ou não estamos em luta, sai.
+    if (!isGameRunning || !isBossFight) return;
 
-    if (!isBossFight) return;
-
+    // 1. Limpeza e Reset Básico
     isBossFight = false;
+    bossIsInPunishment = false;
+
     if (bossInterval) clearInterval(bossInterval);
     if (bossAttackInterval) clearInterval(bossAttackInterval);
+    bossInterval = null;
     bossAttackInterval = null;
-    bossProjectiles.forEach(p => p.element.remove());
+
+    bossProjectiles.forEach(p => { if (p.element) p.element.remove(); });
     bossProjectiles = [];
 
-    if (boss && boss.element.parentElement) {
-         if (success) {
-             // Explosão grande para o Boss
-             createExplosion(GAME_WIDTH / 2, 125, '#ffcc00'); 
-         }
-         // A linha que remove o elemento visual do Boss
-         boss.element.remove();
-         boss = null; 
-    }
-
-    if (success) {
-        score += 100; // Bônus extra
-        acertosDesdeUltimoBoss = 0;
-        
-        // --- LÓGICA DE VITÓRIA FINAL (ÚLTIMO BOSS) ---
-        const totalBosses = BOSS_CHARACTERS.length;
-        
-        if (currentLevel === totalBosses) {
-            // Se o nível atual é o último da lista
-            playBosswin(); 
-            
-            // ⭐ CRÍTICO: REMOÇÃO DO setTimeout. A tela final é chamada IMEDIATAMENTE. ⭐
-            // showTemporaryMessage é opcional, mas se mantiver, use um tempo bem curto (ex: 500ms)
-            showTemporaryMessage("PARABÉNS! VOCÊ VENCEU O JOGO!", 500);
-            
-            // Chama a função final do jogo. Isso irá parar o game loop e mostrar a tela.
-            endGame(true); 
-
-            // NOVO: Limpa o background do Boss (solução para o artefato visual)
-            if (gameArea) {
-                gameArea.style.backgroundImage = 'none'; 
-                gameArea.style.backgroundColor = '#000000';
-            }
-
-            // Impede que o código de incremento de nível execute
-            return; 
-        }
-        // --- FIM DA LÓGICA DE VITÓRIA FINAL ---
-
-        // Lógica normal de incremento de nível (para bosses 1 a 4)
-        currentLevel = Math.min(DIFFICULTY.length, currentLevel + 1);
-        playBosswin(); 
-        showTemporaryMessage(`BOSS DERROTADO! NÍVEL ${currentLevel} INICIADO!`, 2500);
-
-    } else {
-         // Se saiu do modo punição, volta ao modo normal.
-         showTemporaryMessage(`VOCÊ ESCAPOU...`, 1500);
+    // 2. Remoção Visual e Explosão
+    if (boss && boss.element && boss.element.parentElement) {
+        if (success) createExplosion(GAME_WIDTH/2, 125, '#ffcc00'); 
+        boss.element.remove();
+        boss = null;
     }
     
-    // Remove quaisquer asteroides de punição restantes
-    asteroids.forEach(a => { a.element.remove(); });
+    // Limpa asteroides remanescentes
+    asteroids.forEach(a => { if (a.element) a.element.remove(); });
     asteroids = [];
-
-    // Vai gerar nova pergunta depois do timer da mensagem (apenas se o jogo não terminou)
-    const delay = success ? 2500 : 1500;
     
-    setTimeout(() => {
-        // Só gera a nova pergunta se o jogo não foi reiniciado/finalizado
-        if (isGameRunning) { 
-            generateNewQuestion();
+    // Se não foi sucesso, apenas limpa e notifica. O dano já foi tomado.
+    if (!success) {
+        showTemporaryMessage(`VOCÊ ESCAPOU...`, 1500, 'alert-msg');
+        setTimeout(() => { if (isGameRunning) generateNewQuestion(); }, 1500);
+        updateHUD();
+        return;
+    }
+    
+    // --- Lógica de Sucesso (Boss Derrotado) ---
+    const totalBosses = BOSS_CHARACTERS.length;
+    score += 100;
+    
+    // ⭐ NOVO CÓDIGO AQUI: Verifica se o chefe derrotado é o ÚLTIMO
+    if (currentLevel >= totalBosses) {
+        // Se o nível atual é o último (ou superior, por segurança), é VITÓRIA FINAL.
+        
+        playBosswin(); 
+        
+        // Remove background do Boss imediatamente antes da tela de fim
+        if (gameArea) {
+            gameArea.style.backgroundImage = 'none'; 
+            gameArea.style.backgroundColor = '#000000';
         }
-    }, delay);
+        
+        // Exibe mensagem rápida e chama o fim do jogo (endGame(true) cuida de parar tudo)
+        showTemporaryMessage("PARABÉNS! VOCÊ VENCEU O JOGO!", 500, 'success-msg');
+        endGame(true);
+        
+        // O endGame(true) vai parar o loop e o updateHUD não será chamado novamente
+        return; 
+    }
+    
+    // --- Lógica de Avanço de Nível (Chefes Intermediários) ---
+    
+    // Avança para o próximo nível
+    currentLevel++; 
+    acertosDesdeUltimoBoss = 0;
+    
+    playBosswin();
+    showTemporaryMessage(`BOSS DERROTADO! NÍVEL ${currentLevel} INICIADO!`, 2500, 'success-msg');
+    
+    // Reinicia o ciclo para o novo nível
+    setTimeout(() => { 
+        if (isGameRunning) {
+            generateNewQuestion(); 
+        }
+    }, 2500);
     
     updateHUD();
 }
+
 
 
 function movePlayer() {
@@ -1477,103 +1438,94 @@ let lastFrameTime = 0;
         // ----------------------------------------------------------------------
         // 1. Movimentação dos Tiros (Bullets)
         // ----------------------------------------------------------------------
-        bullets = bullets.filter(bullet => {
-            // Movimento (Baseado no tempo, para suavidade)
-            bullet.y -= BULLET_SPEED * (deltaSeconds * 60); // Ajuste a velocidade se necessário
-            bullet.element.style.top = `${bullet.y}px`;
-        
-            // Colisão com o Boss
-            if (isBossFight && boss && handleBossHit(bullet)) {
-                bullet.element.remove(); 
-                return false;       
-            }
+    bullets = bullets.filter(bullet => {
+    // Movimento baseado no DeltaTime
+    bullet.y -= BULLET_SPEED * (deltaSeconds * 60);
+    bullet.element.style.top = `${bullet.y}px`;
 
-            // Colisão com Asteroides (de pergunta ou punição do Boss)
-            if (asteroids.length > 0) { // Simplificando a condição
-                const collidedIndex = asteroids.findIndex(asteroid => !asteroid.isDestroyed && checkCollision(bullet, asteroid));
-                if (collidedIndex !== -1) {
-                    handleAsteroidHit(collidedIndex, bullet);
-                    bullet.element.remove(); 
-                    return false; 
-                }
-            }
+    // Colisão com o Boss
+    if (isBossFight && boss && handleBossHit(bullet)) {
+        bullet.element.remove(); 
+        return false;       
+    }
 
-            // ⭐ Colisão com Projéteis do Boss (Diferentes de Asteroides)
-            if (isBossFight && bossProjectiles.length > 0) {
-                const collidedProjIndex = bossProjectiles.findIndex(proj => checkCollision(bullet, proj));
-                if (collidedProjIndex !== -1) {
-                    // Chama a nova função para lidar com o acerto
-                    handleBossProjectileHit(collidedProjIndex, bullet); 
-                    bullet.element.remove(); // Destrói o tiro
-                    return false; 
-                }
-            }
+    // Colisão com Asteroides
+    if (asteroids.length > 0) {
+        const collidedIndex = asteroids.findIndex(asteroid => !asteroid.isDestroyed && checkCollision(bullet, asteroid));
+        if (collidedIndex !== -1) {
+            handleAsteroidHit(collidedIndex, bullet);
+            bullet.element.remove(); 
+            return false; 
+        }
+    }
 
-            // Remove tiros que saíram da tela
-            if (bullet.y < -20) {
-                bullet.element.remove();
-                return false;
-            }
-            return true;
-        });
+    // Colisão com projéteis do boss
+    if (isBossFight && bossProjectiles.length > 0) {
+        const collidedProjIndex = bossProjectiles.findIndex(proj => checkCollision(bullet, proj));
+        if (collidedProjIndex !== -1) {
+            handleBossProjectileHit(collidedProjIndex, bullet); 
+            bullet.element.remove();
+            return false; 
+        }
+    }
+
+    // Remove tiros fora da tela
+    if (bullet.y < -20) {
+        bullet.element.remove();
+        return false;
+    }
+    return true;
+});
+
 
         // ----------------------------------------------------------------------
         // 2. Movimentação de Asteroides e Tamanho
         // ----------------------------------------------------------------------
-        // Constante de conversão, se estiver usando a lógica antiga de velocidade:
-        // const deltaTimeOld = (deltaSeconds * 1000) / 1700; 
+ asteroids = asteroids.filter(asteroid => {
+    if (asteroid.isDestroyed) return false;
 
-        asteroids = asteroids.filter(asteroid => {
-            if (asteroid.isDestroyed) {
-                return false; 
-            }
+    // Movimento e oscilação
+    asteroid.x = asteroid.baseX + Math.sin(timestamp / 700 + asteroid.oscillationOffset) * 15;
+    asteroid.y += asteroid.speed * deltaSeconds;
 
-            // Oscilação Horizontal e movimento para baixo
-            asteroid.x = asteroid.baseX + Math.sin(timestamp / 700 + asteroid.oscillationOffset) * 15;
-            // Movimento Y baseado no DeltaTime em segundos (mais preciso)
-            asteroid.y += asteroid.speed * deltaSeconds; 
-            
-            asteroid.element.style.left = `${asteroid.x}px`;
-            asteroid.element.style.top = `${asteroid.y}px`;
+    asteroid.element.style.left = `${asteroid.x}px`;
+    asteroid.element.style.top = `${asteroid.y}px`;
 
-            // Aumenta a escala e opacidade ao se aproximar (efeito 3D)
-            const ratio = (GAME_HEIGHT - asteroid.y) / GAME_HEIGHT;
-            asteroid.scale = Math.min(1, 0.5 + (1 - ratio) * 0.3);
-            asteroid.element.style.transform = `translate(-50%, -50%) scale(${asteroid.scale})`;
-            asteroid.element.style.opacity = Math.min(1, 0.5 + (1 - ratio) * 0.5); // Corrigido a opacidade
+    // Escala e opacidade
+    const ratio = (GAME_HEIGHT - asteroid.y) / GAME_HEIGHT;
+    asteroid.scale = Math.min(1, 0.5 + (1 - ratio) * 0.3);
+    asteroid.element.style.transform = `translate(-50%, -50%) scale(${asteroid.scale})`;
+    asteroid.element.style.opacity = Math.min(1, 0.5 + (1 - ratio) * 0.5);
 
-            // Colisão com o Jogador (Agora usa a função CORRIGIDA)
-            if (checkPlayerCollision(asteroid)) {
-                playHitasteroidfail();
-                 if (navigator.vibrate) {
-        navigator.vibrate([40, 60, 40]); // vibração mais intensa
+    // Colisão com o jogador
+    if (checkPlayerCollision(asteroid)) {
+        playHitasteroidfail();
+        if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+
+        handlePlayerHit(asteroid);
+
+        // Remove asteroide de ataque
+        if (asteroid.value === 'Attack') {
+            asteroid.element.remove();
+            return false;
+        }
     }
-                // A colisão com asteroides de pergunta/ataque é a mesma:
-                handlePlayerHit(asteroid); 
-                // Se for um asteroide de ataque, removemos ele na colisão:
-                if (asteroid.value === 'Attack') { 
-                    asteroid.element.remove();
-                    return false;
-                }
-                // Se for asteroide de pergunta, handlePlayerHit lida com a remoção
-            }
 
-            // Asteróide passou da tela (PERDEU UMA VIDA se for alvo atual)
-            if (asteroid.y > GAME_HEIGHT + 50) {
-                playHitasteroidfail();
-                 if (navigator.vibrate) {
-        navigator.vibrate([40, 60, 40]); // vibração mais intensa
+    // Asteroide passou da tela
+    if (asteroid.y > GAME_HEIGHT + 50) {
+        playHitasteroidfail();
+        if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+
+        if (asteroid.isCurrentTarget) {
+            handleMiss(asteroid.isCorrectAnswer);
+        }
+        asteroid.element.remove();
+        return false;
     }
-                if (asteroid.isCurrentTarget) {
-                    // Apenas asteroides de PERGUNTA que passaram descontam vida
-                    handleMiss(asteroid.isCorrectAnswer);
-                }
-                asteroid.element.remove();
-                return false;
-            }
 
-            return true;
-        });
+    return true;
+});
+
         
   // ... (dentro da função gameLoop, após a movimentação de Asteroides) ...
 
@@ -1660,6 +1612,7 @@ if (!isBossFight && asteroids.length === 0 && question.answer !== undefined) {
     // Deixo comentado para evitar lógica duplicada de pontuação/vida.
     // handleMiss(false); 
 }
+handlePlayerCollisionWithBoss(deltaSeconds);
 
 requestAnimationFrame(gameLoop);
 // ... (fim da função gameLoop) ...
@@ -1675,6 +1628,65 @@ bulletRect.top < asteroidRect.bottom &&
 bulletRect.bottom > asteroidRect.top
  );
 }
+function handlePlayerCollisionWithBoss(deltaSeconds) {
+    if (!isBossFight || !boss || !boss.element) return;
+
+    const bossRect = boss.element.getBoundingClientRect();
+    const playerRect = player.getBoundingClientRect();
+
+    const collided = (
+        playerRect.left < bossRect.right &&
+        playerRect.right > bossRect.left &&
+        playerRect.top < bossRect.bottom &&
+        playerRect.bottom > bossRect.top
+    );
+
+    if (!collided) return;
+
+    // Reduz vida
+    if (!player.justHitBoss) {
+        lives--;
+        combo = 0;
+        score = Math.max(0, score - 5);
+        playDamageSound();
+        if (navigator.vibrate) navigator.vibrate([40,60,40]);
+        createExplosion(playerX + playerRect.width/2, playerY + playerRect.height/2, 'red');
+        showTemporaryMessage("-1 VIDA! CUIDADO COM O BOSS!", 1500, 'error-msg');
+        updateHUD();
+
+        player.justHitBoss = true;
+        setTimeout(() => { player.justHitBoss = false; }, 1000);
+    }
+
+    // Calcula vetor do knockback (empurrão)
+    const bossCenterX = bossRect.left + bossRect.width / 2;
+    const bossCenterY = bossRect.top + bossRect.height / 2;
+    const playerCenterX = playerRect.left + playerRect.width / 2;
+    const playerCenterY = playerRect.top + playerRect.height / 2;
+
+    let dx = playerCenterX - bossCenterX;
+    let dy = playerCenterY - bossCenterY;
+    const distance = Math.sqrt(dx*dx + dy*dy) || 1;
+    dx /= distance;
+    dy /= distance;
+
+    // 🔥 AUMENTAR A FORÇA DO EMPURRÃO E ADICIONAR VARIAÇÃO ALEATÓRIA
+    const KNOCKBACK_FORCE = 400 + Math.random() * 100; // mais forte e imprevisível
+    playerX += dx * KNOCKBACK_FORCE * deltaSeconds;
+    playerY += dy * KNOCKBACK_FORCE * deltaSeconds;
+
+    // Mantém o jogador dentro da tela
+    const playerWidth = player.offsetWidth || 63;
+    const playerHeight = player.offsetHeight || 63;
+    playerX = Math.max(0, Math.min(GAME_WIDTH - playerWidth, playerX));
+    playerY = Math.max(0, Math.min(GAME_HEIGHT - playerHeight - 20, playerY));
+
+    // Atualiza posição visual
+    player.style.left = `${playerX}px`;
+    player.style.top = `${playerY}px`;
+}
+
+
 
 // ⭐ CORREÇÃO: Permite colisão com qualquer objeto que tenha 'element'
 function checkPlayerCollision(gameObject) {
@@ -1703,174 +1715,194 @@ function checkPlayerCollision(gameObject) {
 function handleAsteroidHit(index, bullet) {
     const asteroid = asteroids[index];
 
-    // 1. APLICA DANO E REMOVE A BALA
-    asteroid.hits = (asteroid.hits || 0) + 1; // Incrementa o contador de acertos
-// Feedback visual de acerto
-    createExplosion(bullet.x, bullet.y, 'white'); 
-    playHitSound(); // Som de acerto/dano
+    // 1️⃣ APLICA DANO E REMOVE A BALA
+    asteroid.hits = (asteroid.hits || 0) + 1; // Incrementa contador
+    createExplosion(bullet.x, bullet.y, 'white');
+    playHitSound();
 
-    const MAX_HITS = asteroid.maxHits || 5; // Máximo de acertos para destruir
+    const MAX_HITS = asteroid.maxHits || 5;
     const shouldBeDestroyed = asteroid.hits >= MAX_HITS;
 
     if (!shouldBeDestroyed) {
         // --- ASTEROIDE LEVOU DANO, MAS NÃO FOI DESTRUÍDO ---
-        
-        // Feedback Visual de Dano: aumenta escala e opacidade
-        const currentScale = parseFloat(asteroid.element.style.transform.match(/scale\(([^)]+)\)/)[1] || 0.5);
+        const currentScale = parseFloat(asteroid.element.style.transform.match(/scale\(([^)]+)\)/)?.[1] || 0.5);
         asteroid.element.style.transform = `translate(-50%, -50%) scale(${currentScale + 0.1})`;
-        
+
         const opacityChange = 0.5 + (asteroid.hits / MAX_HITS) * 0.5;
         asteroid.element.style.opacity = opacityChange.toString();
-        
-        return; 
+        return;
     }
 
-    // -----------------------------------------------------------
-    // LÓGICA DE DESTRUIÇÃO FINAL
-    // -----------------------------------------------------------
+    // 2️⃣ ASTEROIDE DESTRUÍDO — EFEITOS DE EXPLOSÃO E VIBRAÇÃO
+    if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+    asteroid.isDestroyed = true;
 
-    // Vibração maior na destruição do asteroide
-    if (navigator.vibrate) {
-        navigator.vibrate([40, 60, 40]); // vibração mais intensa
-    }
-
-    asteroid.isDestroyed = true; 
     if (asteroid.element && asteroid.element.parentElement) {
-        createExplosion(asteroid.x, asteroid.y, asteroid.isCorrectAnswer ? 'yellow' : 'gray'); 
-        asteroid.element.remove(); 
+        createExplosion(asteroid.x, asteroid.y, asteroid.isCorrectAnswer ? 'yellow' : 'gray');
+        asteroid.element.remove();
     }
 
-    let shouldResumeGame = false;
-
+    // 3️⃣ SE FOR A RESPOSTA CORRETA...
     if (asteroid.isCorrectAnswer) {
-        // Acerto correto
-        score += 10 + (combo > 1 ? combo * 5 : 0);
+        createExplosion(asteroid.x, asteroid.y, 'yellow');
         playSucesso();
 
-        if (isBossFight) {
-            showTemporaryMessage("PUNIÇÃO CANCELADA! Batalha Retomada!", 2000, 'alert-msg');
-            combo = 0;
-            asteroids.forEach(a => {
-                if (!a.isDestroyed && a.element) { a.isDestroyed = true; a.element.remove(); }
-            });
-            if (bossInterval) clearInterval(bossInterval);
-            bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+        asteroid.isDestroyed = true;
+        if (asteroid.element) asteroid.element.remove();
+
+        // ⚔️ CONTRA-ATAQUE SE ESTIVER NA FASE DE PUNIÇÃO DO BOSS
+        if (isBossFight && bossIsInPunishment) {
+            const counter = document.createElement('div');
+            counter.className = 'counter-attack';
+            counter.style.position = 'absolute';
+            counter.style.left = `${asteroid.x}px`;
+            counter.style.top = `${asteroid.y}px`;
+            counter.style.width = '20px';
+            counter.style.height = '20px';
+            counter.style.borderRadius = '50%';
+            counter.style.background = 'yellow';
+            counter.style.boxShadow = '0 0 20px 10px yellow';
+            gameArea.appendChild(counter);
+
+            const bossRect = boss.element.getBoundingClientRect();
+            const gameRect = gameArea.getBoundingClientRect();
+            const targetX = bossRect.left + bossRect.width / 2 - gameRect.left;
+            const targetY = bossRect.top + bossRect.height / 2 - gameRect.top;
+
+            // Animação do contra-ataque
+            counter.animate([
+                { transform: `translate(-50%, -50%) scale(1)`, opacity: 1 },
+                { transform: `translate(${targetX - asteroid.x}px, ${targetY - asteroid.y}px) scale(2)`, opacity: 0.2 }
+            ], {
+                duration: 800,
+                easing: 'ease-out'
+            }).onfinish = () => {
+                counter.remove();
+                createExplosion(targetX, targetY, 'white');
+                playDamageSound();
+                if (navigator.vibrate) navigator.vibrate([50, 80, 50]);
+
+                bossCurrentHealth--;
+                if (bossCurrentHealth <= 0) {
+                    exitBossFight(true);
+                } else {
+                    showTemporaryMessage("CONTRA-ATAQUE BEM-SUCEDIDO!", 2000, 'alert-msg');
+                    bossIsInPunishment = false;
+
+                    // 🔁 Reinicia o ciclo do boss após o fim da punição
+                    if (bossInterval) clearInterval(bossInterval);
+                    bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+                }
+            };
         } else {
+            // 🌍 ACERTO NORMAL (fora da punição)
+            score += 10 + (combo > 1 ? combo * 5 : 0);
             combo++;
             acertosDesdeUltimoBoss++;
-            shouldResumeGame = true; 
+            setTimeout(() => generateNewQuestion(), 50);
         }
-        
-    } else {
-        // Acerto incorreto
-        playHitasteroidfail();
-        combo = 0;
-        lives--;
-        showTemporaryMessage("RESPOSTA INCORRETA! -1 Vida!", 1000);
-        
-        if (isBossFight) {
-            asteroids.forEach(a => { 
-                if (!a.isDestroyed && a.element) { a.isDestroyed = true; a.element.remove(); }
-            });
-            if (bossInterval) clearInterval(bossInterval);
-            bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
-        } else {
-            shouldResumeGame = true;
-        }
+
+        updateHUD();
+        return;
     }
-    
+
+    // 4️⃣ CASO NÃO SEJA A RESPOSTA CORRETA (NORMAL)
+    if (isBossFight && bossIsInPunishment) {
+        // ❌ Errou o asteroide durante a punição — apenas remove
+        createExplosion(asteroid.x, asteroid.y, 'gray');
+        playHitasteroidfail();
+        asteroid.isDestroyed = true;
+        if (asteroid.element) asteroid.element.remove();
+    }
+
+    updateHUD();
+}
+
+
+function handlePlayerHit(asteroid) {
+    lives--;
+    combo = 0;
+    score = Math.max(0, score - 10);
+    createExplosion(playerX + 25, playerY + 25, 'var(--cor-erro)');
+    player.style.opacity = '0.5';
+    setTimeout(() => player.style.opacity = '1', 500);
+    showTemporaryMessage("COLISÃO! -1 Vida! Pergunta Reiniciada!", 1500);
+
+    if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+
+    // Remove todos os asteroides restantes
+    asteroids.forEach(a => {
+        if (a.element && a.element.parentElement && !a.isDestroyed) {
+            a.isDestroyed = true;
+            a.element.remove();
+        }
+    });
+    asteroids = [];
+
+    // Reset dos controles do jogador
+    const movementKeys = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Mouse0', MOBILE_MOVE_LEFT, MOBILE_MOVE_RIGHT, MOBILE_SHOOT];
+    movementKeys.forEach(k => { if (keysPressed[k]) keysPressed[k] = false; });
+
+    updateHUD();
+
     if (lives <= 0) {
         endGame();
         return;
     }
-    
-    updateHUD();
-    if (shouldResumeGame) {
-        setTimeout(() => generateNewQuestion(), 50); 
-    }
+
+    // Reinicia pergunta ou ciclo do boss
+    setTimeout(() => {
+        if (isBossFight) {
+            showTemporaryMessage("Ciclo do Boss Resetado!", 1000);
+            bossIsInPunishment = false;
+            if (bossInterval) clearInterval(bossInterval);
+            bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+        } else {
+            generateNewQuestion(); 
+        }
+    }, 50); 
 }
 
-function handlePlayerHit(asteroid) {
-
-lives--;
-combo = 0;
-score = Math.max(0, score - 10);
-createExplosion(playerX + 25, playerY + 25, 'var(--cor-erro)');
-player.style.opacity = '0.5';
-setTimeout(() => player.style.opacity = '1', 500); // Pisca
- showTemporaryMessage("COLISÃO! -1 Vida! Pergunta Reiniciada!", 1500);
- if (navigator.vibrate) {
-        navigator.vibrate([40, 60, 40]); // vibração mais intensa
-    }
-asteroids.forEach(a => {
- if (a.element && a.element.parentElement && !a.isDestroyed) {
-a.isDestroyed = true;
- a.element.remove();
-}
- });
-
-    touchTargetX = null;
-    touchTargetY = null;
-    const movementKeys = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS','Mouse0', MOBILE_MOVE_LEFT, MOBILE_MOVE_RIGHT, MOBILE_SHOOT];
-    movementKeys.forEach(k => { if (keysPressed[k]) keysPressed[k] = false; });
-
-updateHUD();
- if (lives <= 0) {
- endGame();
-return;
- }
-
-setTimeout(() => {
- if (isBossFight) {
-showTemporaryMessage("Ciclo do Boss Resetado!", 1000);
-if (bossInterval) clearInterval(bossInterval);
-bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
- } else {
-generateNewQuestion(); 
-}
- }, 50); 
-}
 
 function handleMiss(isCorrectAnswer) {
-let shouldResetBoss = false;
+    let shouldResetBoss = false;
 
- if (isBossFight) {
- shouldResetBoss = true;
- combo = 0;
-showTemporaryMessage("ALVO PERDIDO! Ciclo do Boss Resetado!", 2000);
+    if (isBossFight) {
+        combo = 0;
+        showTemporaryMessage("ALVO DE PUNIÇÃO PERDIDO! Ciclo Reiniciado!", 2000);
 
- } else if (isCorrectAnswer) {
+        bossIsInPunishment = false;
+        if (bossInterval) clearInterval(bossInterval);
+        bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
 
-lives--;
-combo = 0;
-score = Math.max(0, score - 10);
-showTemporaryMessage("ALVO CORRETO PERDIDO! -1 Vida", 2000);
-} else {
-combo = 0;
-showTemporaryMessage("ALVO PERDIDO...", 2000);
- }
+        // Remove todos os asteroides restantes
+        asteroids.forEach(a => { if (a.element && a.element.parentElement) a.element.remove(); });
+        asteroids = [];
+    } else if (isCorrectAnswer) {
+        lives--;
+        combo = 0;
+        score = Math.max(0, score - 10);
+        showTemporaryMessage("ALVO CORRETO PERDIDO! -1 Vida", 2000);
+    } else {
+        combo = 0;
+        showTemporaryMessage("ALVO PERDIDO...", 2000);
+    }
 
-updateHUD();
-if (lives <= 0) endGame();
-asteroids.forEach(a => {
- if (a.element && a.element.parentElement && !a.isDestroyed) {
- a.isDestroyed = true;
-a.element.remove();
+    updateHUD();
+    if (lives <= 0) endGame();
+
+    asteroids.forEach(a => { if (a.element && a.element.parentElement && !a.isDestroyed) { a.isDestroyed = true; a.element.remove(); } });
+
+    setTimeout(() => {
+        if (shouldResetBoss) {
+            if (bossInterval) clearInterval(bossInterval);
+            bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
+        } else {
+            generateNewQuestion(); 
+        }
+    }, 50);
 }
- });
 
-
-setTimeout(() => {
- if (shouldResetBoss) {
-
-if (bossInterval) clearInterval(bossInterval);
-bossInterval = setInterval(toggleBossVulnerability, 1000 + getRandomInt(500, 1500));
-} else {
-
- generateNewQuestion(); 
- }
-}, 50);
-}
 
     const _startBtn = document.getElementById('startButton');
     const _restartBtn = document.getElementById('restartButton');
