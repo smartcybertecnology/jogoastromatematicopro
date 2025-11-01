@@ -1495,7 +1495,7 @@ let lastFrameTime = 0;
     const ratio = (GAME_HEIGHT - asteroid.y) / GAME_HEIGHT;
     asteroid.scale = Math.min(1, 0.5 + (1 - ratio) * 0.3);
     asteroid.element.style.transform = `translate(-50%, -50%) scale(${asteroid.scale})`;
-    asteroid.element.style.opacity = Math.min(1, 0.5 + (1 - ratio) * 0.5);
+    asteroid.element.style.opacity = Math.min(1, 2.7 + (1 - ratio) * 0.5);
 
     // Colisão com o jogador
     if (checkPlayerCollision(asteroid)) {
