@@ -616,43 +616,75 @@
             transform: scale(1.05);
         }
 
-       #shootButton {
+  #shootButton {
     position: absolute;
     bottom: 20px;
     right: 20px;
-    
-    /* ⭐ AJUSTE DE ALTURA 1/2: Reduzindo o padding */
-    padding: 15px 25px; /* Reduzido de 20px para 15px */
-    
-    /* ⭐ AJUSTE DE ALTURA 2/2: Reduzindo a altura explícita */
-    height: 120px; /* Reduzido de 170px para 120px */
-    
-    font-size: 1.2rem;
-    background-color: var(--cor-acerto);
-    color: white;
-    border: 3px solid white;
-    border-radius: 10px;
+    padding: 15px 25px;
+    height: 120px;
+
+    font-size: 1.3rem;
+    color: #e0f7ff;
+    letter-spacing: 1px;
+    border: 2px solid rgba(0, 200, 255, 0.6);
+    border-radius: 100px;
     cursor: pointer;
-    z-index: 1000; 
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
-    
-    display: none; 
+    z-index: 1000;
+    display: none;
+
+    /* 💫 Fundo metálico com energia azul */
+    background: linear-gradient(145deg, #0a1a2f, #112a40);
+    box-shadow:
+        0 0 10px rgba(0, 200, 255, 0.4),
+        inset 0 0 8px rgba(0, 255, 255, 0.2),
+        0 0 20px rgba(0, 100, 255, 0.3);
+    text-shadow: 0 0 8px rgba(0, 255, 255, 0.7);
+
+    /* Efeito “vidro futurista” */
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease, transform 0.15s ease;
+    animation: thrusterPulse 2.2s infinite ease-in-out;
 }
 
-@media (max-width: 768px) {
-    #shootButton {
-        display: block; 
-        position: fixed;
-        z-index: 1100;
-        
-        /* ⭐ AJUSTE MOBILE: Reduzindo a altura mobile */
-        height: 100px; /* Reduzido de 160px para 100px */
-        
-        right: 12px;
-        bottom: calc(var(--ad-height) + 8px);
-        box-shadow: 0 6px 10px rgba(0,0,0,0.5);
+/* 🔵 Efeito de energia pulsando */
+@keyframes thrusterPulse {
+    0%, 100% {
+        box-shadow:
+            0 0 8px rgba(0, 180, 255, 0.4),
+            0 0 20px rgba(0, 255, 255, 0.3),
+            inset 0 0 10px rgba(0, 255, 255, 0.15);
+    }
+    50% {
+        box-shadow:
+            0 0 18px rgba(0, 255, 255, 0.7),
+            0 0 40px rgba(0, 255, 255, 0.5),
+            inset 0 0 15px rgba(0, 255, 255, 0.3);
     }
 }
+
+/* 💥 Efeito ao clicar — energia concentrada */
+#shootButton:active {
+    transform: scale(0.9);
+    background: linear-gradient(145deg, #0d2138, #0b314d);
+    box-shadow:
+        0 0 25px rgba(0, 255, 255, 0.8),
+        inset 0 0 25px rgba(0, 255, 255, 0.6);
+    text-shadow: 0 0 15px rgba(255,255,255,0.9);
+}
+
+/* 📱 Versão Mobile */
+@media (max-width: 768px) {
+    #shootButton {
+        display: block;
+        position: fixed;
+        z-index: 1100;
+        height: 100px;
+        right: 12px;
+        bottom: calc(var(--ad-height) + 8px);
+        font-size: 1.1rem;
+    }
+}
+
 /* 🌌 Buraco Negro Realista */
 
 .black-hole-visual {
@@ -777,7 +809,8 @@
 
     <div id="player"></div>
 
-</div> <button id="shootButton">🔫 DISPARAR</button>
+</div> <button id="shootButton">🚀 DISPARAR</button>
+
 
 <div id="overlay">
     <h1>Astro-Matemático PRO 🌌</h1>
