@@ -1085,6 +1085,9 @@ function handleBossHit(bullet) {
         createExplosion(bullet.x, bullet.y, 'var(--cor-acerto)');
         boss.element.classList.add('hit');
         setTimeout(() => boss.element.classList.remove('hit'), 400);
+ if (navigator.vibrate) {
+        navigator.vibrate([40, 60, 40]); // vibração mais intensa
+    }
 
        
         // ⭐ CRÍTICO: Limpa o intervalo imediatamente.
