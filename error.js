@@ -491,71 +491,64 @@ function endGame(isVictory = false) {
     gameOverScreen.style.display = 'flex';
     questionDisplay.style.display = 'none'; 
 }
+
 function handleShootButtonTouch(event) {
     event.preventDefault();
-    event.stopPropagation(); // ⭐ IMPEDE que o evento se propague para os listeners de movimento
+    event.stopPropagation(); 
+    event.stopImmediatePropagation(); // ⭐ IMPORTANTE: Para completamente a propagação
     
     if (!isGameRunning) return;
+    
+    // Marca que é um toque no botão de disparo para evitar conflitos
     keysPressed[MOBILE_SHOOT] = true;
 
-    const button = event.currentTarget;
-    if (button) {
-        button.classList.add('active');
-    }
-}
-function handleTouchEnd(event) {
-    // ⭐ CORREÇÃO: Não desativa o movimento se o toque terminar no botão de disparo
-    const target = event.changedTouches[0]?.target;
-    
-    // Verifica se o toque que terminou foi no botão de disparo
-    if (target && (target.id === 'shootButton' || target.closest('#shootButton'))) {
-        // ⭐ MANTÉM o movimento ativo - não reseta as variáveis de movimento
-        return;
-    }
-    
-    // ⭐ Se NÃO foi no botão de disparo, então reseta normalmente
-    isTouchActive = false;
-    isDraggingPlayer = false;
-    
-    // Reseta Modo 1
-    dragTargetX = null;
-    dragTargetY = null;
-    touchOffsetX = 0;
-    touchOffsetY = 0;
+    shoot();
 
-    // Reseta Modo 2
-    touchDeltaX = 0;
-    touchDeltaY = 0;
-    lastTouchX = null;
-    lastTouchY = null;
+    const button = event.currentTarget;
+    button.classList.add('active');
+    setTimeout(() => {
+        button.classList.remove('active');
+        // Remove o estado após um delay
+        delete keysPressed[MOBILE_SHOOT];
+    }, SHOOT_DELAY / 2);
+    
+    // ⭐ CRÍTICO: Retorna false para prevenir qualquer comportamento padrão
+    return false;
 }
+
 document.addEventListener('DOMContentLoaded', () => {
     const startButton = document.getElementById('startButton');
     const gameAreaElement = document.getElementById('gameArea'); 
     // ⭐ NOVO: Referência ao botão de disparo exclusivo
     const shootButton = document.getElementById('shootButton'); 
 
-    if (shootButton) {
-        // Disparo ao clicar (desktop se o botão for visível)
-        shootButton.addEventListener('click', handleShootButtonTouch);
-        // Disparo ao tocar (mobile) — non-passive so preventDefault works
-        shootButton.addEventListener('touchstart', handleShootButtonTouch, { passive: false });
-        // Pointerdown fallback
-        shootButton.addEventListener('pointerdown', (ev) => { ev.preventDefault && ev.preventDefault(); handleShootButtonTouch(ev); }, { passive: false });
+  // No DOMContentLoaded, atualize os event listeners:
+if (shootButton) {
+    // Remove listeners antigos para evitar duplicação
+    shootButton.removeEventListener('click', handleShootButtonTouch);
+    shootButton.removeEventListener('touchstart', handleShootButtonTouch);
+    shootButton.removeEventListener('pointerdown', handleShootButtonTouch);
+    shootButton.removeEventListener('touchend', handleShootButtonTouch);
     
-const handleShootEnd = (event) => {
-delete keysPressed[MOBILE_SHOOT];
-if (event.currentTarget) {
- event.currentTarget.classList.remove('active');
- }
-};
-
- shootButton.addEventListener('touchend', handleShootEnd);
-shootButton.addEventListener('touchcancel', handleShootEnd);
-        // Também é bom adicionar para mouse/pointer
-        shootButton.addEventListener('mouseup', handleShootEnd);
-        shootButton.addEventListener('mouseleave', handleShootEnd);
-    }
+    // Adiciona listeners novos
+    shootButton.addEventListener('click', handleShootButtonTouch);
+    shootButton.addEventListener('touchstart', handleShootButtonTouch, { passive: false });
+    shootButton.addEventListener('pointerdown', (ev) => { 
+        ev.preventDefault(); 
+        handleShootButtonTouch(ev); 
+    }, { passive: false });
+    
+    // ⭐ MELHORIA: Listener separado para touchend
+    shootButton.addEventListener('touchend', (ev) => {
+        ev.stopPropagation();
+        delete keysPressed[MOBILE_SHOOT];
+    });
+    
+    shootButton.addEventListener('touchcancel', (ev) => {
+        ev.stopPropagation();
+        delete keysPressed[MOBILE_SHOOT];
+    });
+}
     
     // 3. Adiciona suporte a toque na área do jogo (MODIFICADO)
 if (gameAreaElement) {
@@ -570,50 +563,48 @@ window.addEventListener('touchend', handleTouchEnd);
 window.addEventListener('touchcancel', handleTouchEnd); 
 }
 });
-/**
- * Lida com o início do toque (touchstart).
- * Diferencia entre Modo 1 (Drag) e Modo 2 (Delta), APENAS para movimento.
- */
 function handleTouchStart(event) {
     if (!isGameRunning) return;
+    
+    const touch = event.touches[0];
+    if (!touch) return;
+    const target = touch.target;
 
-    // 1. Ignora se o toque for no botão de disparo (ele é tratado separadamente)
-    const target = event.touches[0]?.target;
-    if (target && (target.id === 'shootButton' || target.closest('#shootButton'))) {
+    // ⭐ MELHORIA: Verificação mais robusta para o botão de disparo
+    if (target.id === 'shootButton' || target.closest('#shootButton')) {
+        // ⭐ IMPORTANTE: Se for o botão de disparo, NÃO processa movimento
+        event.preventDefault();
+        event.stopPropagation();
         return; 
     }
     
-    // 2. Previne o scroll e marca o toque de movimento como ativo
-    event.preventDefault(); 
+    // ⭐ NOVO: Se já estiver processando um toque de disparo, ignora
+    if (keysPressed[MOBILE_SHOOT]) {
+        return;
+    }
+    
+    // Resto do código existente...
+    event.preventDefault();
     isTouchActive = true;
-
-    const touch = event.touches[0];
-    if (!touch) return;
     
     const gameAreaRect = gameArea.getBoundingClientRect();
     const relativeX = touch.clientX - gameAreaRect.left;
     const relativeY = touch.clientY - gameAreaRect.top;
 
-    if (target && target.id === 'player') {
+    if (target.id === 'player') {
         // MODO 1: Drag 1:1 (Tocou na nave)
         isDraggingPlayer = true;
-        
         touchOffsetX = relativeX - playerX;
         touchOffsetY = relativeY - playerY;
         dragTargetX = playerX;
         dragTargetY = playerY;
-        
     } else {
-        // MODO 2: Delta Move (Tocou na tela vazia)
+        // MODO 2: Delta Move (Tocou na tela)
         isDraggingPlayer = false;
-        
-        // APENAS LÓGICA DE MOVIMENTO: Define a posição inicial do toque para calcular o delta
         lastTouchX = touch.clientX;
         lastTouchY = touch.clientY;
         touchDeltaX = 0;
         touchDeltaY = 0;
-        
-        // ⭐ IMPORTANTE: Não ativamos keysPressed[MOBILE_SHOOT] aqui. ⭐
     }
 }
 
@@ -651,11 +642,11 @@ function handleTouchMove(event) {
     }
 }
 
+/**
+ * Lida com o fim do toque (touchend / touchcancel).
+ * Reseta todos os estados de toque.
+ */
 function handleTouchEnd(event) {
-    
-    // ⭐ GARANTIA: NÃO desativa keysPressed[MOBILE_SHOOT]. 
-    // O botão de disparo dedicado controla seu próprio estado de toque/fim. ⭐
-    
     isTouchActive = false;
     isDraggingPlayer = false;
     
@@ -1323,53 +1314,59 @@ function exitBossFight(success) {
 }
 
 
-// --- Função de Movimento do Player (Atualizada) ---
 function movePlayer() {
-    if (!isGameRunning) return;
+ if (!isGameRunning) return;
 
-    // Guarda defensivos para garantir que as variáveis têm um valor válido
-    if (!isFinite(playerX) || playerX === null) playerX = (GAME_WIDTH || 320) / 2;
-    if (!isFinite(playerY) || playerY === null) playerY = (GAME_HEIGHT || 240) - 70;
 
-    let dx = 0;
-    let dy = 0;
-    let rotation = 0;
-    
-    // Calcula as dimensões dinamicamente
-    const playerWidth = player.offsetWidth || 63; 
-    const playerHeight = player.offsetHeight || 63; 
-    // Corresponde ao bottom (ou margem de segurança)
-    const marginBottom = 20; 
+if (!isFinite(playerX) || playerX === null) playerX = (GAME_WIDTH || 320) / 2;
+if (!isFinite(playerY) || playerY === null) playerY = (GAME_HEIGHT || 240) - 70;
 
-    // ==========================================================
-    // LÓGICA DE MOVIMENTO DE TOQUE (Delta Move / Drag)
-    // ==========================================================
+ let dx = 0;
+ let dy = 0;
+ let rotation = 0;
+
+const playerWidth = player.offsetWidth || 63; 
+ const playerHeight = player.offsetHeight || 63; 
+ const marginBottom = 20; // Correspondente ao bottom: 20px no CSS
 
     if (isTouchActive) {
-        
+
+
         if (isDraggingPlayer) {
-            // MODO 1: Drag 1:1 (Tocou na nave: a nave "gruda" no dedo)
+            // MODO 1: Drag 1:1 (move para dragTargetX/Y)
+            // A nave "gruda" no dedo
             
             const playerCenterX = playerX + (playerWidth / 2);
             const playerCenterY = playerY + (playerHeight / 2);
             
-            // Calcula o alvo e a diferença
+            // O alvo é o canto (dragTargetX/Y) + metade da nave
             const targetCenterX = dragTargetX + (playerWidth / 2);
             const targetCenterY = dragTargetY + (playerHeight / 2);
 
             const diffX = targetCenterX - playerCenterX;
             const diffY = targetCenterY - playerCenterY;
             
+            // Move 1:1 (sem suavização, sem limite de vel.)
+            // O 'clamping' (limites) no final da função vai segurar a nave.
             dx = diffX;
             dy = diffY;
             
-            rotation = (dx / (PLAYER_SPEED * 2)) * 15;
+            rotation = (dx / (PLAYER_SPEED * 2)) * 15; // Rotação baseada no delta
 
         } else {
-            // MODO 2: Delta Move (Tocou na tela: a nave "acompanha" o arrasto)
+            // MODO 2: Delta Move (move *por* touchDeltaX/Y)
+            // A nave "acompanha" o arrasto do dedo
             
             dx = touchDeltaX;
             dy = touchDeltaY;
+            
+            // Opcional: Limitar a velocidade do "arraste"
+            // const speedMagnitude = Math.sqrt(dx * dx + dy * dy);
+            // const MAX_DELTA_SPEED = PLAYER_SPEED * 2; // Ex: 2x a velocidade do teclado
+            // if (speedMagnitude > MAX_DELTA_SPEED) {
+            //     dx = (dx / speedMagnitude) * MAX_DELTA_SPEED;
+            //     dy = (dy / speedMagnitude) * MAX_DELTA_SPEED;
+            // }
             
             rotation = (dx / PLAYER_SPEED) * 15;
 
@@ -1380,61 +1377,47 @@ function movePlayer() {
         }
 
     } else {
-        // ==========================================================
-        // LÓGICA DE MOVIMENTO PC (Teclado)
-        // ==========================================================
-        if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) {
+
+ if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) {
             dx = -PLAYER_SPEED;
             rotation = -10;
         }
-        if (keysPressed['ArrowRight'] || keysPressed['KeyD']) {
-            if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) { 
-                dx = 0; rotation = 0;
-            } else {
-                dx = PLAYER_SPEED; rotation = 10;
-            }
-        }
-        // Adiciona suporte vertical, se necessário (do seu código antigo)
-        if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
-        if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
-        
-        if (dx !== 0 && dy !== 0) {
-            const diagFactor = Math.sqrt(2);
-            dx /= diagFactor; dy /= diagFactor;
-        }
+if (keysPressed['ArrowRight'] || keysPressed['KeyD']) {
+ if (keysPressed['ArrowLeft'] || keysPressed['KeyA']) { 
+ dx = 0; rotation = 0;
+} else {
+ dx = PLAYER_SPEED; rotation = 10;
+ }
+ }
+if (keysPressed['ArrowUp'] || keysPressed['KeyW']) dy = -PLAYER_SPEED;
+if (keysPressed['ArrowDown'] || keysPressed['KeyS']) dy = PLAYER_SPEED;
+
+ if (dx !== 0 && dy !== 0) {
+ const diagFactor = Math.sqrt(2);
+ dx /= diagFactor; dy /= diagFactor;
+}
     }
 
-    // ==========================================================
-    // APLICAÇÃO DO MOVIMENTO E CLAMPING (LIMITES)
-    // ==========================================================
-    
-    // Aplica o movimento (seja do toque ou do teclado)
     playerX += dx;
     playerY += dy;
 
-    // Limite horizontal
-    playerX = Math.max(0, Math.min(GAME_WIDTH - playerWidth, playerX));
-    
-    // Limite vertical (O `playerY` precisa ser recalculado com base no `player.style.top` no `startGame` se estiver usando CSS `bottom`)
-    // Visto que você usa `player.style.top` no `startGame`, mantemos o `playerY`.
-    playerY = Math.max(0, Math.min(GAME_HEIGHT - playerHeight - marginBottom, playerY)); 
+playerX = Math.max(0, Math.min(GAME_WIDTH - playerWidth, playerX));
 
-    // Atualiza Posição e Rotação
-    player.style.left = `${playerX}px`;
-    player.style.top = `${playerY}px`;
-    player.style.transform = `rotate(${rotation}deg)`;
 
-    // ==========================================================
-    // LÓGICA DE DISPARO (AGORA INCLUI TECLADO, MOUSE E TOQUE)
-    // ==========================================================
-    const now = Date.now();
-    // Verifica Teclado (Space), Mouse (Mouse0), OU O BOTÃO DE TOQUE
-    if ((keysPressed['Space'] || keysPressed['Mouse0'] || keysPressed[MOBILE_SHOOT]) && (now - lastShootTime > SHOOT_DELAY)) {
-        shoot();
-        lastShootTime = now;
-        player.classList.add('shooting');
-        setTimeout(() => player.classList.remove('shooting'), 100);
-    }
+playerY = Math.max(0, Math.min(GAME_HEIGHT - playerHeight - marginBottom, playerY)); 
+
+player.style.left = `${playerX}px`;
+player.style.top = `${playerY}px`;
+player.style.transform = `rotate(${rotation}deg)`;
+
+
+const now = Date.now();
+if ((keysPressed['Space'] || keysPressed['Mouse0']) && (now - lastShootTime > SHOOT_DELAY)) {
+ shoot();
+lastShootTime = now;
+player.classList.add('shooting');
+ setTimeout(() => player.classList.remove('shooting'), 100);
+}
 }
 function shoot() {
     const currentTime = Date.now();
