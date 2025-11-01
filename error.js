@@ -1694,13 +1694,7 @@ function handleAsteroidHit(index, bullet) {
 
     // 1. APLICA DANO E REMOVE A BALA
     asteroid.hits = (asteroid.hits || 0) + 1; // Incrementa o contador de acertos
-
-    // Vibração curta ao acertar
-    if (navigator.vibrate) {
-        navigator.vibrate([15, 30, 15]); // vibração suave e rápida
-    }
-
-    // Feedback visual de acerto
+// Feedback visual de acerto
     createExplosion(bullet.x, bullet.y, 'white'); 
     playHitSound(); // Som de acerto/dano
 
